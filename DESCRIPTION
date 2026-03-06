@@ -1,0 +1,41 @@
+Package: wvcpmatch
+Title: Taxonomic Name Reconciliation Against the WCVP Backbone
+Version: 1.1.1
+Authors@R: c(
+        person("Paul Efren", "Santos Andrade",
+        email = "paulefrens@gmail.com", role = c("aut", "cre")))
+Description: Tools for taxonomic name reconciliation against the World
+    Checklist of Vascular Plants (WCVP), accessed via
+    'rWCVPdata::wcvp_names'. The package standardizes scientific plant
+    names and performs exact and fuzzy matching for binomial and trinomial
+    names, including infraspecific rank-aware validation. It is designed to
+    support reproducible workflows using versioned WCVP snapshots, enabling
+    consistent taxonomic processing prior to downstream biodiversity,
+    spatial, and trait analyses.
+License: CC BY 4.0
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Imports: 
+    assertthat,
+    cli,
+    dplyr,
+    fuzzyjoin,
+    igraph,
+    magrittr,
+    memoise,
+    Matrix,
+    progress,
+    purrr,
+    readr,
+    stats,
+    stringr,
+    tibble,
+    tidyr
+Depends: 
+    R (>= 3.6)
+LazyData: true
+LazyDataCompression: xz
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
