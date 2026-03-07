@@ -46,7 +46,9 @@ rows. Output includes \code{input_index} for traceability to the original input.
 }}
 }
 \value{
-Tibble with matched names and process flags.
+Tibble with matched names, process flags, and taxonomic context
+columns: \code{matched_plant_name_id}, \code{matched_taxon_name}, \code{taxon_status},
+\code{accepted_plant_name_id}, \code{accepted_taxon_name}, \code{is_accepted_name}.
 }
 \description{
 Runs a matching pipeline with exact and partial matching for binomial and

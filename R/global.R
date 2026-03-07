@@ -9,7 +9,13 @@ utils::globalVariables(c(
   ".Infra.Rank.upper",
   ".key",
   ".matched",
+  ".matched_rank_upper",
+  ".name_exact",
+  ".input_name_clean",
   ".orig_len",
+  ".row_id",
+  ".status_rank",
+  ".taxon_name_clean",
   ".rank_key",
   # Variables de columna / externas
   "direct_match_infra_rank",
@@ -22,6 +28,8 @@ utils::globalVariables(c(
   "is_sp",
   "is_spp",
   "Matched.Infraspecies",
+  "matched_plant_name_id",
+  "matched_taxon_name",
   "n",
   "Orig.Infra.Rank",
   "Orig.Infraspecies",
@@ -33,9 +41,14 @@ utils::globalVariables(c(
   "Orig.Genus",
   "Orig.Species", "Species",
   "db_rank", "fuzzy_genus_dist", "fuzzy_species_dist",
+  "taxon_name", "taxon_status",
+  "accepted_plant_name_id", "accepted_taxon_name",
+  "is_accepted_name",
   "genus",
   "infraspecies",
   "infraspecific_rank",
   "plant_name_id",
-  "species"
+  "species",
+  "Matched.Infra.Rank",
+  "Orig.Name"
 ))
