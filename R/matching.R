@@ -47,7 +47,7 @@ wcvp_matching <- function(df,
                      method = "osa",
                      add_name_distance = FALSE,
                      name_distance_method = "osa",
-                     output_name_style = c("legacy", "snake_case")) {
+                     output_name_style = c("snake_case", "legacy")) {
   output_name_style <- match.arg(output_name_style)
 
   standardize_output_names <- function(x) {

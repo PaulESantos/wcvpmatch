@@ -58,7 +58,7 @@ pak::pak("PaulESantos/rWCVPdata")
 
 ``` r
 library(wcvpmatch)
-#> ── Attaching wcvpmatch ecosystem ──────────────────────────── wcvpmatch 1.1.1 ──
+#> ── Attaching wcvpmatch ecosystem ──────────────────────────── wcvpmatch 0.0.1 ──
 #> ✔ rWCVPdata 0.8.0 (wcvp_names available)
 
 sp_names <- c(
