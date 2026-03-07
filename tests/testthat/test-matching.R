@@ -305,3 +305,56 @@ test_that("matching can standardize output names to snake_case", {
   expect_true(all(c("orig_genus", "orig_species", "matched_genus", "matched_species", "input_name") %in% names(out)))
   expect_false(any(c("Orig.Genus", "Orig.Species", "Matched.Genus", "Input.Name") %in% names(out)))
 })
+
+test_that("matching can add fast pairwise input-vs-matched name distance", {
+  target_df <- tibble::tibble(
+    genus = c("Fagus", "Quercus"),
+    species = c("sylvatica", "robur"),
+    infraspecific_rank = NA_character_,
+    infraspecies = NA_character_
+  )
+
+  input <- tibble::tibble(
+    Genus = c("Fagus", "Qercus"),
+    Species = c("sylvatica", "robur")
+  )
+
+  out <- wcvp_matching(
+    input,
+    target_df = target_df,
+    add_name_distance = TRUE,
+    name_distance_method = "osa"
+  )
+
+  expect_true("matched_dist" %in% names(out))
+  expect_true(is.numeric(out$matched_dist))
+  expect_true(all(!is.na(out$matched_dist[out$matched])))
+})
+
+test_that("matched TRUE is always coherent with matched_taxon_name", {
+  target_df <- tibble::tibble(
+    genus = c("Aniba", "Jaltomata"),
+    species = c("heterotepala", "sagastegui"),
+    infraspecific_rank = NA_character_,
+    infraspecies = NA_character_,
+    plant_name_id = c(1, 2),
+    taxon_name = c("Aniba heterotepala", "Jaltomata sagastegui"),
+    taxon_status = c("Accepted", "Accepted"),
+    accepted_plant_name_id = c(1, 2)
+  )
+
+  input <- classify_spnames(c(
+    "Aniba heterotepala",
+    "Jaltometa sagasteguii"
+  ))
+
+  out <- wcvp_matching(
+    input,
+    target_df = target_df,
+    max_dist = 2,
+    method = "osa",
+    allow_duplicates = TRUE
+  )
+
+  expect_true(all(!out$matched | !is.na(out$matched_taxon_name)))
+})

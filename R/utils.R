@@ -415,8 +415,9 @@ check_df_consistency <- function(df) {
 # ---------------------------------------------------------------
 ## returns WCVP target rows filtered by a single genus
 get_trees_of_genus <- function(genus, target_df = NULL){
+  genus_values <- as.character(genus)
   return(get_db(target_df = target_df) %>%
-           dplyr::filter(Genus == genus) %>%
+           dplyr::filter(.data$Genus %in% .env$genus_values) %>%
            dplyr::select(c('Genus', 'Species')))
 }
 ## locally save output of get_trees_of_genus of called more than once for the same inputs. --> maybe we should get rid of this, as I suppose it's not effectively speading up things due to the increased memory usage.

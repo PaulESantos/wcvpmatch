@@ -11,6 +11,7 @@
 #' @export
 #'
 direct_match_species_within_genus <- function(df, target_df = NULL){
+  df <- check_df_format(df)
 
   assertthat::assert_that(all(c('Orig.Genus', 'Orig.Species', 'Matched.Genus') %in% colnames(df)))
   target_df <- get_db(target_df = target_df)
@@ -25,31 +26,32 @@ direct_match_species_within_genus <- function(df, target_df = NULL){
     }
   }
 
-  res <- df %>%
-    dplyr::group_by(Matched.Genus) %>%
-    dplyr::group_split() %>%
-    purrr::map_dfr(direct_match_species_within_genus_helper, target_df)
+  # Match must be constrained by both Matched.Genus and Orig.Species.
+  # Using species-only joins can produce false positives when the same epithet
+  # exists in other genera.
+  db_subset <- target_df %>%
+    dplyr::select(genus, species) %>%
+    dplyr::distinct()
 
-  return(res)
-}
-
-direct_match_species_within_genus_helper <- function(df, target_df){
-  # subset database
-  genus <- df %>% dplyr::distinct(Matched.Genus) %>% unlist()
-  database_subset <- get_trees_of_genus(genus, target_df)
-
-  # match specific epithet within genus
   matched <- df %>%
-    dplyr::semi_join(database_subset, by = c('Orig.Species' = 'Species')) %>%
+    dplyr::semi_join(
+      db_subset,
+      by = c("Matched.Genus" = "genus", "Orig.Species" = "species")
+    ) %>%
     dplyr::mutate(Matched.Species = Orig.Species)
-  unmatched <- df %>%
-    dplyr::anti_join(database_subset, by = c('Orig.Species' = 'Species'))
 
-    assertthat::assert_that(nrow(df) == (nrow(matched) + nrow(unmatched)))
+  unmatched <- df %>%
+    dplyr::anti_join(
+      db_subset,
+      by = c("Matched.Genus" = "genus", "Orig.Species" = "species")
+    )
+
+  assertthat::assert_that(nrow(df) == (nrow(matched) + nrow(unmatched)))
 
   # combine matched and unmatched and add Boolean indicator: TRUE = matched, FALSE = unmatched
-  combined <-  dplyr::bind_rows(matched, unmatched, .id = 'direct_match_species_within_genus') %>%
+  combined <- dplyr::bind_rows(matched, unmatched, .id = 'direct_match_species_within_genus') %>%
     dplyr::mutate(direct_match_species_within_genus = (direct_match_species_within_genus == 1)) %>% ## convert to Boolean
     dplyr::relocate(c('Orig.Genus', 'Orig.Species')) ## Genus & Species column at the beginning of tibble
+
   return(combined)
 }

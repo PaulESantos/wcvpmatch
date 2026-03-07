@@ -61,25 +61,51 @@ pak::pak("PaulESantos/rWCVPdata")
 ```{r}
 library(wcvpmatch)
 
-splist <- c(
-  "Praecereus euchlorus subsp. diffusus",
+sp_names <- c(
+  "Aniba heterotepala",          
+  "Anthurium quipuscoae",        
+  "Centropogon reflexus",        
+  "Chuquiraga jonhstonii",       
+  "Cyathea carolinae",           
+  "Ditassa violascens",   
   "Cleistocactus fieldianus",
   "Opuntia yanganucensis",
-  "Trichocereus macrogonus var. pachanoi",
-  "opuntia sp."
+  "Epidendrum trachydipterum",  
+  "Hebeclinium hylophorbum",     
+  "Jaltometa sagastegui",        # Jaltomata sagastegui
+  "Lepechinia tomentosa",        
+  "Lupinus cookianos",           # Lupinus cookianus
+  "Oxalis hochreutinerii",       # Oxalis hochreutineri
+  "Passiflora heterohelix",     
+  "Peperomia arborigaudens",     # Peperromia arborigaudens
+  "Piper setulosum",             
+  "Pycnophyllum aristattum",     # Pycnophyllum aristatum
+  "Salvia subscadens",           # Salvia subscandens
+  "Stellaria macbridei",         
+  "Stemodia piurenses",          # Stemodia piurensis
+  "Weberbauerella brongnartioides" 
 )
 
-parsed <- classify_spnames(splist)
 
-res <- wcvp_matching(
-  parsed,
+res <- 
+  classify_spnames(sp_names) |> 
+  wcvp_matching(
   prefilter_genus = TRUE,
   allow_duplicates = TRUE,
-  max_dist = 1,
-  method = "osa"
+  max_dist = 2,
+  method = "osa",
+  output_name_style = "snake_case"
 )
 
-res 
+res |>  dim()
+
+res |> 
+  dplyr::select(input_name,
+                matched_taxon_name,
+                accepted_taxon_name, 
+                taxon_status) |> 
+  as.data.frame()
+
 ```
 
 ## Matching workflow

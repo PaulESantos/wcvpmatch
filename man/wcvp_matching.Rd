@@ -7,10 +7,12 @@
 wcvp_matching(
   df,
   target_df = NULL,
-  prefilter_genus = FALSE,
+  prefilter_genus = TRUE,
   allow_duplicates = FALSE,
   max_dist = 1,
   method = "osa",
+  add_name_distance = FALSE,
+  name_distance_method = "osa",
   output_name_style = c("legacy", "snake_case")
 )
 }
@@ -46,10 +48,17 @@ rows. Output includes \code{input_index} for traceability to the original input.
 \item \code{"soundex"}: Soundex codes based on the National Archives standard.
 }}
 
+\item{add_name_distance}{Logical. If \code{TRUE}, add
+\code{matched_dist} as pairwise distance between input name
+(\code{Input.Name} fallback \code{Orig.Name}) and \code{matched_taxon_name}.}
+
+\item{name_distance_method}{Method passed to \code{stringdist::stringdist}
+when \code{add_name_distance = TRUE} (for example \code{"osa"}).}
+
 \item{output_name_style}{Naming style for output columns:
 \itemize{
-\item \code{"legacy"} keeps the historical mixed naming convention.
 \item \code{"snake_case"} returns standardized lower snake_case names.
+\item \code{"legacy"} keeps the historical mixed naming convention.
 }}
 }
 \value{

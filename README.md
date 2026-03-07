@@ -61,44 +61,97 @@ library(wcvpmatch)
 #> ── Attaching wcvpmatch ecosystem ──────────────────────────── wcvpmatch 1.1.1 ──
 #> ✔ rWCVPdata 0.8.0 (wcvp_names available)
 
-splist <- c(
-  "Praecereus euchlorus subsp. diffusus",
+sp_names <- c(
+  "Aniba heterotepala",          
+  "Anthurium quipuscoae",        
+  "Centropogon reflexus",        
+  "Chuquiraga jonhstonii",       
+  "Cyathea carolinae",           
+  "Ditassa violascens",   
   "Cleistocactus fieldianus",
   "Opuntia yanganucensis",
-  "Trichocereus macrogonus var. pachanoi",
-  "opuntia sp."
+  "Epidendrum trachydipterum",  
+  "Hebeclinium hylophorbum",     
+  "Jaltometa sagastegui",        # Jaltomata sagastegui
+  "Lepechinia tomentosa",        
+  "Lupinus cookianos",           # Lupinus cookianus
+  "Oxalis hochreutinerii",       # Oxalis hochreutineri
+  "Passiflora heterohelix",     
+  "Peperomia arborigaudens",     # Peperromia arborigaudens
+  "Piper setulosum",             
+  "Pycnophyllum aristattum",     # Pycnophyllum aristatum
+  "Salvia subscadens",           # Salvia subscandens
+  "Stellaria macbridei",         
+  "Stemodia piurenses",          # Stemodia piurensis
+  "Weberbauerella brongnartioides" 
 )
 
-parsed <- classify_spnames(splist)
-#> Warning: Undetermined species indicator detected ('sp.'/'spp.'). Classified at
-#> genus level only; Orig.Species set to NA for: 'opuntia sp.'
 
-res <- wcvp_matching(
-  parsed,
+res <- 
+  classify_spnames(sp_names) |> 
+  wcvp_matching(
   prefilter_genus = TRUE,
   allow_duplicates = TRUE,
-  max_dist = 1,
-  method = "osa"
+  max_dist = 2,
+  method = "osa",
+  output_name_style = "snake_case"
 )
-#> Warning: 1 genus-only row(s) detected (Rank==1 / sp./spp.). These will not
-#> participate in species-level strict matching.
 
-res 
-#> # A tibble: 5 × 43
-#>   input_index input_name            orig_name orig_genus orig_species infra_rank
-#>         <int> <chr>                 <chr>     <chr>      <chr>        <chr>     
-#> 1           1 Praecereus euchlorus… Praecere… Praecereus euchlorus    subsp.    
-#> 2           2 Cleistocactus fieldi… Cleistoc… Cleistoca… fieldianus   <NA>      
-#> 3           3 Opuntia yanganucensis Opuntia … Opuntia    yanganucens… <NA>      
-#> 4           4 Trichocereus macrogo… Trichoce… Trichocer… macrogonus   var.      
-#> 5           5 opuntia sp.           Opuntia   Opuntia    <NA>         <NA>      
-#> # ℹ 37 more variables: orig_infraspecies <chr>, matched_genus <chr>,
-#> #   matched_species <chr>, matched_infra_rank <chr>,
-#> #   matched_infraspecies <chr>, author <chr>, matched_plant_name_id <dbl>,
-#> #   matched_taxon_name <chr>, matched_taxon_authors <chr>, taxon_status <chr>,
-#> #   accepted_plant_name_id <dbl>, accepted_taxon_name <chr>,
-#> #   accepted_taxon_authors <chr>, is_accepted_name <lgl>, matched <lgl>,
-#> #   direct_match <lgl>, genus_match <lgl>, fuzzy_match_genus <lgl>, …
+res |>  dim()
+#> [1] 22 43
+
+res |> 
+  dplyr::select(input_name,
+                matched_taxon_name,
+                accepted_taxon_name, 
+                taxon_status) |> 
+  as.data.frame()
+#>                        input_name              matched_taxon_name
+#> 1              Aniba heterotepala              Aniba heterotepala
+#> 2            Anthurium quipuscoae            Anthurium quipuscoae
+#> 3            Centropogon reflexus            Centropogon reflexus
+#> 4           Chuquiraga jonhstonii           Chuquiraga johnstonii
+#> 5               Cyathea carolinae               Cyathea carolinae
+#> 6              Ditassa violascens              Ditassa violascens
+#> 7        Cleistocactus fieldianus        Cleistocactus fieldianus
+#> 8           Opuntia yanganucensis           Opuntia yanganucensis
+#> 9       Epidendrum trachydipterum       Epidendrum trachydipterum
+#> 10        Hebeclinium hylophorbum         Hebeclinium hylophorbum
+#> 11           Jaltometa sagastegui            Jaltomata sagastegui
+#> 12           Lepechinia tomentosa            Lepechinia tomentosa
+#> 13              Lupinus cookianos               Lupinus cookianus
+#> 14          Oxalis hochreutinerii            Oxalis hochreutineri
+#> 15         Passiflora heterohelix          Passiflora heterohelix
+#> 16        Peperomia arborigaudens         Peperomia arborigaudens
+#> 17                Piper setulosum                 Piper setulosum
+#> 18        Pycnophyllum aristattum          Pycnophyllum aristatum
+#> 19              Salvia subscadens              Salvia subscandens
+#> 20            Stellaria macbridei             Stellaria macbridei
+#> 21             Stemodia piurenses              Stemodia piurensis
+#> 22 Weberbauerella brongnartioides Weberbauerella brongniartioides
+#>                accepted_taxon_name taxon_status
+#> 1               Aniba heterotepala     Accepted
+#> 2             Anthurium quipuscoae     Accepted
+#> 3             Centropogon reflexus     Accepted
+#> 4            Chuquiraga johnstonii     Accepted
+#> 5                Cyathea carolinae     Accepted
+#> 6               Ditassa violascens     Accepted
+#> 7           Borzicactus fieldianus      Synonym
+#> 8    Austrocylindropuntia floccosa      Synonym
+#> 9        Epidendrum trachydipterum     Accepted
+#> 10         Hebeclinium hylophorbum     Accepted
+#> 11            Jaltomata sagastegui     Accepted
+#> 12            Lepechinia tomentosa     Accepted
+#> 13               Lupinus cookianus     Accepted
+#> 14            Oxalis hochreutineri     Accepted
+#> 15          Passiflora heterohelix     Accepted
+#> 16         Peperomia arborigaudens     Accepted
+#> 17                 Piper setulosum     Accepted
+#> 18          Pycnophyllum aristatum     Accepted
+#> 19              Salvia subscandens     Accepted
+#> 20             Stellaria macbridei     Accepted
+#> 21              Stemodia piurensis     Accepted
+#> 22 Weberbauerella brongniartioides     Accepted
 ```
 
 ## Matching workflow

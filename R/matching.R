@@ -26,6 +26,11 @@
 #'   - `"jaro"`: Jaro similarity.
 #'   - `"jaro_winkler"` or `"jw"`: Jaro-Winkler similarity.
 #'   - `"soundex"`: Soundex codes based on the National Archives standard.
+#' @param add_name_distance Logical. If `TRUE`, add
+#'   `matched_dist` as pairwise distance between input name
+#'   (`Input.Name` fallback `Orig.Name`) and `matched_taxon_name`.
+#' @param name_distance_method Method passed to `stringdist::stringdist`
+#'   when `add_name_distance = TRUE` (for example `"osa"`).
 #' @param output_name_style Naming style for output columns:
 #'   - `"snake_case"` returns standardized lower snake_case names.
 #'   - `"legacy"` keeps the historical mixed naming convention.
@@ -40,7 +45,9 @@ wcvp_matching <- function(df,
                      allow_duplicates = FALSE,
                      max_dist = 1,
                      method = "osa",
-                     output_name_style = c("snake_case", "legacy")) {
+                     add_name_distance = FALSE,
+                     name_distance_method = "osa",
+                     output_name_style = c("legacy", "snake_case")) {
   output_name_style <- match.arg(output_name_style)
 
   standardize_output_names <- function(x) {
@@ -394,6 +401,57 @@ wcvp_matching <- function(df,
   res <- dplyr::select(res, -dplyr::any_of(".dedup_key"))
   res <- add_taxonomic_context(res, target_df_full)
 
+  # Safety guard: do not report rows as matched when no taxon context was found.
+  # This keeps boolean match flags coherent with matched_taxon_name.
+  has_taxon_context <- all(c(
+    "plant_name_id", "taxon_name", "taxon_status", "accepted_plant_name_id"
+  ) %in% names(target_df_full))
+
+  if (has_taxon_context && all(c("matched", "matched_taxon_name") %in% names(res))) {
+    inconsistent_match <- !is.na(res$matched) & res$matched & is.na(res$matched_taxon_name)
+    if (any(inconsistent_match, na.rm = TRUE)) {
+      res$matched[inconsistent_match] <- FALSE
+    }
+  }
+
+  if (isTRUE(add_name_distance)) {
+    input_name_vec <- dplyr::coalesce(res$Input.Name, res$Orig.Name, "")
+
+    gen_vec <- if ("Matched.Genus" %in% names(res)) as.character(res$Matched.Genus) else rep(NA_character_, nrow(res))
+    spp_vec <- if ("Matched.Species" %in% names(res)) as.character(res$Matched.Species) else rep(NA_character_, nrow(res))
+    rk_vec <- if ("Matched.Infra.Rank" %in% names(res)) as.character(res$Matched.Infra.Rank) else rep(NA_character_, nrow(res))
+    inf_vec <- if ("Matched.Infraspecies" %in% names(res)) as.character(res$Matched.Infraspecies) else rep(NA_character_, nrow(res))
+
+    fallback_matched_name <- vapply(
+      seq_len(nrow(res)),
+      function(i) {
+        parts <- c(gen_vec[i], spp_vec[i], rk_vec[i], inf_vec[i])
+        parts <- parts[!is.na(parts) & nzchar(parts)]
+        if (length(parts) == 0) return(NA_character_)
+        paste(parts, collapse = " ")
+      },
+      FUN.VALUE = character(1)
+    )
+
+    matched_name_vec <- dplyr::coalesce(res$matched_taxon_name, fallback_matched_name, "")
+    has_pair <- !is.na(matched_name_vec) &
+      nzchar(input_name_vec) &
+      nzchar(matched_name_vec)
+
+    dist_out <- rep(NA_real_, nrow(res))
+    if (any(has_pair)) {
+      left_names <- tolower(stringr::str_squish(input_name_vec[has_pair]))
+      right_names <- tolower(stringr::str_squish(matched_name_vec[has_pair]))
+      dist_out[has_pair] <- stringdist::stringdist(
+        a = left_names,
+        b = right_names,
+        method = name_distance_method,
+        useBytes = TRUE
+      )
+    }
+    res$matched_dist <- dist_out
+  }
+
   relocate_cols <- c(
     "input_index",
     "Input.Name",
@@ -403,6 +461,7 @@ wcvp_matching <- function(df,
     "Author",
     "matched_plant_name_id", "matched_taxon_name", "matched_taxon_authors", "taxon_status",
     "accepted_plant_name_id", "accepted_taxon_name", "accepted_taxon_authors", "is_accepted_name",
+    "matched_dist",
     "matched",
     "direct_match", "genus_match", "fuzzy_match_genus",
     "direct_match_species_within_genus", "suffix_match_species_within_genus", "fuzzy_match_species_within_genus",
