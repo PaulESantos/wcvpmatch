@@ -10,7 +10,8 @@ wcvp_matching(
   prefilter_genus = FALSE,
   allow_duplicates = FALSE,
   max_dist = 1,
-  method = "osa"
+  method = "osa",
+  output_name_style = c("legacy", "snake_case")
 )
 }
 \arguments{
@@ -43,6 +44,12 @@ rows. Output includes \code{input_index} for traceability to the original input.
 \item \code{"jaro"}: Jaro similarity.
 \item \code{"jaro_winkler"} or \code{"jw"}: Jaro-Winkler similarity.
 \item \code{"soundex"}: Soundex codes based on the National Archives standard.
+}}
+
+\item{output_name_style}{Naming style for output columns:
+\itemize{
+\item \code{"legacy"} keeps the historical mixed naming convention.
+\item \code{"snake_case"} returns standardized lower snake_case names.
 }}
 }
 \value{

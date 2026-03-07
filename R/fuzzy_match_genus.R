@@ -17,6 +17,7 @@ fuzzy_match_genus <- function(df, target_df = NULL, max_dist = 1, method = "osa"
   df <- check_df_format(df)
   assertthat::assert_that(all(c('Orig.Genus', 'Orig.Species') %in% colnames(df)))
   target_df <- get_db(target_df = target_df)
+  ambiguous_genus <- NULL
 
   ## handle empty input tibble while preserving expected output schema
   if(nrow(df) == 0){
@@ -34,11 +35,14 @@ fuzzy_match_genus <- function(df, target_df = NULL, max_dist = 1, method = "osa"
   } ## TODO: can potentially be removed again????
 
 
+  df_work <- df %>%
+    dplyr::mutate(.row_id = dplyr::row_number())
+
   Tree.Genera <- target_df |>
     dplyr::distinct(genus)
 
   # fuzzy match
-  matched_temp <- df %>%
+  matched_temp <- df_work %>%
     fozziejoin::fozzie_string_left_join(
       Tree.Genera,
       by = c('Orig.Genus' = 'genus'),
@@ -49,34 +53,47 @@ fuzzy_match_genus <- function(df, target_df = NULL, max_dist = 1, method = "osa"
     # save matched Genus name to Matched.Genus
     dplyr::mutate(Matched.Genus = genus) %>%
     dplyr::select(-c('genus')) %>%
-    dplyr::group_by(Orig.Genus, Orig.Species) %>%
+    dplyr::group_by(.row_id) %>%
     dplyr::filter(fuzzy_genus_dist == min(fuzzy_genus_dist))
 
-## If there are multiple matches for the same genus: raise warning and advise for manual checking
-  if(matched_temp %>% dplyr::filter(dplyr::n() > 1) %>% nrow() > 0){
+  ambiguous_keys <- matched_temp %>%
+    dplyr::count(.row_id, name = "n") %>%
+    dplyr::filter(n > 1)
+
+## If there are multiple matches for the same genus: raise warning and keep ambiguous candidates in an attribute
+  if(nrow(ambiguous_keys) > 0){
     warning(
       "Multiple fuzzy matches for some genera (tied distances). The first match is selected.",
       call. = FALSE
     )
+    ambiguous_genus <- matched_temp %>%
+      dplyr::semi_join(ambiguous_keys, by = ".row_id") %>%
+      dplyr::arrange(.row_id, fuzzy_genus_dist, Matched.Genus)
   }
 
  ## continue selecting first genus if more than one match
   matched <- matched_temp %>%
+    dplyr::group_by(.row_id) %>%
     dplyr::slice_head(n = 1) %>%
     dplyr::ungroup()
 
-  unmatched <- df %>%
-    fozziejoin::fozzie_string_anti_join(Tree.Genera,
-                                        by = c('Orig.Genus' = 'genus'),
-                                        max_distance = max_dist,
-                                        method = method)
+  unmatched <- df_work %>%
+    dplyr::anti_join(
+      matched %>% dplyr::select(.row_id),
+      by = ".row_id"
+    )
 
-  assertthat::assert_that(nrow(df) == (nrow(matched) + nrow(unmatched)))
+  assertthat::assert_that(nrow(df_work) == (nrow(matched) + nrow(unmatched)))
 
   res <-  dplyr::bind_rows(matched, unmatched, .id = 'fuzzy_match_genus') %>%
     dplyr::mutate(fuzzy_match_genus = (fuzzy_match_genus == 1)) %>% ## convert to Boolean
+    dplyr::select(-dplyr::any_of(".row_id")) %>%
     dplyr::arrange(Orig.Genus, Orig.Species) %>%
     dplyr::relocate(c('Orig.Genus', 'Orig.Species')) ## Genus & Species column at the beginning of tibble
+
+  if (!is.null(ambiguous_genus) && nrow(ambiguous_genus) > 0) {
+    attr(res, "ambiguous_genus") <- ambiguous_genus
+  }
 
   return(res)
 }

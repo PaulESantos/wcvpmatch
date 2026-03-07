@@ -15,6 +15,7 @@ fuzzy_match_species_within_genus <- function(df, target_df = NULL, max_dist = 1,
   df <- check_df_format(df)
   assertthat::assert_that(all(c('Orig.Genus', 'Orig.Species', 'Matched.Genus') %in% colnames(df)))
   target_df <- get_db(target_df = target_df)
+  ambiguous_species <- NULL
 
   ## handle empty input tibble while preserving expected output schema
   if(nrow(df) == 0){
@@ -31,14 +32,17 @@ fuzzy_match_species_within_genus <- function(df, target_df = NULL, max_dist = 1,
     df <- df %>% dplyr::mutate(fuzzy_species_dist = NULL)
   }
 
+  df_work <- df %>%
+    dplyr::mutate(.row_id = dplyr::row_number())
+
   # Vectorized candidate generation in a single fuzzy join over candidate genera.
   # This avoids group_split() + map_dfr() overhead for many genera.
   db_subset <- target_df %>%
-    dplyr::semi_join(df %>% dplyr::distinct(Matched.Genus), by = c("Genus" = "Matched.Genus")) %>%
+    dplyr::semi_join(df_work %>% dplyr::distinct(Matched.Genus), by = c("Genus" = "Matched.Genus")) %>%
     dplyr::select(Genus, Species) %>%
     dplyr::distinct()
 
-  matched_candidates <- df %>%
+  matched_temp <- df_work %>%
     fozziejoin::fozzie_string_left_join(
       db_subset,
       by = c("Orig.Species" = "Species"),
@@ -60,23 +64,45 @@ fuzzy_match_species_within_genus <- function(df, target_df = NULL, max_dist = 1,
     ) %>%
     dplyr::mutate(Matched.Species = Species) %>%
     dplyr::select(-c(Species, Genus, .orig_len, .cand_len)) %>%
-    dplyr::group_by(Orig.Genus, Orig.Species) %>%
-    dplyr::slice_min(order_by = fuzzy_species_dist, n = 1, with_ties = FALSE) %>%
+    dplyr::group_by(.row_id) %>%
+    dplyr::slice_min(order_by = fuzzy_species_dist, n = 1, with_ties = TRUE) %>%
     dplyr::ungroup()
 
-  matched <- matched_candidates
+  ambiguous_keys <- matched_temp %>%
+    dplyr::count(.row_id, name = "n") %>%
+    dplyr::filter(n > 1)
 
-  unmatched <- df %>%
+  if (nrow(ambiguous_keys) > 0) {
+    warning(
+      "Multiple fuzzy matches for some species within genus (tied distances). The first match is selected.",
+      call. = FALSE
+    )
+    ambiguous_species <- matched_temp %>%
+      dplyr::semi_join(ambiguous_keys, by = ".row_id") %>%
+      dplyr::arrange(.row_id, fuzzy_species_dist, Matched.Species)
+  }
+
+  matched <- matched_temp %>%
+    dplyr::group_by(.row_id) %>%
+    dplyr::slice_head(n = 1) %>%
+    dplyr::ungroup()
+
+  unmatched <- df_work %>%
     dplyr::anti_join(
-      matched %>% dplyr::select(Orig.Genus, Orig.Species),
-      by = c("Orig.Genus", "Orig.Species")
+      matched %>% dplyr::select(.row_id),
+      by = ".row_id"
     )
 
-  assertthat::assert_that(nrow(df) == (nrow(matched) + nrow(unmatched)))
+  assertthat::assert_that(nrow(df_work) == (nrow(matched) + nrow(unmatched)))
 
   res <- dplyr::bind_rows(matched, unmatched, .id = 'fuzzy_match_species_within_genus') %>%
     dplyr::mutate(fuzzy_match_species_within_genus = (fuzzy_match_species_within_genus == 1)) %>%
+    dplyr::select(-dplyr::any_of(".row_id")) %>%
     dplyr::relocate(c('Orig.Genus', 'Orig.Species'))
+
+  if (!is.null(ambiguous_species) && nrow(ambiguous_species) > 0) {
+    attr(res, "ambiguous_species") <- ambiguous_species
+  }
 
   return(res)
 }
@@ -108,7 +134,7 @@ fuzzy_match_species_within_genus_helper <- function(df, target_df, max_dist = 1,
     dplyr::mutate(Matched.Species = Species) %>%
     dplyr::select(-c('Species', 'Genus')) %>%
     dplyr::group_by(Orig.Genus, Orig.Species) %>%
-    dplyr::slice_min(order_by = fuzzy_species_dist, n = 1, with_ties = FALSE) %>%
+    dplyr::slice_min(order_by = fuzzy_species_dist, n = 1, with_ties = TRUE) %>%
     dplyr::ungroup() %>%
     dplyr::select(-.orig_len, -.cand_len)
 

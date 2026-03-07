@@ -6,3 +6,6 @@
 ^scripts_publication$
 ^.github
 ^README\.Rmd$
+^DOCUMENTO_FUNCIONALIDAD\.md$
+^paper_wcvpmatch\.pdf$
+^paper_wcvpmatch\.qmd$

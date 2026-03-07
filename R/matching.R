@@ -26,6 +26,9 @@
 #'   - `"jaro"`: Jaro similarity.
 #'   - `"jaro_winkler"` or `"jw"`: Jaro-Winkler similarity.
 #'   - `"soundex"`: Soundex codes based on the National Archives standard.
+#' @param output_name_style Naming style for output columns:
+#'   - `"legacy"` keeps the historical mixed naming convention.
+#'   - `"snake_case"` returns standardized lower snake_case names.
 #'
 #' @return Tibble with matched names, process flags, and taxonomic context
 #'   columns: `matched_plant_name_id`, `matched_taxon_name`, `taxon_status`,
@@ -36,15 +39,44 @@ wcvp_matching <- function(df,
                      prefilter_genus = FALSE,
                      allow_duplicates = FALSE,
                      max_dist = 1,
-                     method = "osa") {
+                     method = "osa",
+                     output_name_style = c("legacy", "snake_case")) {
+  output_name_style <- match.arg(output_name_style)
+
+  standardize_output_names <- function(x) {
+    rename_map <- c(
+      "Input.Name" = "input_name",
+      "Orig.Name" = "orig_name",
+      "Orig.Genus" = "orig_genus",
+      "Orig.Species" = "orig_species",
+      "Infra.Rank" = "infra_rank",
+      "Orig.Infraspecies" = "orig_infraspecies",
+      "Matched.Genus" = "matched_genus",
+      "Matched.Species" = "matched_species",
+      "Matched.Infra.Rank" = "matched_infra_rank",
+      "Matched.Infraspecies" = "matched_infraspecies",
+      "Author" = "author",
+      "Rank" = "rank"
+    )
+
+    old_names <- names(x)
+    mapped <- ifelse(old_names %in% names(rename_map), rename_map[old_names], old_names)
+    mapped <- gsub("\\.", "_", mapped)
+    mapped <- tolower(mapped)
+    names(x) <- mapped
+    x
+  }
   add_taxonomic_context <- function(x, target_tbl) {
     meta_needed <- c("plant_name_id", "taxon_name", "taxon_status", "accepted_plant_name_id")
+    has_taxon_authors <- "taxon_authors" %in% names(target_tbl)
     if (!all(meta_needed %in% names(target_tbl))) {
       x$matched_plant_name_id <- NA_real_
       x$matched_taxon_name <- NA_character_
+      x$matched_taxon_authors <- NA_character_
       x$taxon_status <- NA_character_
       x$accepted_plant_name_id <- NA_real_
       x$accepted_taxon_name <- NA_character_
+      x$accepted_taxon_authors <- NA_character_
       x$is_accepted_name <- as.logical(NA)
       return(x)
     }
@@ -52,7 +84,11 @@ wcvp_matching <- function(df,
     db_meta <- target_tbl %>%
       dplyr::select(
         genus, species, infraspecific_rank, infraspecies,
-        plant_name_id, taxon_name, taxon_status, accepted_plant_name_id
+        plant_name_id, taxon_name, taxon_status, accepted_plant_name_id,
+        dplyr::any_of("taxon_authors")
+      ) %>%
+      dplyr::mutate(
+        taxon_authors = if (has_taxon_authors) as.character(taxon_authors) else NA_character_
       ) %>%
       dplyr::mutate(
         infraspecific_rank = .rank_to_upper(infraspecific_rank),
@@ -61,7 +97,11 @@ wcvp_matching <- function(df,
       dplyr::distinct()
 
     accepted_lookup <- db_meta %>%
-      dplyr::select(plant_name_id, accepted_taxon_name = taxon_name) %>%
+      dplyr::select(
+        plant_name_id,
+        accepted_taxon_name = taxon_name,
+        accepted_taxon_authors = taxon_authors
+      ) %>%
       dplyr::distinct()
 
     x_work <- x %>%
@@ -90,16 +130,22 @@ wcvp_matching <- function(df,
         )
       ) %>%
       dplyr::group_by(.row_id) %>%
-      dplyr::arrange(dplyr::desc(.name_exact), dplyr::desc(.status_rank), plant_name_id, .by_group = TRUE) %>%
+      dplyr::arrange(
+        dplyr::desc(.name_exact),
+        dplyr::desc(.status_rank),
+        plant_name_id,
+        .by_group = TRUE
+      ) %>%
       dplyr::slice_head(n = 1) %>%
       dplyr::ungroup() %>%
-      dplyr::select(.row_id, plant_name_id, taxon_name, taxon_status, accepted_plant_name_id)
+      dplyr::select(.row_id, plant_name_id, taxon_name, taxon_authors, taxon_status, accepted_plant_name_id)
 
     out <- x_work %>%
       dplyr::left_join(best_match, by = ".row_id") %>%
       dplyr::rename(
         matched_plant_name_id = plant_name_id,
-        matched_taxon_name = taxon_name
+        matched_taxon_name = taxon_name,
+        matched_taxon_authors = taxon_authors
       ) %>%
       dplyr::left_join(accepted_lookup, by = c("accepted_plant_name_id" = "plant_name_id")) %>%
       dplyr::mutate(
@@ -117,9 +163,16 @@ wcvp_matching <- function(df,
           is_accepted_name & is.na(accepted_taxon_name),
           matched_taxon_name,
           accepted_taxon_name
+        ),
+        accepted_taxon_authors = dplyr::if_else(
+          is_accepted_name & is.na(accepted_taxon_authors),
+          matched_taxon_authors,
+          accepted_taxon_authors
         )
       ) %>%
-      dplyr::select(-dplyr::any_of(c(".row_id", ".matched_rank_upper", ".input_name_clean")))
+      dplyr::select(-dplyr::any_of(c(
+        ".row_id", ".matched_rank_upper", ".input_name_clean"
+      )))
 
     out
   }
@@ -212,6 +265,7 @@ wcvp_matching <- function(df,
     max_dist = max_dist,
     method = method
   )
+  ambiguous_genus <- attr(node_3, "ambiguous_genus")
   n3_true <- dplyr::filter(node_3, fuzzy_match_genus)
   n3_false <- dplyr::filter(node_3, !fuzzy_match_genus)
 
@@ -236,6 +290,7 @@ wcvp_matching <- function(df,
     max_dist = max_dist,
     method = method
   )
+  ambiguous_species <- attr(node_5b, "ambiguous_species")
   n5b_true <- dplyr::filter(node_5b, fuzzy_match_species_within_genus)
   n5b_false <- dplyr::filter(node_5b, !fuzzy_match_species_within_genus)
 
@@ -346,8 +401,8 @@ wcvp_matching <- function(df,
     "Orig.Genus", "Orig.Species", "Infra.Rank", "Orig.Infraspecies",
     "Matched.Genus", "Matched.Species", "Matched.Infra.Rank", "Matched.Infraspecies",
     "Author",
-    "matched_plant_name_id", "matched_taxon_name", "taxon_status",
-    "accepted_plant_name_id", "accepted_taxon_name", "is_accepted_name",
+    "matched_plant_name_id", "matched_taxon_name", "matched_taxon_authors", "taxon_status",
+    "accepted_plant_name_id", "accepted_taxon_name", "accepted_taxon_authors", "is_accepted_name",
     "matched",
     "direct_match", "genus_match", "fuzzy_match_genus",
     "direct_match_species_within_genus", "suffix_match_species_within_genus", "fuzzy_match_species_within_genus",
@@ -359,6 +414,16 @@ wcvp_matching <- function(df,
 
   if (!is.null(ambiguous_infraspecies) && nrow(ambiguous_infraspecies) > 0) {
     attr(res, "ambiguous_infraspecies") <- ambiguous_infraspecies
+  }
+  if (!is.null(ambiguous_genus) && nrow(ambiguous_genus) > 0) {
+    attr(res, "ambiguous_genus") <- ambiguous_genus
+  }
+  if (!is.null(ambiguous_species) && nrow(ambiguous_species) > 0) {
+    attr(res, "ambiguous_species") <- ambiguous_species
+  }
+
+  if (identical(output_name_style, "snake_case")) {
+    res <- standardize_output_names(res)
   }
 
   res

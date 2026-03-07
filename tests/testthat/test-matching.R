@@ -214,3 +214,94 @@ test_that("matching duplicate error suggests allow_duplicates option", {
     "allow_duplicates = TRUE"
   )
 })
+
+test_that("wcvp_matching propagates ambiguous genus fuzzy ties", {
+  target_df <- tibble::tibble(
+    genus = c("Aaa", "Aab"),
+    species = c("beta", "beta"),
+    infraspecific_rank = NA_character_,
+    infraspecies = NA_character_
+  )
+
+  input <- tibble::tibble(
+    Genus = "Aac",
+    Species = "beta"
+  )
+
+  expect_warning(
+    out <- wcvp_matching(input, target_df = target_df, max_dist = 1, method = "osa"),
+    "Multiple fuzzy matches"
+  )
+
+  amb <- attr(out, "ambiguous_genus")
+  expect_false(is.null(amb))
+  expect_true(nrow(amb) >= 2)
+})
+
+test_that("wcvp_matching propagates ambiguous species fuzzy ties", {
+  target_df <- tibble::tibble(
+    genus = c("Abc", "Abc"),
+    species = c("alba", "alga"),
+    infraspecific_rank = NA_character_,
+    infraspecies = NA_character_
+  )
+
+  input <- tibble::tibble(
+    Genus = "Abc",
+    Species = "alca"
+  )
+
+  expect_warning(
+    out <- wcvp_matching(input, target_df = target_df, max_dist = 1, method = "osa"),
+    "Multiple fuzzy matches"
+  )
+
+  amb <- attr(out, "ambiguous_species")
+  expect_false(is.null(amb))
+  expect_true(nrow(amb) >= 2)
+})
+
+test_that("matching returns matched and accepted author columns when available", {
+  target_df <- tibble::tibble(
+    genus = c("Veronica", "Veronica", "Veronica"),
+    species = c("vulcanica", "vulcanica", "spathulata"),
+    infraspecific_rank = NA_character_,
+    infraspecies = NA_character_,
+    plant_name_id = c(10, 11, 200),
+    taxon_name = c("Veronica vulcanica", "Veronica vulcanica", "Veronica spathulata"),
+    taxon_authors = c("A.Author", "B.Author", "C.Author"),
+    taxon_status = c("Synonym", "Synonym", "Accepted"),
+    accepted_plant_name_id = c(200, 200, 200)
+  )
+
+  input <- tibble::tibble(
+    Orig.Genus = "Veronica",
+    Orig.Species = "vulcanica",
+    Rank = 2
+  )
+
+  out <- wcvp_matching(input, target_df = target_df)
+
+  expect_true(all(c("matched_taxon_authors", "accepted_taxon_authors") %in% names(out)))
+  expect_true(out$matched_taxon_authors[1] %in% c("A.Author", "B.Author"))
+  expect_equal(out$accepted_taxon_authors[1], "C.Author")
+})
+
+test_that("matching can standardize output names to snake_case", {
+  target_df <- tibble::tibble(
+    genus = "Fagus",
+    species = "sylvatica",
+    infraspecific_rank = NA_character_,
+    infraspecies = NA_character_
+  )
+
+  input <- tibble::tibble(
+    Genus = "Fagus",
+    Species = "sylvatica"
+  )
+
+  out <- wcvp_matching(input, target_df = target_df, output_name_style = "snake_case")
+
+  expect_true(all(c("orig_genus", "orig_species", "matched_genus", "matched_species", "input_name") %in% names(out)))
+  expect_false(any(c("Orig.Genus", "Orig.Species", "Matched.Genus", "Input.Name") %in% names(out)))
+})
