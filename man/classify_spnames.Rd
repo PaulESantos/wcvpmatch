@@ -41,12 +41,12 @@ casing/punctuation (no forced uppercasing).
 Robustness rules:
 \itemize{
 \item \code{cf.} / \code{aff.} are removed from parsing but preserved as flags (\code{has_cf}, \code{has_aff}).
-\item Hybrid markers (\code{x}/\verb{×}) as standalone tokens are removed with \code{had_hybrid = TRUE}.
+\item Hybrid markers (\code{x}/\verb{\\u00D7}) as standalone tokens are removed with \code{had_hybrid = TRUE}.
 \item \code{sp.} / \code{spp.} triggers genus-only classification (\code{Rank = 1}, \code{Orig.Species = NA})
 and sets \code{is_sp}/\code{is_spp}.
 \item If an infraspecific rank is present but the infraspecific epithet is missing,
 sets \code{rank_missing_infra = TRUE} and keeps \code{Infra.Rank} while \code{Orig.Infraspecies = NA}.
-\item If rank appears “late” (after author-like tokens), parsing is best-effort and
+\item If rank appears "late" (after author-like tokens), parsing is best-effort and
 \code{rank_late = TRUE}.
 \item If there is no explicit rank and a third token exists, the function can infer an
 unranked infraspecific epithet when the third token looks epithet-like (all lowercase),

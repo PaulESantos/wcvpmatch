@@ -15,16 +15,14 @@ fuzzy_match_species_within_genus(
 \item{df}{\code{tibble} containing the species binomial split into the columns \code{Orig.Genus} and \code{Orig.Species}.}
 
 \item{target_df}{Optional custom target table; if \code{NULL}, uses \code{rWCVPdata::wcvp_names}.}
+
+\item{max_dist}{Maximum edit distance used for fuzzy species matching within genus.}
+
+\item{method}{String distance method passed to \code{fozziejoin} (for example \code{"osa"}).}
 }
 \value{
 Returns a \code{tibble} with the additional logical column \code{fuzzy_match_species_within_genus}, indicating whether the specific epithet was successfully fuzzy matched within the matched genus (TRUE) or not (FALSE).
 }
 \description{
 Tries to fuzzy match the species epithet within a matched genus against WCVP (\code{rWCVPdata::wcvp_names} by default).
-}
-\examples{
-iucn \%>\%
-    dplyr::mutate(Orig.Genus = stringr::str_replace(Orig.Genus, '.{1}$', '')) \%>\%
-    dplyr::mutate(Matched.Genus = Orig.Genus) \%>\%
-    fuzzy_match_species_within_genus()
 }

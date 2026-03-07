@@ -10,8 +10,8 @@
 
 .wvcpmatch_attach_msg <- function() {
   header <- cli::rule(
-    left = cli::style_bold("Attaching wvcpmatch ecosystem"),
-    right = paste0("wvcpmatch ", as.character(utils::packageVersion("wvcpmatch")))
+    left = cli::style_bold("Attaching wcvpmatch ecosystem"),
+    right = paste0("wcvpmatch ", as.character(utils::packageVersion("wcvpmatch")))
   )
 
   if (isTRUE(.pkgenv$rwcvpdata_available)) {

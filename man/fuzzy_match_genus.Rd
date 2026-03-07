@@ -10,6 +10,10 @@ fuzzy_match_genus(df, target_df = NULL, max_dist = 1, method = "osa")
 \item{df}{\code{tibble} containing the species binomial split into the columns \code{Orig.Genus} and \code{Orig.Species}.}
 
 \item{target_df}{Optional custom target table; if \code{NULL}, uses \code{rWCVPdata::wcvp_names}.}
+
+\item{max_dist}{Maximum edit distance used for fuzzy genus matching.}
+
+\item{method}{String distance method passed to \code{fozziejoin} (for example \code{"osa"}).}
 }
 \value{
 Returns a \code{tibble} with the additional logical column \code{fuzzy_match_genus}, indicating whether the genus was successfully matched (TRUE) or not (FALSE).
@@ -17,9 +21,4 @@ Further, the additional column \code{fuzzy_genus_dist} returns the distance for 
 }
 \description{
 Tries to fuzzy match the genus name to the WCVP table (\code{rWCVPdata::wcvp_names} by default).
-}
-\examples{
-iucn \%>\%
-    dplyr::mutate(Orig.Genus = stringr::str_replace(Orig.Genus, '.{1}$', '')) \%>\%
-    fuzzy_match_genus()
 }

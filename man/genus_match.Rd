@@ -17,6 +17,3 @@ Returns a \code{tibble} with the additional logical column \code{genus_match}, i
 \description{
 #' Tries to match the genus name to \verb{WCVP data}.
 }
-\examples{
-iucn \%>\% genus_match()
-}

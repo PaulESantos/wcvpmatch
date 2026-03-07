@@ -10,13 +10,6 @@
 #' Returns a `tibble` with the additional logical column `suffix_match_species_within_genus`, indicating whether the specific epithet was successfully matched within the matched genus (`r TRUE`) or not (`r FALSE`).
 #' @export
 #'
-#' @examples
-#' # substitute endings c('um$|i$|is$|us$|ae$') with 'a' of specific epithet
-#' iucn_modified<- iucn %>%
-#'     dplyr::mutate(Orig.Species = stringr::str_replace(Orig.Species, 'um$|i$|is$|us$|ae$', 'a'))
-#' iucn_modified %>%
-#'     dplyr::mutate(Matched.Genus = Orig.Genus) %>%
-#'     suffix_match_species_within_genus()
 suffix_match_species_within_genus <- function(df, target_df = NULL){
   df <- check_df_format(df)
   assertthat::assert_that(all(c('Orig.Genus', 'Orig.Species', 'Matched.Genus') %in% colnames(df)))

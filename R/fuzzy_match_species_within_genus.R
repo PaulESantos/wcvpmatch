@@ -4,16 +4,13 @@
 #'
 #' @param df `tibble` containing the species binomial split into the columns `Orig.Genus` and `Orig.Species`.
 #' @param target_df Optional custom target table; if `NULL`, uses `rWCVPdata::wcvp_names`.
+#' @param max_dist Maximum edit distance used for fuzzy species matching within genus.
+#' @param method String distance method passed to `fozziejoin` (for example `"osa"`).
 #'
 #' @return
 #' Returns a `tibble` with the additional logical column `fuzzy_match_species_within_genus`, indicating whether the specific epithet was successfully fuzzy matched within the matched genus (`r TRUE`) or not (`r FALSE`).
 #' @export
 #'
-#' @examples
-#' iucn %>%
-#'     dplyr::mutate(Orig.Genus = stringr::str_replace(Orig.Genus, '.{1}$', '')) %>%
-#'     dplyr::mutate(Matched.Genus = Orig.Genus) %>%
-#'     fuzzy_match_species_within_genus()
 fuzzy_match_species_within_genus <- function(df, target_df = NULL, max_dist = 1, method = "osa"){
   df <- check_df_format(df)
   assertthat::assert_that(all(c('Orig.Genus', 'Orig.Species', 'Matched.Genus') %in% colnames(df)))

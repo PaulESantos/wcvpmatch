@@ -18,11 +18,3 @@ Returns a \code{tibble} with the additional logical column \code{suffix_match_sp
 Tries to match the specific epithet by exchanging common suffixes within an already matched genus in WCVP.
 The following suffixes are captured: \code{c("a", "i", "is", "um", "us", "ae")}.
 }
-\examples{
-# substitute endings c('um$|i$|is$|us$|ae$') with 'a' of specific epithet
-iucn_modified<- iucn \%>\%
-    dplyr::mutate(Orig.Species = stringr::str_replace(Orig.Species, 'um$|i$|is$|us$|ae$', 'a'))
-iucn_modified \%>\%
-    dplyr::mutate(Matched.Genus = Orig.Genus) \%>\%
-    suffix_match_species_within_genus()
-}

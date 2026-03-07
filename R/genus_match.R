@@ -5,13 +5,11 @@
 #'
 #' @param df `tibble` containing the species binomial split into the columns `Orig.Genus` and `Orig.Species`.
 #' @param target_df Optional custom target table; if `NULL`, uses `rWCVPdata::wcvp_names`.
-#' 
+#'
 #' @return
 #' Returns a `tibble` with the additional logical column `genus_match`, indicating whether the genus was successfully matched (`r TRUE`) or not (`r FALSE`)
 #' @export
-#'
-#' @examples
-#' iucn %>% genus_match()
+
 genus_match <- function(df, target_df = NULL){
   df <- check_df_format(df)
   assertthat::assert_that(all(c('Orig.Genus', 'Orig.Species') %in% colnames(df)))

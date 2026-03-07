@@ -15,18 +15,18 @@ The package supports:
 Install `wcvpmatch`:
 
 ```r
-remotes::install_github("PaulESantos/wcvpmatch")
+pak::pak("PaulESantos/wcvpmatch")
 ```
 
-Install WCVP data source (required when you do not pass a custom `target_df`):
+Install WCVP data source (required to use `wcvpmatch`):
 
 ```r
-remotes::install_github("PaulESantos/rWCVPdata")
+pak::pak("PaulESantos/rWCVPdata")
 ```
 
 ## Quick Start
 
-```r
+{r }
 library(wcvpmatch)
 
 splist <- c(

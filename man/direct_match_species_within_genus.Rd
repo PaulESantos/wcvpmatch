@@ -17,6 +17,3 @@ Returns a \code{tibble} with the additional logical column \code{direct_match_sp
 \description{
 Tries to directly match the specific epithet within an already matched genus in WCVP.
 }
-\examples{
-iucn \%>\% dplyr::mutate(Matched.Genus = Orig.Genus) \%>\% direct_match_species_within_genus()
-}

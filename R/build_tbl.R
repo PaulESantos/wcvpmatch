@@ -17,12 +17,12 @@
 #' Robustness rules:
 #' \itemize{
 #'   \item `cf.` / `aff.` are removed from parsing but preserved as flags (`has_cf`, `has_aff`).
-#'   \item Hybrid markers (`x`/`×`) as standalone tokens are removed with `had_hybrid = TRUE`.
+#'   \item Hybrid markers (`x`/`\u00D7`) as standalone tokens are removed with `had_hybrid = TRUE`.
 #'   \item `sp.` / `spp.` triggers genus-only classification (`Rank = 1`, `Orig.Species = NA`)
 #'     and sets `is_sp`/`is_spp`.
 #'   \item If an infraspecific rank is present but the infraspecific epithet is missing,
 #'     sets `rank_missing_infra = TRUE` and keeps `Infra.Rank` while `Orig.Infraspecies = NA`.
-#'   \item If rank appears “late” (after author-like tokens), parsing is best-effort and
+#'   \item If rank appears "late" (after author-like tokens), parsing is best-effort and
 #'     `rank_late = TRUE`.
 #'   \item If there is no explicit rank and a third token exists, the function can infer an
 #'     unranked infraspecific epithet when the third token looks epithet-like (all lowercase),
@@ -286,7 +286,7 @@ classify_spnames <- function(splist) {
   raw_tokens <- strsplit(s, " ", fixed = TRUE)
   raw_tokens <- lapply(raw_tokens, function(tt) tt[tt != ""])
 
-  mult_sign <- intToUtf8(0x00D7) # "×"
+  mult_sign <- "\u00D7" # multiplication sign
   had_hybrid <- logical(length(raw_tokens))
   had_na_author <- logical(length(raw_tokens))
 
@@ -320,7 +320,7 @@ classify_spnames <- function(splist) {
     keep1 <- !grepl(drop_re, tt, ignore.case = TRUE, perl = TRUE)
     tt <- tt[keep1]
 
-    # remove hybrid tokens (standalone) "x" or "×"
+    # remove hybrid tokens (standalone) "x" or multiplication sign
     before_len <- length(tt)
     tt <- tt[!(tt %in% c(mult_sign))]
     tt <- tt[!grepl("^x$", tt, ignore.case = TRUE)]
@@ -412,7 +412,7 @@ classify_spnames <- function(splist) {
 
   # lowercase particles: only if followed by an uppercase token
   particle <- tolower(tok)
-  is_particle <- particle %in% c("de","del","da","den","der","van","von","du","la","le") || grepl("^d['’]", particle)
+  is_particle <- particle %in% c("de","del","da","den","der","van","von","du","la","le") || grepl("^d['\\u2019]", particle)
   if (is_particle && !is.null(next_tok) && grepl("^[A-Z]", next_tok)) return(TRUE)
 
   FALSE
@@ -636,7 +636,7 @@ classify_spnames <- function(splist) {
 #   raw_tokens <- strsplit(s, " ", fixed = TRUE)
 #   raw_tokens <- lapply(raw_tokens, function(tt) tt[tt != ""])
 #
-#   mult_sign <- intToUtf8(0x00D7) # "×"
+#   mult_sign <- "\u00D7" # multiplication sign
 #   had_hybrid <- logical(length(raw_tokens))
 #   had_na_author <- logical(length(raw_tokens))
 #
@@ -673,9 +673,9 @@ classify_spnames <- function(splist) {
 #     keep1 <- !grepl(drop_re, tt, ignore.case = TRUE, perl = TRUE)
 #     tt <- tt[keep1]
 #
-#     # remove hybrid tokens (standalone) "x" or "×" (case-insensitive for x)
+#     # remove hybrid tokens (standalone) "x" or multiplication sign (case-insensitive for x)
 #     before_len <- length(tt)
-#     tt <- tt[!(tt %in% c(mult_sign))]                # remove × exactly
+#     tt <- tt[!(tt %in% c(mult_sign))]                # remove multiplication sign exactly
 #     tt <- tt[!grepl("^x$", tt, ignore.case = TRUE)]  # remove x/X token
 #     had_hybrid[i] <- length(tt) != before_len
 #
