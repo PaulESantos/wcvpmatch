@@ -27,8 +27,8 @@
 #'   - `"jaro_winkler"` or `"jw"`: Jaro-Winkler similarity.
 #'   - `"soundex"`: Soundex codes based on the National Archives standard.
 #' @param output_name_style Naming style for output columns:
-#'   - `"legacy"` keeps the historical mixed naming convention.
 #'   - `"snake_case"` returns standardized lower snake_case names.
+#'   - `"legacy"` keeps the historical mixed naming convention.
 #'
 #' @return Tibble with matched names, process flags, and taxonomic context
 #'   columns: `matched_plant_name_id`, `matched_taxon_name`, `taxon_status`,
@@ -36,11 +36,11 @@
 #' @export
 wcvp_matching <- function(df,
                      target_df = NULL,
-                     prefilter_genus = FALSE,
+                     prefilter_genus = TRUE,
                      allow_duplicates = FALSE,
                      max_dist = 1,
                      method = "osa",
-                     output_name_style = c("legacy", "snake_case")) {
+                     output_name_style = c("snake_case", "legacy")) {
   output_name_style <- match.arg(output_name_style)
 
   standardize_output_names <- function(x) {
