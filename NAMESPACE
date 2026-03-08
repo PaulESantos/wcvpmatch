@@ -2,9 +2,7 @@
 
 export(build_genus_index)
 export(classify_spnames)
-export(install.Rust)
 export(prefilter_target_by_genus)
-export(set.rust.toolchain.gnu)
 export(wcvp_direct_match)
 export(wcvp_direct_match_species_within_genus)
 export(wcvp_fuzzy_match_genus)
