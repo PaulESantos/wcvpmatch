@@ -1,8 +1,8 @@
 test_that("all fuzzy matches", {
   df1 <- get_testset(mutation = 2) |>
-    fuzzy_match_genus()
+    wcvp_fuzzy_match_genus()
   df2 <- get_testset(mutation = 3) |>
-    fuzzy_match_genus()
+    wcvp_fuzzy_match_genus()
   dfs <- list(df1, df2)
   for(df in dfs){
     expect_true("Matched.Genus" %in% colnames(df1))
@@ -22,7 +22,7 @@ test_that("fuzzy genus tie stores ambiguous candidates in attribute", {
   input <- tibble::tibble(Genus = "Aac", Species = "beta")
 
   expect_warning(
-    out <- fuzzy_match_genus(input, target_df = target_df, max_dist = 1, method = "osa"),
+    out <- wcvp_fuzzy_match_genus(input, target_df = target_df, max_dist = 1, method = "osa"),
     "Multiple fuzzy matches"
   )
 

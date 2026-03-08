@@ -30,7 +30,7 @@ test_that("matching supports infraspecific rank + fuzzy epithet (WCVP schema)", 
   expect_true(all(out$matched))
   expect_true(all(out$direct_match_infra_rank))
   expect_true(all(out$fuzzy_match_infraspecies))
-  expect_true("Matched.Infraspecies" %in% colnames(out))
+  expect_true("matched_infraspecies" %in% colnames(out))
   expect_true(any(out$fuzzy_infraspecies_dist == 1, na.rm = TRUE))
 })
 

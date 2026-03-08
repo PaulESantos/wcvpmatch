@@ -64,5 +64,11 @@ utils::globalVariables(c(
   "Species",
   "taxon_authors",
   "taxon_name",
-  "taxon_status"
+  "taxon_status",
+  "direct_match",
+  "direct_match_species_within_genus",
+  "fuzzy_match_genus",
+  "fuzzy_match_species_within_genus",
+  "genus_match",
+  "suffix_match_species_within_genus"
 ))

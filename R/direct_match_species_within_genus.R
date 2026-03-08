@@ -10,7 +10,7 @@
 #' Returns a `tibble` with the additional logical column `direct_match_species_within_genus`, indicating whether the specific epithet was successfully matched within the matched genus (`r TRUE`) or not (`r FALSE`).
 #' @export
 #'
-direct_match_species_within_genus <- function(df, target_df = NULL){
+wcvp_direct_match_species_within_genus <- function(df, target_df = NULL){
   df <- check_df_format(df)
 
   assertthat::assert_that(all(c('Orig.Genus', 'Orig.Species', 'Matched.Genus') %in% colnames(df)))

@@ -13,7 +13,7 @@
 #' @export
 #'
 
-fuzzy_match_genus <- function(df, target_df = NULL, max_dist = 1, method = "osa"){
+wcvp_fuzzy_match_genus <- function(df, target_df = NULL, max_dist = 1, method = "osa"){
   df <- check_df_format(df)
   assertthat::assert_that(all(c('Orig.Genus', 'Orig.Species') %in% colnames(df)))
   target_df <- get_db(target_df = target_df)

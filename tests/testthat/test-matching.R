@@ -137,10 +137,14 @@ test_that("matching output always includes Input.Name", {
     infraspecies = NA_character_
   )
 
-  input_auto <- tibble::tibble(Genus = "Fagus", Species = "sylvatica")
-  out_auto <- wcvp_matching(input_auto, target_df = target_df)
-  expect_true("Input.Name" %in% names(out_auto))
-  expect_equal(out_auto$Input.Name[1], "Fagus sylvatica")
+  input_auto <- tibble::tibble(Genus = "Fagus",
+                               Species = "sylvatica")
+
+  out_auto <- wcvp_matching(input_auto,
+                            target_df = target_df)
+
+  expect_true("input_name" %in% names(out_auto))
+  expect_equal(out_auto$input_name[1], "Fagus sylvatica")
 
   input_keep <- tibble::tibble(
     Genus = "Fagus",
@@ -148,7 +152,7 @@ test_that("matching output always includes Input.Name", {
     Input.Name = "Fagus sylvatica L."
   )
   out_keep <- wcvp_matching(input_keep, target_df = target_df)
-  expect_equal(out_keep$Input.Name[1], "Fagus sylvatica L.")
+  expect_equal(out_keep$input_name[1], "Fagus sylvatica L.")
 })
 
 test_that("matching with prefilter_genus keeps same result on small custom target", {
@@ -168,8 +172,8 @@ test_that("matching with prefilter_genus keeps same result on small custom targe
   out_pref <- wcvp_matching(input, target_df = target_df, prefilter_genus = TRUE, max_dist = 1, method = "osa")
 
   expect_equal(out_pref$matched, out_base$matched)
-  expect_equal(out_pref$Matched.Genus, out_base$Matched.Genus)
-  expect_equal(out_pref$Matched.Species, out_base$Matched.Species)
+  expect_equal(out_pref$matched_genus, out_base$matched_genus)
+  expect_equal(out_pref$matched_species, out_base$matched_species)
 })
 
 test_that("matching can expand duplicate inputs with input_index when allow_duplicates is TRUE", {

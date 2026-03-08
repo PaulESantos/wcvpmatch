@@ -258,15 +258,15 @@ wcvp_matching <- function(df,
     )
   }
 
-  node_1 <- direct_match(df_work, target_df = target_df_match)
+  node_1 <- wcvp_direct_match(df_work, target_df = target_df_match)
   n1_true <- dplyr::filter(node_1, direct_match)
   n1_false <- dplyr::filter(node_1, !direct_match)
 
-  node_2 <- genus_match(n1_false, target_df = target_df_match)
+  node_2 <- wcvp_genus_match(n1_false, target_df = target_df_match)
   n2_true <- dplyr::filter(node_2, genus_match)
   n2_false <- dplyr::filter(node_2, !genus_match)
 
-  node_3 <- fuzzy_match_genus(
+  node_3 <- wcvp_fuzzy_match_genus(
     n2_false,
     target_df = target_df_match,
     max_dist = max_dist,
@@ -277,21 +277,21 @@ wcvp_matching <- function(df,
   n3_false <- dplyr::filter(node_3, !fuzzy_match_genus)
 
   node_4_in <- dplyr::bind_rows(coerce_tax_char(n2_true), coerce_tax_char(n3_true))
-  node_4 <- direct_match_species_within_genus(
+  node_4 <- wcvp_direct_match_species_within_genus(
     node_4_in,
     target_df = target_df_match
   )
   n4_true <- dplyr::filter(node_4, direct_match_species_within_genus)
   n4_false <- dplyr::filter(node_4, !direct_match_species_within_genus)
 
-  node_5a <- suffix_match_species_within_genus(
+  node_5a <- wcvp_suffix_match_species_within_genus(
     n4_false,
     target_df = target_df_match
   )
   n5a_true <- dplyr::filter(node_5a, suffix_match_species_within_genus)
   n5a_false <- dplyr::filter(node_5a, !suffix_match_species_within_genus)
 
-  node_5b <- fuzzy_match_species_within_genus(
+  node_5b <- wcvp_fuzzy_match_species_within_genus(
     n5a_false,
     target_df = target_df_match,
     max_dist = max_dist,

@@ -9,7 +9,7 @@
 #' Returns a `tibble` with the additional logical column `direct_match`, indicating whether the binomial was successfully matched (`r TRUE`) or not (`r FALSE`)
 #' @export
 
-direct_match <- function(df, target_df = NULL) {
+wcvp_direct_match <- function(df, target_df = NULL) {
   df <- check_df_format(df)
   target_df <- get_db(target_df = target_df)
 

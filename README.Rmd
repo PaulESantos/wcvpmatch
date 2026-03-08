@@ -135,12 +135,12 @@ res |>
 
 `wcvp_matching()` follows a staged pipeline:
 
-1. `direct_match()`
-2. `genus_match()`
-3. `fuzzy_match_genus()`
-4. `direct_match_species_within_genus()`
-5. `suffix_match_species_within_genus()`
-6. `fuzzy_match_species_within_genus()`
+1. `wcvp_direct_match()`
+2. `wcvp_genus_match()`
+3. `wcvp_fuzzy_match_genus()`
+4. `wcvp_direct_match_species_within_genus()`
+5. `wcvp_suffix_match_species_within_genus()`
+6. `wcvp_fuzzy_match_species_within_genus()`
 7. infraspecific checks (rank + fuzzy infraspecies, when applicable)
 
 This staged design prioritizes strict evidence first, then progressively
@@ -201,12 +201,12 @@ matching and avoids recomputing duplicated names.
 - `wcvp_matching()`
 - `build_genus_index()`
 - `prefilter_target_by_genus()`
-- `direct_match()`
-- `genus_match()`
-- `fuzzy_match_genus()`
-- `direct_match_species_within_genus()`
-- `fuzzy_match_species_within_genus()`
-- `suffix_match_species_within_genus()`
+- `wcvp_direct_match()`
+- `wcvp_genus_match()`
+- `wcvp_fuzzy_match_genus()`
+- `wcvp_direct_match_species_within_genus()`
+- `wcvp_fuzzy_match_species_within_genus()`
+- `wcvp_suffix_match_species_within_genus()`
 
 ## Acknowledgement
 
