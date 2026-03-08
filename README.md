@@ -42,16 +42,43 @@ taxonomic resolution workflows.
 
 ## Installation
 
-Install the development version of `wcvpmatch` from GitHub:
+`wcvpmatch` depends on `fozziejoin` for fuzzy matching. At the moment,
+`fozziejoin` is installed from GitHub and requires a working Rust
+toolchain.
 
-``` r
-pak::pak("PaulESantos/wcvpmatch")
+### 1) Install Rust
+
+Windows (GNU toolchain required for R + Rtools compatibility):
+
+``` bash
+rustup install stable-x86_64-pc-windows-gnu
+rustup default stable-x86_64-pc-windows-gnu
+rustup target add x86_64-pc-windows-gnu --toolchain stable-x86_64-pc-windows-gnu
 ```
 
-Install **WCVP** data source from GitHub (required to use `wcvpmatch`):
+Linux / macOS: install Rust with the official installer at
+<https://www.rust-lang.org/tools/install>.
+
+### 2) Install the development version of `fozziejoin` from GitHub:
+
+``` r
+pak::pak("fozzieverse/fozziejoin/fozziejoin-r")
+```
+
+Additional information is available in the official
+[`fozziejoin`](https://github.com/fozzieverse/fozziejoin/tree/main/fozziejoin-r)
+GitHub repository.
+
+### 3) Install the development version of `rWCVPdata` from GitHub:
 
 ``` r
 pak::pak("PaulESantos/rWCVPdata")
+```
+
+### 4) Install the development version of `wcvpmatch` from GitHub:
+
+``` r
+pak::pak("PaulESantos/wcvpmatch")
 ```
 
 ## Quick start
@@ -214,21 +241,6 @@ wcvp_matching(
 
 This typically reduces runtime by limiting candidate genera before
 species-level matching and avoids recomputing duplicated names.
-
-## Custom backbone (optional)
-
-You can bypass `rWCVPdata` by passing your own `target_df`:
-
-``` r
-custom_target <- tibble::tibble(
-  genus = c("Acer", "Quercus"),
-  species = c("rubrum", "robur"),
-  infraspecific_rank = NA_character_,
-  infraspecies = NA_character_
-)
-
-res <- wcvp_matching(parsed, target_df = custom_target)
-```
 
 ## Core public functions
 
