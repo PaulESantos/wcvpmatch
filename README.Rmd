@@ -178,6 +178,65 @@ Optional columns:
 - `accepted_taxon_authors`
 - `is_accepted_name`
 
+## Example: FIA data and ambiguous genus ties
+
+When input genera have tied fuzzy candidates, `wcvp_matching()` emits:
+
+`Multiple fuzzy matches for some genera (tied distances). The first match is selected.`
+
+Example with an FIA-like table (`Orig.Genus`, `Orig.Species`):
+
+```{r}
+fia
+
+fia_result <- fia |>
+  wcvp_matching(
+    allow_duplicates = TRUE,
+    max_dist = 2
+  ) |>
+  dplyr::select(
+    input_name,
+    orig_genus,
+    matched_genus,
+    orig_species,
+    matched_species,
+    taxon_status,
+    accepted_taxon_name
+  )
+fia_result
+```
+
+Inspect ambiguous genus cases from the result attribute:
+
+```{r}
+amb_g <- attr(fia_result, "ambiguous_genus")
+amb_g
+```
+
+Re-run only those ambiguous names for focused review:
+
+```{r}
+amb_g |>
+  dplyr::ungroup() |>
+  dplyr::select(Orig.Genus, Orig.Species) |>
+  wcvp_matching(
+    allow_duplicates = TRUE,
+    max_dist = 2
+  ) |>
+  dplyr::select(
+    input_name,
+    orig_genus,
+    matched_genus,
+    orig_species,
+    matched_species,
+    taxon_status,
+    accepted_taxon_name
+  )
+```
+
+In this example, the ambiguous genus spellings (`Howeia`, `Hyeronima`) are
+resolved to accepted genera (`Howea`, `Hieronyma`) after species-level checks.
+
 
 ## Performance notes
 

@@ -228,6 +228,122 @@ Optional columns:
 - `accepted_taxon_authors`
 - `is_accepted_name`
 
+## Example: FIA data and ambiguous genus ties
+
+When input genera have tied fuzzy candidates, `wcvp_matching()` emits:
+
+`Multiple fuzzy matches for some genera (tied distances). The first match is selected.`
+
+Example with an FIA-like table (`Orig.Genus`, `Orig.Species`):
+
+``` r
+fia
+#> # A tibble: 2,169 × 2
+#>    Orig.Genus Orig.Species
+#>    <chr>      <chr>       
+#>  1 Abies      amabilis    
+#>  2 Abies      balsamea    
+#>  3 Abies      bracteata   
+#>  4 Abies      concolor    
+#>  5 Abies      fraseri     
+#>  6 Abies      grandis     
+#>  7 Abies      lasiocarpa  
+#>  8 Abies      magnifica   
+#>  9 Abies      procera     
+#> 10 Abies      shastensis  
+#> # ℹ 2,159 more rows
+
+fia_result <- fia |>
+  wcvp_matching(
+    allow_duplicates = TRUE,
+    max_dist = 2
+  ) |>
+  dplyr::select(
+    input_name,
+    orig_genus,
+    matched_genus,
+    orig_species,
+    matched_species,
+    taxon_status,
+    accepted_taxon_name
+  )
+#> Warning: Multiple fuzzy matches for some genera (tied distances). The first
+#> match is selected.
+fia_result
+#> # A tibble: 2,169 × 7
+#>    input_name orig_genus matched_genus orig_species matched_species taxon_status
+#>    <chr>      <chr>      <chr>         <chr>        <chr>           <chr>       
+#>  1 Abies ama… Abies      Abies         amabilis     amabilis        Accepted    
+#>  2 Abies bal… Abies      Abies         balsamea     balsamea        Accepted    
+#>  3 Abies bra… Abies      Abies         bracteata    bracteata       Accepted    
+#>  4 Abies con… Abies      Abies         concolor     concolor        Accepted    
+#>  5 Abies fra… Abies      Abies         fraseri      fraseri         Accepted    
+#>  6 Abies gra… Abies      Abies         grandis      grandis         Accepted    
+#>  7 Abies las… Abies      Abies         lasiocarpa   lasiocarpa      Accepted    
+#>  8 Abies mag… Abies      Abies         magnifica    magnifica       Accepted    
+#>  9 Abies pro… Abies      Abies         procera      procera         Accepted    
+#> 10 Abies sha… Abies      Abies         shastensis   shastensis      Synonym     
+#> # ℹ 2,159 more rows
+#> # ℹ 1 more variable: accepted_taxon_name <chr>
+```
+
+Inspect ambiguous genus cases from the result attribute:
+
+``` r
+amb_g <- attr(fia_result, "ambiguous_genus")
+amb_g
+#> # A tibble: 4 × 28
+#> # Groups:   .row_id [2]
+#>   Orig.Genus Orig.Species genus_match Input.Name           Orig.Name Author
+#>   <chr>      <chr>        <lgl>       <chr>                <chr>     <chr> 
+#> 1 Howeia     forsteriana  FALSE       Howeia forsteriana   <NA>      ""    
+#> 2 Howeia     forsteriana  FALSE       Howeia forsteriana   <NA>      ""    
+#> 3 Hyeronima  clusioides   FALSE       Hyeronima clusioides <NA>      ""    
+#> 4 Hyeronima  clusioides   FALSE       Hyeronima clusioides <NA>      ""    
+#> # ℹ 22 more variables: Orig.Infraspecies <chr>, Infra.Rank <chr>, Rank <dbl>,
+#> #   has_cf <lgl>, has_aff <lgl>, is_sp <lgl>, is_spp <lgl>, had_hybrid <lgl>,
+#> #   rank_late <lgl>, rank_missing_infra <lgl>, had_na_author <lgl>,
+#> #   implied_infra <lgl>, sorter <dbl>, input_index <int>, .dedup_key <chr>,
+#> #   direct_match <lgl>, Matched.Genus <chr>, Matched.Species <chr>,
+#> #   Matched.Infraspecies <chr>, Matched.Infra.Rank <chr>, .row_id <int>,
+#> #   fuzzy_genus_dist <dbl>
+```
+
+Re-run only those ambiguous names for focused review:
+
+``` r
+amb_g |>
+  dplyr::ungroup() |>
+  dplyr::select(Orig.Genus, Orig.Species) |>
+  wcvp_matching(
+    allow_duplicates = TRUE,
+    max_dist = 2
+  ) |>
+  dplyr::select(
+    input_name,
+    orig_genus,
+    matched_genus,
+    orig_species,
+    matched_species,
+    taxon_status,
+    accepted_taxon_name
+  )
+#> Warning: Multiple fuzzy matches for some genera (tied distances). The first
+#> match is selected.
+#> # A tibble: 4 × 7
+#>   input_name  orig_genus matched_genus orig_species matched_species taxon_status
+#>   <chr>       <chr>      <chr>         <chr>        <chr>           <chr>       
+#> 1 Howeia for… Howeia     Howea         forsteriana  forsteriana     Accepted    
+#> 2 Howeia for… Howeia     Howea         forsteriana  forsteriana     Accepted    
+#> 3 Hyeronima … Hyeronima  Hieronyma     clusioides   clusioides      Accepted    
+#> 4 Hyeronima … Hyeronima  Hieronyma     clusioides   clusioides      Accepted    
+#> # ℹ 1 more variable: accepted_taxon_name <chr>
+```
+
+In this example, the ambiguous genus spellings (`Howeia`, `Hyeronima`)
+are resolved to accepted genera (`Howea`, `Hieronyma`) after
+species-level checks.
+
 ## Performance notes
 
 For medium/large inputs, recommended settings are:
