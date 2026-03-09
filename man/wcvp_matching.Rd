@@ -22,7 +22,7 @@ wcvp_matching(
 \code{Infraspecies} (or \code{Orig.Infra.Rank}/\code{Orig.Infraspecies}).}
 
 \item{target_df}{Optional custom target table. If \code{NULL}, data are read from
-\code{rWCVPdata::wcvp_names}.}
+\code{wcvpdata::wcvp_checklist_names}.}
 
 \item{prefilter_genus}{Logical. If \code{TRUE}, prefilter \code{target_df} to candidate
 genera (exact + fuzzy) before running the matching pipeline.}

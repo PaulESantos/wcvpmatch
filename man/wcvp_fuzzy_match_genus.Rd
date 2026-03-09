@@ -9,7 +9,7 @@ wcvp_fuzzy_match_genus(df, target_df = NULL, max_dist = 1, method = "osa")
 \arguments{
 \item{df}{\code{tibble} containing the species binomial split into the columns \code{Orig.Genus} and \code{Orig.Species}.}
 
-\item{target_df}{Optional custom target table; if \code{NULL}, uses \code{rWCVPdata::wcvp_names}.}
+\item{target_df}{Optional custom target table; if \code{NULL}, uses \code{wcvpdata::wcvp_checklist_names}.}
 
 \item{max_dist}{Maximum edit distance used for fuzzy genus matching.}
 
@@ -20,5 +20,5 @@ Returns a \code{tibble} with the additional logical column \code{fuzzy_match_gen
 Further, the additional column \code{fuzzy_genus_dist} returns the distance for every match.
 }
 \description{
-Tries to fuzzy match the genus name to the WCVP table (\code{rWCVPdata::wcvp_names} by default).
+Tries to fuzzy match the genus name to the WCVP table (\code{wcvpdata::wcvp_checklist_names} by default).
 }

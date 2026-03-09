@@ -206,19 +206,19 @@ normalize_target_df <- function(target_df) {
 }
 
 default_target_df <- function() {
-  .require_rwcvpdata()
+  .require_wcvpdata()
 
   # Read dataset directly, fail with clear message if object is unavailable.
   wcvp_data <- tryCatch({
-    rWCVPdata::wcvp_names
+    wcvpdata::wcvp_checklist_names
   }, error = function(e) NULL)
 
   if (is.null(wcvp_data)) {
     stop(
       paste(
-        "Object 'wcvp_names' was not found in package 'rWCVPdata'.",
+        "Object 'wcvp_checklist_names' was not found in package 'wcvpdata'.",
         "Please update/reinstall from:",
-        "remotes::install_github('PaulESantos/rWCVPdata')",
+        "remotes::install_github('matildesrib/wcvpdata')",
         sep = "\n"
       ),
       call. = FALSE

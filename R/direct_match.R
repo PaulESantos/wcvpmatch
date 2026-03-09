@@ -3,7 +3,7 @@
 #' Tries to directly match Genus + Species | Genus + Species + Rank + Infraspecies to `WCVP data`.
 #'
 #' @param df `tibble` containing the species binomial split into the columns `Orig.Genus` and `Orig.Species`.
-#' @param target_df Optional custom target table; if `NULL`, uses `rWCVPdata::wcvp_names`.
+#' @param target_df Optional custom target table; if `NULL`, uses `wcvpdata::wcvp_checklist_names`.
 #'
 #' @return
 #' Returns a `tibble` with the additional logical column `direct_match`, indicating whether the binomial was successfully matched (`r TRUE`) or not (`r FALSE`)

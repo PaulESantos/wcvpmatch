@@ -69,10 +69,10 @@ Additional information is available in the official
 [`fozziejoin`](https://github.com/fozzieverse/fozziejoin/tree/main/fozziejoin-r)
 GitHub repository.
 
-### 3) Install the development version of `rWCVPdata` from GitHub:
+### 3) Install the development version of `wcvpdata` from GitHub:
 
 ``` r
-pak::pak("PaulESantos/rWCVPdata")
+pak::pak("matildesrib/wcvpdata")
 ```
 
 ### 4) Install the development version of `wcvpmatch` from GitHub:
@@ -86,7 +86,7 @@ pak::pak("PaulESantos/wcvpmatch")
 ``` r
 library(wcvpmatch)
 #> ── Attaching wcvpmatch ecosystem ──────────────────────────── wcvpmatch 0.0.1 ──
-#> ✔ rWCVPdata 0.8.0 (wcvp_names available)
+#> ✔ wcvpdata 0.8.0 (wcvp_checklist_names available)
 
 sp_names <- c(
   "Aniba heterotepala",          

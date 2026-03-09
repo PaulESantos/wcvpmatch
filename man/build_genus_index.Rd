@@ -7,7 +7,7 @@
 build_genus_index(target_df = NULL)
 }
 \arguments{
-\item{target_df}{Optional custom target table; if \code{NULL}, uses \code{rWCVPdata::wcvp_names}.}
+\item{target_df}{Optional custom target table; if \code{NULL}, uses \code{wcvpdata::wcvp_checklist_names}.}
 }
 \value{
 A tibble with columns:

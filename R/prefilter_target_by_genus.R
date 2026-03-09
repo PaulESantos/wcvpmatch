@@ -8,7 +8,7 @@
 #' If `plant_name_id` is not present in `target_df`, a surrogate integer ID is
 #' created to keep the index usable with custom backbones.
 #'
-#' @param target_df Optional custom target table; if `NULL`, uses `rWCVPdata::wcvp_names`.
+#' @param target_df Optional custom target table; if `NULL`, uses `wcvpdata::wcvp_checklist_names`.
 #'
 #' @return A tibble with columns:
 #' \describe{
@@ -49,7 +49,7 @@ build_genus_index <- function(target_df = NULL) {
 #' }
 #'
 #' @param df Input tibble/data.frame with either `Genus`/`Species` or `Orig.Genus`/`Orig.Species`.
-#' @param target_df Optional custom target table; if `NULL`, uses `rWCVPdata::wcvp_names`.
+#' @param target_df Optional custom target table; if `NULL`, uses `wcvpdata::wcvp_checklist_names`.
 #' @param genus_index Optional pre-built index from `build_genus_index()`. If `NULL`, it is built on the fly.
 #' @param include_fuzzy Logical. If `TRUE`, include fuzzy-matched genera.
 #' @param max_dist Maximum fuzzy distance for genus matching (used when `include_fuzzy = TRUE`).

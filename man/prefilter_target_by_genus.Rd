@@ -16,7 +16,7 @@ prefilter_target_by_genus(
 \arguments{
 \item{df}{Input tibble/data.frame with either \code{Genus}/\code{Species} or \code{Orig.Genus}/\code{Orig.Species}.}
 
-\item{target_df}{Optional custom target table; if \code{NULL}, uses \code{rWCVPdata::wcvp_names}.}
+\item{target_df}{Optional custom target table; if \code{NULL}, uses \code{wcvpdata::wcvp_checklist_names}.}
 
 \item{genus_index}{Optional pre-built index from \code{build_genus_index()}. If \code{NULL}, it is built on the fly.}
 

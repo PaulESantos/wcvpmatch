@@ -1,9 +1,9 @@
 #' Fuzzy Match Species within Genus
 #' @description
-#' Tries to fuzzy match the species epithet within a matched genus against WCVP (`rWCVPdata::wcvp_names` by default).
+#' Tries to fuzzy match the species epithet within a matched genus against WCVP (`wcvpdata::wcvp_checklist_names` by default).
 #'
 #' @param df `tibble` containing the species binomial split into the columns `Orig.Genus` and `Orig.Species`.
-#' @param target_df Optional custom target table; if `NULL`, uses `rWCVPdata::wcvp_names`.
+#' @param target_df Optional custom target table; if `NULL`, uses `wcvpdata::wcvp_checklist_names`.
 #' @param max_dist Maximum edit distance used for fuzzy species matching within genus.
 #' @param method String distance method passed to `fozziejoin` (for example `"osa"`).
 #'

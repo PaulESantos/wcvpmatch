@@ -14,7 +14,7 @@ wcvp_fuzzy_match_species_within_genus(
 \arguments{
 \item{df}{\code{tibble} containing the species binomial split into the columns \code{Orig.Genus} and \code{Orig.Species}.}
 
-\item{target_df}{Optional custom target table; if \code{NULL}, uses \code{rWCVPdata::wcvp_names}.}
+\item{target_df}{Optional custom target table; if \code{NULL}, uses \code{wcvpdata::wcvp_checklist_names}.}
 
 \item{max_dist}{Maximum edit distance used for fuzzy species matching within genus.}
 
@@ -24,5 +24,5 @@ wcvp_fuzzy_match_species_within_genus(
 Returns a \code{tibble} with the additional logical column \code{fuzzy_match_species_within_genus}, indicating whether the specific epithet was successfully fuzzy matched within the matched genus (TRUE) or not (FALSE).
 }
 \description{
-Tries to fuzzy match the species epithet within a matched genus against WCVP (\code{rWCVPdata::wcvp_names} by default).
+Tries to fuzzy match the species epithet within a matched genus against WCVP (\code{wcvpdata::wcvp_checklist_names} by default).
 }

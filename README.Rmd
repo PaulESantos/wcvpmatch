@@ -67,10 +67,10 @@ pak::pak("fozzieverse/fozziejoin/fozziejoin-r")
 Additional information is available in the official [`fozziejoin`](https://github.com/fozzieverse/fozziejoin/tree/main/fozziejoin-r) GitHub repository.
 
 
-### 3) Install the development version of `rWCVPdata` from GitHub: 
+### 3) Install the development version of `wcvpdata` from GitHub: 
 
 ```r
-pak::pak("PaulESantos/rWCVPdata")
+pak::pak("matildesrib/wcvpdata")
 ```
 
 ### 4) Install the development version of `wcvpmatch` from GitHub: 

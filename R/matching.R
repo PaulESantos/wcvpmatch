@@ -7,7 +7,7 @@
 #'   `Orig.Genus`/`Orig.Species`. For trinomials, include `Infra.Rank` and
 #'   `Infraspecies` (or `Orig.Infra.Rank`/`Orig.Infraspecies`).
 #' @param target_df Optional custom target table. If `NULL`, data are read from
-#'   `rWCVPdata::wcvp_names`.
+#'   `wcvpdata::wcvp_checklist_names`.
 #' @param prefilter_genus Logical. If `TRUE`, prefilter `target_df` to candidate
 #'   genera (exact + fuzzy) before running the matching pipeline.
 #' @param allow_duplicates Logical. If `TRUE`, duplicated taxon keys are

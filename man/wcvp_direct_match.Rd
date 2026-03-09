@@ -9,7 +9,7 @@ wcvp_direct_match(df, target_df = NULL)
 \arguments{
 \item{df}{\code{tibble} containing the species binomial split into the columns \code{Orig.Genus} and \code{Orig.Species}.}
 
-\item{target_df}{Optional custom target table; if \code{NULL}, uses \code{rWCVPdata::wcvp_names}.}
+\item{target_df}{Optional custom target table; if \code{NULL}, uses \code{wcvpdata::wcvp_checklist_names}.}
 }
 \value{
 Returns a \code{tibble} with the additional logical column \code{direct_match}, indicating whether the binomial was successfully matched (TRUE) or not (FALSE)

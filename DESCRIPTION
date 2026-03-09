@@ -6,7 +6,7 @@ Authors@R: c(
         email = "paulefrens@gmail.com", role = c("aut", "cre")))
 Description: Standardizes and reconciles scientific plant names against
     the World Checklist of Vascular Plants (WCVP), accessed through
-    'rWCVPdata::wcvp_names'. The package parses names into taxonomic
+    'wcvpdata::wcvp_checklist_names'. The package parses names into taxonomic
     components and applies staged exact and fuzzy matching for binomial
     and trinomial inputs, including infraspecific rank-aware checks.
     It also returns accepted-name context and row-level matching flags
@@ -25,7 +25,7 @@ Imports:
     memoise,
     progress,
     purrr,
-    rWCVPdata,
+    wcvpdata,
     stringdist,
     stringr,
     tibble,
