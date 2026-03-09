@@ -72,7 +72,7 @@ GitHub repository.
 ### 3) Install the development version of `wcvpdata` from GitHub:
 
 ``` r
-pak::pak("matildesrib/wcvpdata")
+pak::pak("PaulESantos/wcvpdata")
 ```
 
 ### 4) Install the development version of `wcvpmatch` from GitHub:
@@ -86,7 +86,7 @@ pak::pak("PaulESantos/wcvpmatch")
 ``` r
 library(wcvpmatch)
 #> ── Attaching wcvpmatch ecosystem ──────────────────────────── wcvpmatch 0.0.1 ──
-#> ✔ wcvpdata 0.8.0 (wcvp_checklist_names available)
+#> ✔ wcvpdata 0.5.0 (wcvp_checklist_names available)
 
 sp_names <- c(
   "Aniba heterotepala",          

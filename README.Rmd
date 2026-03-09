@@ -70,7 +70,7 @@ Additional information is available in the official [`fozziejoin`](https://githu
 ### 3) Install the development version of `wcvpdata` from GitHub: 
 
 ```r
-pak::pak("matildesrib/wcvpdata")
+pak::pak("PaulESantos/wcvpdata")
 ```
 
 ### 4) Install the development version of `wcvpmatch` from GitHub: 
