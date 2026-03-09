@@ -21,8 +21,15 @@ wcvp_fuzzy_match_species_within_genus(
 \item{method}{String distance method passed to \code{fozziejoin} (for example \code{"osa"}).}
 }
 \value{
-Returns a \code{tibble} with the additional logical column \code{fuzzy_match_species_within_genus}, indicating whether the specific epithet was successfully fuzzy matched within the matched genus (TRUE) or not (FALSE).
+Returns a \code{tibble} with the additional logical column \code{fuzzy_match_species_within_genus}, indicating whether the specific epithet was successfully fuzzy matched within the matched genus (\code{TRUE}) or not (\code{FALSE}).
 }
 \description{
-Tries to fuzzy match the species epithet within a matched genus against WCVP (\code{wcvpdata::wcvp_checklist_names} by default).
+Tries to fuzzy match the species epithet within a matched genus against 'WCVP' (\code{wcvpdata::wcvp_checklist_names} by default).
+}
+\examples{
+\dontshow{if (rlang::is_installed("wcvpdata")) withAutoprint(\{ # examplesIf}
+library(wcvpmatch)
+df <- data.frame(Orig.Genus = "Opuntia", Orig.Species = "yanganucensiss", Matched.Genus = "Opuntia")
+wcvp_fuzzy_match_species_within_genus(df)
+\dontshow{\}) # examplesIf}
 }

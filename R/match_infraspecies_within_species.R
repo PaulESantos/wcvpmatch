@@ -121,10 +121,10 @@ fuzzy_match_infraspecies_within_species <- function(df,
     dplyr::filter(n > 1)
 
   if (nrow(ambiguous) > 0) {
-    warning(
-      "Found infraspecific names with multiple fuzzy matches (tied distances). Selecting the first match.",
-      call. = FALSE
-    )
+    cli::cli_warn(c(
+      "!" = "Found infraspecific names with multiple fuzzy matches (tied distances).",
+      "i" = "Selecting the first match."
+    ))
   }
 
   matched <- matched_temp %>%

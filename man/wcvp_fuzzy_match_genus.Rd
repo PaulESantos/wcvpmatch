@@ -16,9 +16,16 @@ wcvp_fuzzy_match_genus(df, target_df = NULL, max_dist = 1, method = "osa")
 \item{method}{String distance method passed to \code{fozziejoin} (for example \code{"osa"}).}
 }
 \value{
-Returns a \code{tibble} with the additional logical column \code{fuzzy_match_genus}, indicating whether the genus was successfully matched (TRUE) or not (FALSE).
+Returns a \code{tibble} with the additional logical column \code{fuzzy_match_genus}, indicating whether the genus was successfully matched (\code{TRUE}) or not (\code{FALSE}).
 Further, the additional column \code{fuzzy_genus_dist} returns the distance for every match.
 }
 \description{
-Tries to fuzzy match the genus name to the WCVP table (\code{wcvpdata::wcvp_checklist_names} by default).
+Tries to fuzzy match the genus name to the 'WCVP' table (\code{wcvpdata::wcvp_checklist_names} by default).
+}
+\examples{
+\dontshow{if (rlang::is_installed("wcvpdata")) withAutoprint(\{ # examplesIf}
+library(wcvpmatch)
+df <- data.frame(Orig.Genus = "Opuntiaa", Orig.Species = "yanganucensis")
+wcvp_fuzzy_match_genus(df)
+\dontshow{\}) # examplesIf}
 }

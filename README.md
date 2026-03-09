@@ -9,8 +9,6 @@
 stable](https://img.shields.io/badge/lifecycle-stable-blue.svg)](https://lifecycle.r-lib.org/articles/stages.html)
 [![CRAN
 status](https://www.r-pkg.org/badges/version/wcvpmatch)](https://CRAN.R-project.org/package=wcvpmatch)
-[![](http://cranlogs.r-pkg.org/badges/grand-total/wcvpmatch?color=green)](https://cran.r-project.org/package=wcvpmatch)
-[![](http://cranlogs.r-pkg.org/badges/last-week/wcvpmatch?color=green)](https://cran.r-project.org/package=wcvpmatch)
 [![R-CMD-check](https://github.com/PaulESantos/wcvpmatch/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/PaulESantos/wcvpmatch/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
@@ -19,7 +17,7 @@ and taxonomic reconciliation against the [World Checklist of Vascular
 Plants (WCVP)](https://powo.science.kew.org/about-wcvp).
 
 The package is inspired by the matching workflow implemented in
-`treemendous` (especially its staged `matching` logic), and extends that
+‘treemendous’ (especially its staged ‘matching’ logic), and extends that
 approach with broader functionality for robust and reproducible
 taxonomic resolution workflows.
 
@@ -35,16 +33,29 @@ taxonomic resolution workflows.
   (`allow_duplicates`, `input_index`)
 - taxonomic context output (`matched_taxon_name`, `accepted_taxon_name`,
   status fields)
-- author metadata propagation from WCVP (`matched_taxon_authors`,
+- author metadata propagation from ‘WCVP’ (`matched_taxon_authors`,
   `accepted_taxon_authors`)
 - optional standardized output names in snake_case
   (`output_name_style = "snake_case"`)
 
 ## Installation
 
-`wcvpmatch` depends on `fozziejoin` for fuzzy matching. At the moment,
-`fozziejoin` is installed from GitHub and requires a working Rust
-toolchain.
+You can install the released version of `wcvpmatch` from
+[CRAN](https://CRAN.R-project.org) with:
+
+``` r
+install.packages("wcvpmatch")
+```
+
+And the development version from [GitHub](https://github.com/) with:
+
+``` r
+# install.packages("pak")
+pak::pak("PaulESantos/wcvpmatch")
+```
+
+`wcvpmatch` depends on `fozziejoin` for fuzzy matching. If installing
+from source, `fozziejoin` requires a working Rust toolchain.
 
 ### 1) Install Rust
 
@@ -57,28 +68,13 @@ rustup target add x86_64-pc-windows-gnu --toolchain stable-x86_64-pc-windows-gnu
 ```
 
 Linux / macOS: install Rust with the official installer at
-<https://www.rust-lang.org/tools/install>.
+<https://rust-lang.org/tools/install/>.
 
-### 2) Install the development version of `fozziejoin` from GitHub:
+### 2) Install `fozziejoin` and `wcvpdata`:
 
 ``` r
 pak::pak("fozzieverse/fozziejoin/fozziejoin-r")
-```
-
-Additional information is available in the official
-[`fozziejoin`](https://github.com/fozzieverse/fozziejoin/tree/main/fozziejoin-r)
-GitHub repository.
-
-### 3) Install the development version of `wcvpdata` from GitHub:
-
-``` r
 pak::pak("PaulESantos/wcvpdata")
-```
-
-### 4) Install the development version of `wcvpmatch` from GitHub:
-
-``` r
-pak::pak("PaulESantos/wcvpmatch")
 ```
 
 ## Quick start

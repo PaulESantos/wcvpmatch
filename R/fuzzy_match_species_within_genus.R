@@ -1,6 +1,6 @@
 #' Fuzzy Match Species within Genus
 #' @description
-#' Tries to fuzzy match the species epithet within a matched genus against WCVP (`wcvpdata::wcvp_checklist_names` by default).
+#' Tries to fuzzy match the species epithet within a matched genus against 'WCVP' (`wcvpdata::wcvp_checklist_names` by default).
 #'
 #' @param df `tibble` containing the species binomial split into the columns `Orig.Genus` and `Orig.Species`.
 #' @param target_df Optional custom target table; if `NULL`, uses `wcvpdata::wcvp_checklist_names`.
@@ -8,7 +8,11 @@
 #' @param method String distance method passed to `fozziejoin` (for example `"osa"`).
 #'
 #' @return
-#' Returns a `tibble` with the additional logical column `fuzzy_match_species_within_genus`, indicating whether the specific epithet was successfully fuzzy matched within the matched genus (`r TRUE`) or not (`r FALSE`).
+#' Returns a `tibble` with the additional logical column `fuzzy_match_species_within_genus`, indicating whether the specific epithet was successfully fuzzy matched within the matched genus (`TRUE`) or not (`FALSE`).
+#' @examplesIf rlang::is_installed("wcvpdata")
+#' library(wcvpmatch)
+#' df <- data.frame(Orig.Genus = "Opuntia", Orig.Species = "yanganucensiss", Matched.Genus = "Opuntia")
+#' wcvp_fuzzy_match_species_within_genus(df)
 #' @export
 #'
 wcvp_fuzzy_match_species_within_genus <- function(df, target_df = NULL, max_dist = 1, method = "osa"){
@@ -73,10 +77,10 @@ wcvp_fuzzy_match_species_within_genus <- function(df, target_df = NULL, max_dist
     dplyr::filter(n > 1)
 
   if (nrow(ambiguous_keys) > 0) {
-    warning(
-      "Multiple fuzzy matches for some species within genus (tied distances). The first match is selected.",
-      call. = FALSE
-    )
+    cli::cli_warn(c(
+      "!" = "Multiple fuzzy matches for some species within genus (tied distances).",
+      "i" = "The first match is selected."
+    ))
     ambiguous_species <- matched_temp %>%
       dplyr::semi_join(ambiguous_keys, by = ".row_id") %>%
       dplyr::arrange(.row_id, fuzzy_species_dist, Matched.Species)

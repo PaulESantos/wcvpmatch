@@ -1,10 +1,10 @@
 check_df_format <- function(df) {
   if (!tibble::is_tibble(df) && inherits(df, "data.frame")) {
     df <- tibble::as_tibble(df)
-    message(
-      "Input was converted from data.frame to a tibble.\n",
-      "See https://tibble.tidyverse.org/ for more details."
-    )
+    cli::cli_inform(c(
+      "i" = "Input was converted from {.cls data.frame} to a {.cls tibble}.",
+      " " = "See {.url https://tibble.tidyverse.org/} for more details."
+    ))
   }
   assertthat::assert_that(tibble::is_tibble(df))
 
@@ -40,31 +40,19 @@ check_df_format <- function(df) {
   # Early whitespace hygiene for taxonomic fields
   if (any(stringr::str_detect(df$Orig.Genus, "^\\s|\\s$"), na.rm = TRUE)) {
     ng <- sum(stringr::str_detect(df$Orig.Genus, "^\\s|\\s$"), na.rm = TRUE)
-    warning(sprintf(
-      "%s leading/trailing space(s) detected in Orig.Genus. Consider stringr::str_trim().",
-      ng
-    ))
+    cli::cli_warn("{ng} leading/trailing space{?s} detected in {.field Orig.Genus}. Consider {.fn stringr::str_trim}.")
   }
   if (any(!is.na(df$Orig.Species) & stringr::str_detect(df$Orig.Species, "^\\s|\\s$"), na.rm = TRUE)) {
     nsp <- sum(!is.na(df$Orig.Species) & stringr::str_detect(df$Orig.Species, "^\\s|\\s$"), na.rm = TRUE)
-    warning(sprintf(
-      "%s leading/trailing space(s) detected in Orig.Species. Consider stringr::str_trim().",
-      nsp
-    ))
+    cli::cli_warn("{nsp} leading/trailing space{?s} detected in {.field Orig.Species}. Consider {.fn stringr::str_trim}.")
   }
   if (any(!is.na(df$Orig.Infraspecies) & stringr::str_detect(df$Orig.Infraspecies, "^\\s|\\s$"), na.rm = TRUE)) {
     ninf <- sum(!is.na(df$Orig.Infraspecies) & stringr::str_detect(df$Orig.Infraspecies, "^\\s|\\s$"), na.rm = TRUE)
-    warning(sprintf(
-      "%s leading/trailing space(s) detected in Orig.Infraspecies. Consider stringr::str_trim().",
-      ninf
-    ))
+    cli::cli_warn("{ninf} leading/trailing space{?s} detected in {.field Orig.Infraspecies}. Consider {.fn stringr::str_trim}.")
   }
   if (any(!is.na(df$Infra.Rank) & stringr::str_detect(df$Infra.Rank, "^\\s|\\s$"), na.rm = TRUE)) {
     nrk <- sum(!is.na(df$Infra.Rank) & stringr::str_detect(df$Infra.Rank, "^\\s|\\s$"), na.rm = TRUE)
-    warning(sprintf(
-      "%s leading/trailing space(s) detected in Infra.Rank. Consider stringr::str_trim().",
-      nrk
-    ))
+    cli::cli_warn("{nrk} leading/trailing space{?s} detected in {.field Infra.Rank}. Consider {.fn stringr::str_trim}.")
   }
 
   df <- dplyr::mutate(
@@ -214,15 +202,10 @@ default_target_df <- function() {
   }, error = function(e) NULL)
 
   if (is.null(wcvp_data)) {
-    stop(
-      paste(
-        "Object 'wcvp_checklist_names' was not found in package 'wcvpdata'.",
-        "Please update/reinstall from:",
-        "remotes::install_github('matildesrib/wcvpdata')",
-        sep = "\n"
-      ),
-      call. = FALSE
-    )
+    cli::cli_abort(c(
+      "x" = "Object {.val wcvp_checklist_names} was not found in package {.pkg wcvpdata}.",
+      "i" = "Please update/reinstall from {.url https://github.com/matildesrib/wcvpdata}"
+    ))
   }
 
   return(normalize_target_df(wcvp_data))
@@ -380,34 +363,28 @@ check_df_consistency <- function(df) {
 
   if (any(stringr::str_detect(df$Orig.Genus, "^\\s|\\s$"))) {
     nsp <- sum(stringr::str_detect(df$Orig.Genus, "^\\s|\\s$"))
-    warning(sprintf(
-      "%s leading/trailing space(s) detected in Orig.Genus. Consider stringr::str_trim().",
-      nsp
-    ), call. = FALSE)
+    cli::cli_warn("{nsp} leading/trailing space{?s} detected in {.field Orig.Genus}. Consider {.fn stringr::str_trim}.")
   }
 
   if (any(!is.na(df$Orig.Species) & stringr::str_detect(df$Orig.Species, "^\\s|\\s$"))) {
     nsp <- sum(!is.na(df$Orig.Species) & stringr::str_detect(df$Orig.Species, "^\\s|\\s$"))
-    warning(sprintf(
-      "%s leading/trailing space(s) detected in Orig.Species. Consider stringr::str_trim().",
-      nsp
-    ), call. = FALSE)
+    cli::cli_warn("{nsp} leading/trailing space{?s} detected in {.field Orig.Species}. Consider {.fn stringr::str_trim}.")
   }
 
   if (any(df$Rank == 1 | df$is_sp | df$is_spp, na.rm = TRUE)) {
     n_genus_only <- sum(df$Rank == 1 | df$is_sp | df$is_spp, na.rm = TRUE)
-    warning(sprintf(
-      "%s genus-only row(s) detected (Rank==1 / sp./spp.). These will not participate in species-level strict matching.",
-      n_genus_only
-    ), call. = FALSE)
+    cli::cli_warn(c(
+      "!" = "{n_genus_only} genus-only row{?s} detected (Rank==1 / sp./spp.).",
+      "i" = "These will not participate in species-level strict matching."
+    ))
   }
 
   if ("implied_infra" %in% names(df) && any(df$implied_infra)) {
     n_imp <- sum(df$implied_infra)
-    warning(sprintf(
-      "%s unranked infraspecific epithet(s) inferred (implied_infra == TRUE). Matching will use Genus + Species + Infraspecies without an explicit rank.",
-      n_imp
-    ), call. = FALSE)
+    cli::cli_warn(c(
+      "!" = "{n_imp} unranked infraspecific epithet{?s} inferred (implied_infra == TRUE).",
+      "i" = "Matching will use Genus + Species + Infraspecies without an explicit rank."
+    ))
   }
 
   df
@@ -430,16 +407,18 @@ memoised_get_trees_of_genus <- memoise::memoise(get_trees_of_genus)
 map_dfr_progress <- function(.x, .f, ..., .id = NULL) { ## credits to https://www.jamesatkins.net/posts/progress-bar-in-purrr-map-df/
   function_name <- stringr::str_remove(toString(substitute(.f)), '_helper')
   .f <- purrr::as_mapper(.f, ...)
-  pb <- progress::progress_bar$new(total = length(.x),
-                                   force = TRUE,
-                                   format = paste(paste0(eval(...), collapse = ' '), ": ", function_name, "[:bar] :percent", collapse = ''))
-  # pb <- progress::progress_bar$new(total = length(.x),
-  #                                  force = TRUE,
-  #                                  format = paste(paste0(eval(...), collapse = ' '), ": ", substitute(.f), "[:bar] :percent", collapse = ''))
+  cli::cli_progress_bar(
+    total = length(.x),
+    format = paste0(
+      "{? ", paste0(eval(...), collapse = ' '), ": }",
+      "{.fn ", function_name, "} ",
+      "[{cli::pb_bar}] {cli::pb_percent}"
+    )
+  )
 
 
   f <- function(...) {
-    pb$tick()
+    cli::cli_progress_update()
     .f(...)
   }
 
@@ -452,12 +431,13 @@ map_dfr_progress <- function(.x, .f, ..., .id = NULL) { ## credits to https://ww
 map_progress <- function(.x, .f, ..., .id = NULL) { ## credits to https://www.jamesatkins.net/posts/progress-bar-in-purrr-map-df/
   function_name <- stringr::str_remove(toString(substitute(.f)), '_helper')
   .f <- purrr::as_mapper(.f, ...)
-  pb <- progress::progress_bar$new(total = length(.x),
-                                   force = TRUE,
-                                   format = paste(paste0(eval(...), collapse = ' '), ": enforce_matching: [:bar] :percent", collapse = ''))
+  cli::cli_progress_bar(
+    total = length(.x),
+    format = "{?enforce_matching: }[{cli::pb_bar}] {cli::pb_percent}"
+  )
 
   f <- function(...) {
-    pb$tick()
+    cli::cli_progress_update()
     .f(...)
   }
 

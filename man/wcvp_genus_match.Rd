@@ -12,8 +12,15 @@ wcvp_genus_match(df, target_df = NULL)
 \item{target_df}{Optional custom target table; if \code{NULL}, uses \code{wcvpdata::wcvp_checklist_names}.}
 }
 \value{
-Returns a \code{tibble} with the additional logical column \code{genus_match}, indicating whether the genus was successfully matched (TRUE) or not (FALSE)
+Returns a \code{tibble} with the additional logical column \code{genus_match}, indicating whether the genus was successfully matched (\code{TRUE}) or not (\code{FALSE}).
 }
 \description{
-#' Tries to match the genus name to \verb{WCVP data}.
+Tries to match the genus name to the 'WCVP' table (\code{wcvpdata::wcvp_checklist_names} by default).
+}
+\examples{
+\dontshow{if (rlang::is_installed("wcvpdata")) withAutoprint(\{ # examplesIf}
+library(wcvpmatch)
+df <- data.frame(Orig.Genus = "Opuntia", Orig.Species = "yanganucensis")
+wcvp_genus_match(df)
+\dontshow{\}) # examplesIf}
 }

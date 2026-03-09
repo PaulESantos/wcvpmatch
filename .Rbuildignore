@@ -10,3 +10,5 @@
 ^paper_wcvpmatch\.pdf$
 ^paper_wcvpmatch\.qmd$
 .agent
+^cran-comments\.md$
+^NEWS\.md$

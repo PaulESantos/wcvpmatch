@@ -70,3 +70,15 @@ columns: \code{matched_plant_name_id}, \code{matched_taxon_name}, \code{taxon_st
 Runs a matching pipeline with exact and partial matching for binomial and
 trinomial names, including infraspecific rank validation.
 }
+\examples{
+\dontshow{if (rlang::is_installed("wcvpdata")) withAutoprint(\{ # examplesIf}
+library(wcvpmatch)
+# Match a single name
+wcvp_matching(data.frame(Genus = "Opuntia", Species = "yanganucensis"))
+
+# Match multiple names with snake_case output
+names <- c("Aniba heterotepala", "Anthurium quipuscoae")
+df <- classify_spnames(names)
+wcvp_matching(df, output_name_style = "snake_case")
+\dontshow{\}) # examplesIf}
+}

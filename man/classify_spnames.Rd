@@ -55,7 +55,7 @@ and does not look like the start of an author. In that case \code{implied_infra 
 }
 }
 \examples{
+library(wcvpmatch)
 classify_spnames(c("Opuntia sp.", "Rosa canina subsp. coriifolia (Fr.) Leffler"))
 classify_spnames(c("Cydonia japonica tricolor")) # implied unranked infra epithet
-
 }

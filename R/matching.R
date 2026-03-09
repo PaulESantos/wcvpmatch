@@ -38,6 +38,15 @@
 #' @return Tibble with matched names, process flags, and taxonomic context
 #'   columns: `matched_plant_name_id`, `matched_taxon_name`, `taxon_status`,
 #'   `accepted_plant_name_id`, `accepted_taxon_name`, `is_accepted_name`.
+#' @examplesIf rlang::is_installed("wcvpdata")
+#' library(wcvpmatch)
+#' # Match a single name
+#' wcvp_matching(data.frame(Genus = "Opuntia", Species = "yanganucensis"))
+#'
+#' # Match multiple names with snake_case output
+#' names <- c("Aniba heterotepala", "Anthurium quipuscoae")
+#' df <- classify_spnames(names)
+#' wcvp_matching(df, output_name_style = "snake_case")
 #' @export
 wcvp_matching <- function(df,
                      target_df = NULL,
@@ -223,16 +232,11 @@ wcvp_matching <- function(df,
       dplyr::filter(n > 1)
     n_dup_keys <- nrow(dup_counts)
     n_dup_rows <- sum(dup_counts$n) - n_dup_keys
-    stop(
-      paste(
-        "Duplicate taxon keys detected in input (", n_dup_keys, " duplicated key(s), ",
-        n_dup_rows, " extra row(s)).",
-        "\nUse `allow_duplicates = TRUE` to keep all input rows and expand results by `input_index`.",
-        "\nOr deduplicate manually, e.g. `dplyr::distinct(df, Orig.Genus, Orig.Species)` for rank <= 2.",
-        sep = ""
-      ),
-      call. = FALSE
-    )
+    cli::cli_abort(c(
+      "x" = "Duplicate taxon keys detected in input ({n_dup_keys} duplicated key{?s}, {n_dup_rows} extra row{?s}).",
+      "i" = "Use {.arg allow_duplicates = TRUE} to keep all input rows and expand results by {.field input_index}.",
+      "i" = "Or deduplicate manually, e.g. {.code dplyr::distinct(df, Orig.Genus, Orig.Species)} for rank <= 2."
+    ))
   }
 
   df_work <- if (isTRUE(allow_duplicates)) {

@@ -1,6 +1,6 @@
 #' Fuzzy Match Genus Name
 #' @description
-#' Tries to fuzzy match the genus name to the WCVP table (`wcvpdata::wcvp_checklist_names` by default).
+#' Tries to fuzzy match the genus name to the 'WCVP' table (`wcvpdata::wcvp_checklist_names` by default).
 #'
 #' @param df `tibble` containing the species binomial split into the columns `Orig.Genus` and `Orig.Species`.
 #' @param target_df Optional custom target table; if `NULL`, uses `wcvpdata::wcvp_checklist_names`.
@@ -8,8 +8,12 @@
 #' @param method String distance method passed to `fozziejoin` (for example `"osa"`).
 #'
 #' @return
-#' Returns a `tibble` with the additional logical column `fuzzy_match_genus`, indicating whether the genus was successfully matched (`r TRUE`) or not (`r FALSE`).
+#' Returns a `tibble` with the additional logical column `fuzzy_match_genus`, indicating whether the genus was successfully matched (`TRUE`) or not (`FALSE`).
 #' Further, the additional column `fuzzy_genus_dist` returns the distance for every match.
+#' @examplesIf rlang::is_installed("wcvpdata")
+#' library(wcvpmatch)
+#' df <- data.frame(Orig.Genus = "Opuntiaa", Orig.Species = "yanganucensis")
+#' wcvp_fuzzy_match_genus(df)
 #' @export
 #'
 
@@ -62,10 +66,10 @@ wcvp_fuzzy_match_genus <- function(df, target_df = NULL, max_dist = 1, method = 
 
 ## If there are multiple matches for the same genus: raise warning and keep ambiguous candidates in an attribute
   if(nrow(ambiguous_keys) > 0){
-    warning(
-      "Multiple fuzzy matches for some genera (tied distances). The first match is selected.",
-      call. = FALSE
-    )
+    cli::cli_warn(c(
+      "!" = "Multiple fuzzy matches for some genera (tied distances).",
+      "i" = "The first match is selected."
+    ))
     ambiguous_genus <- matched_temp %>%
       dplyr::semi_join(ambiguous_keys, by = ".row_id") %>%
       dplyr::arrange(.row_id, fuzzy_genus_dist, Matched.Genus)

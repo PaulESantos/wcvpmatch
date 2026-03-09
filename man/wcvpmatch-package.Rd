@@ -6,7 +6,7 @@
 \alias{wcvpmatch-package}
 \title{wcvpmatch package}
 \description{
-Standardizes and reconciles scientific plant names against the World Checklist of Vascular Plants (WCVP), accessed through 'wcvpdata::wcvp_checklist_names'. The package parses names into taxonomic components and applies staged exact and fuzzy matching for binomial and trinomial inputs, including infraspecific rank-aware checks. It also returns accepted-name context and row-level matching flags to support reproducible, auditable preprocessing for downstream biodiversity, spatial, and trait analyses.
+Standardizes and reconciles scientific plant names against the World Checklist of Vascular Plants ('WCVP'), accessed through 'wcvpdata::wcvp_checklist_names'. The package parses names into taxonomic components and applies staged exact and fuzzy matching for binomial and trinomial inputs, including infraspecific rank-aware checks. It also returns accepted-name context and row-level matching flags to support reproducible, auditable preprocessing for downstream biodiversity, spatial, and trait analyses.
 }
 \seealso{
 Useful links:
@@ -17,7 +17,7 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Paul Efren Santos Andrade \email{paulefrens@gmail.com}
+\strong{Maintainer}: Paul Efren Santos Andrade \email{paulefrens@gmail.com} [copyright holder]
 
 }
 \keyword{internal}

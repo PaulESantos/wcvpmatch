@@ -1,15 +1,18 @@
 #' Match Genus name
 #'
 #' @description
-#' #' Tries to match the genus name to `WCVP data`.
+#' Tries to match the genus name to the 'WCVP' table (`wcvpdata::wcvp_checklist_names` by default).
 #'
 #' @param df `tibble` containing the species binomial split into the columns `Orig.Genus` and `Orig.Species`.
 #' @param target_df Optional custom target table; if `NULL`, uses `wcvpdata::wcvp_checklist_names`.
 #'
 #' @return
-#' Returns a `tibble` with the additional logical column `genus_match`, indicating whether the genus was successfully matched (`r TRUE`) or not (`r FALSE`)
+#' Returns a `tibble` with the additional logical column `genus_match`, indicating whether the genus was successfully matched (`TRUE`) or not (`FALSE`).
+#' @examplesIf rlang::is_installed("wcvpdata")
+#' library(wcvpmatch)
+#' df <- data.frame(Orig.Genus = "Opuntia", Orig.Species = "yanganucensis")
+#' wcvp_genus_match(df)
 #' @export
-
 wcvp_genus_match <- function(df, target_df = NULL){
   df <- check_df_format(df)
   assertthat::assert_that(all(c('Orig.Genus', 'Orig.Species') %in% colnames(df)))

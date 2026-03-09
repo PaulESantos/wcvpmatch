@@ -12,8 +12,15 @@ wcvp_direct_match_species_within_genus(df, target_df = NULL)
 \item{target_df}{Optional custom target table; if \code{NULL}, uses \code{wcvpdata::wcvp_checklist_names}.}
 }
 \value{
-Returns a \code{tibble} with the additional logical column \code{direct_match_species_within_genus}, indicating whether the specific epithet was successfully matched within the matched genus (TRUE) or not (FALSE).
+Returns a \code{tibble} with the additional logical column \code{direct_match_species_within_genus}, indicating whether the specific epithet was successfully matched within the matched genus (\code{TRUE}) or not (\code{FALSE}).
 }
 \description{
-Tries to directly match the specific epithet within an already matched genus in WCVP.
+Tries to directly match the specific epithet within an already matched genus in 'WCVP'.
+}
+\examples{
+\dontshow{if (rlang::is_installed("wcvpdata")) withAutoprint(\{ # examplesIf}
+library(wcvpmatch)
+df <- data.frame(Orig.Genus = "Opuntia", Orig.Species = "yanganucensis", Matched.Genus = "Opuntia")
+wcvp_direct_match_species_within_genus(df)
+\dontshow{\}) # examplesIf}
 }

@@ -46,3 +46,10 @@ Strategy:
 \item Returned object preserves the standard target schema used by the package.
 }
 }
+\examples{
+\dontshow{if (rlang::is_installed("wcvpdata")) withAutoprint(\{ # examplesIf}
+library(wcvpmatch)
+df <- data.frame(Genus = "Opuntia", Species = "yanganucensis")
+prefilter_target_by_genus(df)
+\dontshow{\}) # examplesIf}
+}

@@ -25,3 +25,9 @@ associated with each genus.
 If \code{plant_name_id} is not present in \code{target_df}, a surrogate integer ID is
 created to keep the index usable with custom backbones.
 }
+\examples{
+\dontshow{if (rlang::is_installed("wcvpdata")) withAutoprint(\{ # examplesIf}
+library(wcvpmatch)
+build_genus_index()
+\dontshow{\}) # examplesIf}
+}

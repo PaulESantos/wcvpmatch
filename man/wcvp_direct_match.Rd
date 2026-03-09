@@ -12,8 +12,17 @@ wcvp_direct_match(df, target_df = NULL)
 \item{target_df}{Optional custom target table; if \code{NULL}, uses \code{wcvpdata::wcvp_checklist_names}.}
 }
 \value{
-Returns a \code{tibble} with the additional logical column \code{direct_match}, indicating whether the binomial was successfully matched (TRUE) or not (FALSE)
+Returns a \code{tibble} with the additional logical column \code{direct_match}, indicating whether the binomial was successfully matched (\code{TRUE}) or not (\code{FALSE}).
+Returns original columns plus \code{Matched.Genus}, \code{Matched.Species}, \code{Matched.Infra.Rank}, and \code{Matched.Infraspecies}.
 }
 \description{
 Tries to directly match Genus + Species | Genus + Species + Rank + Infraspecies to \verb{WCVP data}.
+}
+\examples{
+\dontshow{if (rlang::is_installed("wcvpdata")) withAutoprint(\{ # examplesIf}
+library(wcvpmatch)
+# Simple binomial match
+df_parsed <- classify_spnames("Opuntia yanganucensis")
+wcvp_direct_match(df_parsed)
+\dontshow{\}) # examplesIf}
 }

@@ -16,6 +16,9 @@
 #'   \item{plant_name_id}{List-column of unique IDs per genus.}
 #'   \item{n_records}{Number of IDs per genus.}
 #' }
+#' @examplesIf rlang::is_installed("wcvpdata")
+#' library(wcvpmatch)
+#' build_genus_index()
 #' @export
 build_genus_index <- function(target_df = NULL) {
   target_norm <- if (is.null(target_df)) default_target_df() else normalize_target_df(target_df)
@@ -62,6 +65,10 @@ build_genus_index <- function(target_df = NULL) {
 #'   \item{exact_genera}{Character vector of exact matched genera.}
 #'   \item{fuzzy_genera}{Character vector of fuzzy matched genera.}
 #' }
+#' @examplesIf rlang::is_installed("wcvpdata")
+#' library(wcvpmatch)
+#' df <- data.frame(Genus = "Opuntia", Species = "yanganucensis")
+#' prefilter_target_by_genus(df)
 #' @export
 prefilter_target_by_genus <- function(df,
                                       target_df = NULL,

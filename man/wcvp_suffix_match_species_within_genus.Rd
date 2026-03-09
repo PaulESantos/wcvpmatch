@@ -12,9 +12,16 @@ wcvp_suffix_match_species_within_genus(df, target_df = NULL)
 \item{target_df}{Optional custom target table; if \code{NULL}, uses \code{wcvpdata::wcvp_checklist_names}.}
 }
 \value{
-Returns a \code{tibble} with the additional logical column \code{suffix_match_species_within_genus}, indicating whether the specific epithet was successfully matched within the matched genus (TRUE) or not (FALSE).
+Returns a \code{tibble} with the additional logical column \code{suffix_match_species_within_genus}, indicating whether the specific epithet was successfully matched within the matched genus (\code{TRUE}) or not (\code{FALSE}).
 }
 \description{
-Tries to match the specific epithet by exchanging common suffixes within an already matched genus in WCVP.
+Tries to match the specific epithet by exchanging common suffixes within an already matched genus in 'WCVP'.
 The following suffixes are captured: \code{c("a", "i", "is", "um", "us", "ae")}.
+}
+\examples{
+\dontshow{if (rlang::is_installed("wcvpdata")) withAutoprint(\{ # examplesIf}
+library(wcvpmatch)
+df <- data.frame(Orig.Genus = "Opuntia", Orig.Species = "yanganucensa", Matched.Genus = "Opuntia")
+wcvp_suffix_match_species_within_genus(df)
+\dontshow{\}) # examplesIf}
 }

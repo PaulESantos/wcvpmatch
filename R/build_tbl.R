@@ -32,6 +32,10 @@
 #'
 #' @param splist Character vector. Scientific plant names.
 #'
+#' @examples
+#' library(wcvpmatch)
+#' classify_spnames(c("Opuntia sp.", "Rosa canina subsp. coriifolia (Fr.) Leffler"))
+#' classify_spnames(c("Cydonia japonica tricolor")) # implied unranked infra epithet
 #' @return A tibble with one row per input name and standardized columns/flags:
 #' \describe{
 #'   \item{sorter}{Numeric index of original order.}
@@ -46,18 +50,14 @@
 #'   \item{has_cf,has_aff,is_sp,is_spp,had_hybrid,rank_late,rank_missing_infra,had_na_author,implied_infra}{Logical flags.}
 #' }
 #'
-#' @examples
-#' classify_spnames(c("Opuntia sp.", "Rosa canina subsp. coriifolia (Fr.) Leffler"))
-#' classify_spnames(c("Cydonia japonica tricolor")) # implied unranked infra epithet
-#'
 #' @importFrom tibble as_tibble
 #' @export
 classify_spnames <- function(splist) {
   if (!is.character(splist)) {
-    stop("`splist` must be a character vector.", call. = FALSE)
+    cli::cli_abort("{.arg splist} must be a character vector.")
   }
   if (length(splist) == 0) {
-    stop("`splist` must contain at least one name.", call. = FALSE)
+    cli::cli_abort("{.arg splist} must contain at least one name.")
   }
 
   std <- .names_standardize2(splist)
@@ -360,12 +360,12 @@ classify_spnames <- function(splist) {
   if (n == 0) return(invisible(NULL))
 
   show <- items[seq_len(min(n, max_show))]
-  msg <- paste0(
-    prefix, ": ",
-    paste(sprintf("'%s'", show), collapse = ", "),
-    if (n > max_show) paste0(" ... (+", n - max_show, " more)") else ""
-  )
-  warning(msg, immediate. = TRUE, call. = FALSE)
+  
+  cli::cli_warn(c(
+    prefix,
+    "*" = "{show}",
+    if (n > max_show) c("i" = "... (+{n - max_show} more)")
+  ))
   invisible(NULL)
 }
 
