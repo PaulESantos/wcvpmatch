@@ -12,3 +12,4 @@
 .agent
 ^cran-comments\.md$
 ^NEWS\.md$
+^.*\\.Rcheck$

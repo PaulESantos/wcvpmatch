@@ -67,7 +67,7 @@ On Windows, configure Rust for R + Rtools compatibility by running this command 
 rustup override set stable-x86_64-pc-windows-gnu
 ```
 
-### 2) Install `fozziejoin` and `wcvpdata`:
+### 2) Install dependencies:
 
 ```r
 pak::pak("fozziejoin")
@@ -79,7 +79,7 @@ Or install the development version of `fozziejoin`:
 pak::pak("fozzieverse/fozziejoin/fozziejoin-r")
 ```
 
-Then install `wcvpdata`:
+If you want the package to use the default WCVP backbone automatically, install the optional companion package `wcvpdata`:
 
 ```r
 pak::pak("PaulESantos/wcvpdata")
@@ -278,3 +278,4 @@ matching and avoids recomputing duplicated names.
 `wcvpmatch` builds on ideas used in the [`treemendous`](https://github.com/speckerf/treemendous) matching workflow and
 extends them for WCVP-focused reconciliation, richer parser diagnostics, and
 reproducible row-level traceability.
+

@@ -6,7 +6,7 @@
 \alias{wcvpmatch-package}
 \title{wcvpmatch: Taxonomic Name Reconciliation Against the 'WCVP' Backbone}
 \description{
-Standardizes and reconciles scientific plant names against the World Checklist of Vascular Plants ('WCVP'), accessed through 'wcvpdata::wcvp_checklist_names'. The package parses names into taxonomic components and applies staged exact and fuzzy matching for binomial and trinomial inputs, including infraspecific rank-aware checks. It also returns accepted-name context and row-level matching flags to support reproducible, auditable preprocessing for downstream biodiversity, spatial, and trait analyses.
+Standardizes and reconciles scientific plant names against a World Checklist of Vascular Plants ('WCVP')-style taxonomic backbone. The package parses names into taxonomic components and applies staged exact and fuzzy matching for binomial and trinomial inputs, including infraspecific rank-aware checks. It also returns accepted-name context and row-level matching flags to support reproducible, auditable preprocessing for downstream biodiversity, spatial, and trait analyses. A user-supplied backbone can be passed through 'target_df'; when the optional companion package 'wcvpdata' is installed, its default checklist can also be used.
 }
 \seealso{
 Useful links:
@@ -21,3 +21,4 @@ Useful links:
 
 }
 \keyword{internal}
+

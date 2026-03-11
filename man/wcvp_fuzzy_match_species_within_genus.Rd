@@ -14,7 +14,7 @@ wcvp_fuzzy_match_species_within_genus(
 \arguments{
 \item{df}{\code{tibble} containing the species binomial split into the columns \code{Orig.Genus} and \code{Orig.Species}.}
 
-\item{target_df}{Optional custom target table; if \code{NULL}, uses \code{wcvpdata::wcvp_checklist_names}.}
+\item{target_df}{Optional custom target table. If \code{NULL}, the optional \code{wcvpdata} checklist is used when available; otherwise pass a backbone explicitly.}
 
 \item{max_dist}{Maximum edit distance used for fuzzy species matching within genus.}
 
@@ -26,7 +26,7 @@ Returns a \code{tibble} with the additional logical column \code{fuzzy_match_spe
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
-Tries to fuzzy match the species epithet within a matched genus against 'WCVP' (\code{wcvpdata::wcvp_checklist_names} by default).
+Tries to fuzzy match the species epithet within a matched genus against 'WCVP' (using the optional \code{wcvpdata} checklist by default when available).
 }
 \examples{
 \dontshow{if (rlang::is_installed("wcvpdata")) withAutoprint(\{ # examplesIf}
@@ -35,3 +35,4 @@ df <- data.frame(Orig.Genus = "Opuntia", Orig.Species = "yanganucensiss", Matche
 wcvp_fuzzy_match_species_within_genus(df)
 \dontshow{\}) # examplesIf}
 }
+

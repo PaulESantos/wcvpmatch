@@ -5,13 +5,15 @@ Authors@R: c(
         person("Paul Efren", "Santos Andrade",
         email = "paulefrens@gmail.com", role = c("aut", "cre", "cph")))
 Description: Standardizes and reconciles scientific plant names against
-    the World Checklist of Vascular Plants ('WCVP'), accessed through
-    'wcvpdata::wcvp_checklist_names'. The package parses names into taxonomic
-    components and applies staged exact and fuzzy matching for binomial
-    and trinomial inputs, including infraspecific rank-aware checks.
-    It also returns accepted-name context and row-level matching flags
-    to support reproducible, auditable preprocessing for downstream
-    biodiversity, spatial, and trait analyses.
+    a World Checklist of Vascular Plants ('WCVP')-style taxonomic
+    backbone. The package parses names into taxonomic components and
+    applies staged exact and fuzzy matching for binomial and trinomial
+    inputs, including infraspecific rank-aware checks. It also returns
+    accepted-name context and row-level matching flags to support
+    reproducible, auditable preprocessing for downstream biodiversity,
+    spatial, and trait analyses. A user-supplied backbone can be passed
+    through 'target_df'; when the optional companion package 'wcvpdata'
+    is installed, its default checklist can also be used.
 License: CC BY 4.0
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -25,7 +27,6 @@ Imports:
     magrittr,
     memoise,
     purrr,
-    wcvpdata,
     stringdist,
     stringr,
     tibble,

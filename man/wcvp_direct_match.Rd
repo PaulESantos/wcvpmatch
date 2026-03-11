@@ -9,7 +9,7 @@ wcvp_direct_match(df, target_df = NULL)
 \arguments{
 \item{df}{\code{tibble} containing the species binomial split into the columns \code{Orig.Genus} and \code{Orig.Species}.}
 
-\item{target_df}{Optional custom target table; if \code{NULL}, uses \code{wcvpdata::wcvp_checklist_names}.}
+\item{target_df}{Optional custom target table. If \code{NULL}, the optional \code{wcvpdata} checklist is used when available; otherwise pass a backbone explicitly.}
 }
 \value{
 Returns a \code{tibble} with the additional logical column \code{direct_match}, indicating whether the binomial was successfully matched (\code{TRUE}) or not (\code{FALSE}).
@@ -28,3 +28,4 @@ df_parsed <- classify_spnames("Opuntia yanganucensis")
 wcvp_direct_match(df_parsed)
 \dontshow{\}) # examplesIf}
 }
+

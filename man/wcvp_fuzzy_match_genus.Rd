@@ -9,7 +9,7 @@ wcvp_fuzzy_match_genus(df, target_df = NULL, max_dist = 1, method = "osa")
 \arguments{
 \item{df}{\code{tibble} containing the species binomial split into the columns \code{Orig.Genus} and \code{Orig.Species}.}
 
-\item{target_df}{Optional custom target table; if \code{NULL}, uses \code{wcvpdata::wcvp_checklist_names}.}
+\item{target_df}{Optional custom target table. If \code{NULL}, the optional \code{wcvpdata} checklist is used when available; otherwise pass a backbone explicitly.}
 
 \item{max_dist}{Maximum edit distance used for fuzzy genus matching.}
 
@@ -22,7 +22,7 @@ Further, the additional column \code{fuzzy_genus_dist} returns the distance for 
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
-Tries to fuzzy match the genus name to the 'WCVP' table (\code{wcvpdata::wcvp_checklist_names} by default).
+Tries to fuzzy match the genus name to the 'WCVP' table (using the optional \code{wcvpdata} checklist by default when available).
 }
 \examples{
 \dontshow{if (rlang::is_installed("wcvpdata")) withAutoprint(\{ # examplesIf}
@@ -31,3 +31,4 @@ df <- data.frame(Orig.Genus = "Opuntiaa", Orig.Species = "yanganucensis")
 wcvp_fuzzy_match_genus(df)
 \dontshow{\}) # examplesIf}
 }
+

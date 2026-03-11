@@ -2,10 +2,10 @@
 #' @description
 #' `r lifecycle::badge("experimental")`
 #'
-#' Tries to fuzzy match the species epithet within a matched genus against 'WCVP' (`wcvpdata::wcvp_checklist_names` by default).
+#' Tries to fuzzy match the species epithet within a matched genus against 'WCVP' (using the optional `wcvpdata` checklist by default when available).
 #'
 #' @param df `tibble` containing the species binomial split into the columns `Orig.Genus` and `Orig.Species`.
-#' @param target_df Optional custom target table; if `NULL`, uses `wcvpdata::wcvp_checklist_names`.
+#' @param target_df Optional custom target table. If `NULL`, the optional `wcvpdata` checklist is used when available; otherwise pass a backbone explicitly.
 #' @param max_dist Maximum edit distance used for fuzzy species matching within genus.
 #' @param method String distance method passed to `fozziejoin` (for example `"osa"`).
 #'
@@ -160,3 +160,4 @@ fuzzy_match_species_within_genus_helper <- function(df, target_df, max_dist = 1,
     dplyr::relocate(c('Orig.Genus', 'Orig.Species')) ## Genus & Species column at the beginning of tibble
   return(combined)
 }
+

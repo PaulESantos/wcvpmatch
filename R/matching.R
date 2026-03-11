@@ -9,7 +9,7 @@
 #'   `Orig.Genus`/`Orig.Species`. For trinomials, include `Infra.Rank` and
 #'   `Infraspecies` (or `Orig.Infra.Rank`/`Orig.Infraspecies`).
 #' @param target_df Optional custom target table. If `NULL`, data are read from
-#'   `wcvpdata::wcvp_checklist_names`.
+#'   the optional `wcvpdata` checklist when available; otherwise pass `target_df` explicitly.
 #' @param prefilter_genus Logical. If `TRUE`, prefilter `target_df` to candidate
 #'   genera (exact + fuzzy) before running the matching pipeline.
 #' @param allow_duplicates Logical. If `TRUE`, duplicated taxon keys are
@@ -493,3 +493,4 @@ wcvp_matching <- function(df,
 
   res
 }
+

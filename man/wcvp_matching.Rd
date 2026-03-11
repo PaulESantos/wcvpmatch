@@ -22,7 +22,7 @@ wcvp_matching(
 \code{Infraspecies} (or \code{Orig.Infra.Rank}/\code{Orig.Infraspecies}).}
 
 \item{target_df}{Optional custom target table. If \code{NULL}, data are read from
-\code{wcvpdata::wcvp_checklist_names}.}
+the optional \code{wcvpdata} checklist when available; otherwise pass \code{target_df} explicitly.}
 
 \item{prefilter_genus}{Logical. If \code{TRUE}, prefilter \code{target_df} to candidate
 genera (exact + fuzzy) before running the matching pipeline.}
@@ -84,3 +84,4 @@ df <- classify_spnames(names)
 wcvp_matching(df, output_name_style = "snake_case")
 \dontshow{\}) # examplesIf}
 }
+

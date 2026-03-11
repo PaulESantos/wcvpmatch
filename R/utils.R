@@ -198,13 +198,13 @@ default_target_df <- function() {
 
   # Read dataset directly, fail with clear message if object is unavailable.
   wcvp_data <- tryCatch({
-    wcvpdata::wcvp_checklist_names
+    getExportedValue("wcvpdata", "wcvp_checklist_names")
   }, error = function(e) NULL)
 
   if (is.null(wcvp_data)) {
     cli::cli_abort(c(
       "x" = "Object {.val wcvp_checklist_names} was not found in package {.pkg wcvpdata}.",
-      "i" = "Please update/reinstall from {.url https://github.com/matildesrib/wcvpdata}"
+      "i" = "Pass a backbone explicitly with {.arg target_df} or update the optional companion package."
     ))
   }
 
@@ -359,7 +359,8 @@ check_df_consistency <- function(df) {
   }
 
   # ---- Warnings ----
-  options(warn = 1)
+  old_options <- options(warn = 1)
+  on.exit(options(old_options), add = TRUE)
 
   if (any(stringr::str_detect(df$Orig.Genus, "^\\s|\\s$"))) {
     nsp <- sum(stringr::str_detect(df$Orig.Genus, "^\\s|\\s$"))
@@ -500,3 +501,5 @@ get_testset <- function(n = 10,
       return()
   }
 }
+
+

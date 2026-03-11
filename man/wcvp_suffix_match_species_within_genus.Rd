@@ -9,7 +9,7 @@ wcvp_suffix_match_species_within_genus(df, target_df = NULL)
 \arguments{
 \item{df}{\code{tibble} containing the species binomial split into the columns \code{Orig.Genus} and \code{Orig.Species}.}
 
-\item{target_df}{Optional custom target table; if \code{NULL}, uses \code{wcvpdata::wcvp_checklist_names}.}
+\item{target_df}{Optional custom target table. If \code{NULL}, the optional \code{wcvpdata} checklist is used when available; otherwise pass a backbone explicitly.}
 }
 \value{
 Returns a \code{tibble} with the additional logical column \code{suffix_match_species_within_genus}, indicating whether the specific epithet was successfully matched within the matched genus (\code{TRUE}) or not (\code{FALSE}).
@@ -27,3 +27,4 @@ df <- data.frame(Orig.Genus = "Opuntia", Orig.Species = "yanganucensa", Matched.
 wcvp_suffix_match_species_within_genus(df)
 \dontshow{\}) # examplesIf}
 }
+

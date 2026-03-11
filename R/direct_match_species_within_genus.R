@@ -6,7 +6,7 @@
 #' Tries to directly match the specific epithet within an already matched genus in 'WCVP'.
 #'
 #' @param df `tibble` containing the species binomial split into the columns `Orig.Genus` and `Orig.Species`.
-#' @param target_df Optional custom target table; if `NULL`, uses `wcvpdata::wcvp_checklist_names`.
+#' @param target_df Optional custom target table. If `NULL`, the optional `wcvpdata` checklist is used when available; otherwise pass a backbone explicitly.
 #'
 #' @return
 #' Returns a `tibble` with the additional logical column `direct_match_species_within_genus`, indicating whether the specific epithet was successfully matched within the matched genus (`TRUE`) or not (`FALSE`).
@@ -61,3 +61,4 @@ wcvp_direct_match_species_within_genus <- function(df, target_df = NULL){
 
   return(combined)
 }
+

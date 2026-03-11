@@ -91,8 +91,6 @@ pak::pak("PaulESantos/wcvpdata")
 
 ``` r
 library(wcvpmatch)
-#> ── Attaching wcvpmatch ecosystem ──────────────────────────── wcvpmatch 0.0.1 ──
-#> ✔ wcvpdata 0.5.0 (wcvp_checklist_names available)
 
 sp_names <- c(
   "Aniba heterotepala",          

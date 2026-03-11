@@ -9,7 +9,7 @@ wcvp_genus_match(df, target_df = NULL)
 \arguments{
 \item{df}{\code{tibble} containing the species binomial split into the columns \code{Orig.Genus} and \code{Orig.Species}.}
 
-\item{target_df}{Optional custom target table; if \code{NULL}, uses \code{wcvpdata::wcvp_checklist_names}.}
+\item{target_df}{Optional custom target table. If \code{NULL}, the optional \code{wcvpdata} checklist is used when available; otherwise pass a backbone explicitly.}
 }
 \value{
 Returns a \code{tibble} with the additional logical column \code{genus_match}, indicating whether the genus was successfully matched (\code{TRUE}) or not (\code{FALSE}).
@@ -17,7 +17,7 @@ Returns a \code{tibble} with the additional logical column \code{genus_match}, i
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
-Tries to match the genus name to the 'WCVP' table (\code{wcvpdata::wcvp_checklist_names} by default).
+Tries to match the genus name to the 'WCVP' table (using the optional \code{wcvpdata} checklist by default when available).
 }
 \examples{
 \dontshow{if (rlang::is_installed("wcvpdata")) withAutoprint(\{ # examplesIf}
@@ -26,3 +26,4 @@ df <- data.frame(Orig.Genus = "Opuntia", Orig.Species = "yanganucensis")
 wcvp_genus_match(df)
 \dontshow{\}) # examplesIf}
 }
+
