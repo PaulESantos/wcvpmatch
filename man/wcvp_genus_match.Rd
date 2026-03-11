@@ -15,6 +15,8 @@ wcvp_genus_match(df, target_df = NULL)
 Returns a \code{tibble} with the additional logical column \code{genus_match}, indicating whether the genus was successfully matched (\code{TRUE}) or not (\code{FALSE}).
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+
 Tries to match the genus name to the 'WCVP' table (\code{wcvpdata::wcvp_checklist_names} by default).
 }
 \examples{

@@ -15,6 +15,8 @@ wcvp_suffix_match_species_within_genus(df, target_df = NULL)
 Returns a \code{tibble} with the additional logical column \code{suffix_match_species_within_genus}, indicating whether the specific epithet was successfully matched within the matched genus (\code{TRUE}) or not (\code{FALSE}).
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+
 Tries to match the specific epithet by exchanging common suffixes within an already matched genus in 'WCVP'.
 The following suffixes are captured: \code{c("a", "i", "is", "um", "us", "ae")}.
 }

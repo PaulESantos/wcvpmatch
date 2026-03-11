@@ -1,5 +1,7 @@
 #' Match Scientific Names Against WCVP
 #' @description
+#' `r lifecycle::badge("experimental")`
+#'
 #' Runs a matching pipeline with exact and partial matching for binomial and
 #' trinomial names, including infraspecific rank validation.
 #'

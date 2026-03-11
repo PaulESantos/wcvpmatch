@@ -1,5 +1,7 @@
 #' Suffix Match Species within Genus
 #' @description
+#' `r lifecycle::badge("experimental")`
+#'
 #' Tries to match the specific epithet by exchanging common suffixes within an already matched genus in 'WCVP'.
 #' The following suffixes are captured: `c("a", "i", "is", "um", "us", "ae")`.
 #'

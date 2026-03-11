@@ -16,6 +16,8 @@ Returns a \code{tibble} with the additional logical column \code{direct_match}, 
 Returns original columns plus \code{Matched.Genus}, \code{Matched.Species}, \code{Matched.Infra.Rank}, and \code{Matched.Infraspecies}.
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+
 Tries to directly match Genus + Species | Genus + Species + Rank + Infraspecies to \verb{WCVP data}.
 }
 \examples{

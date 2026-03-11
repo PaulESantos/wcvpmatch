@@ -36,6 +36,8 @@ Attributes:
 }
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+
 Reduces the target backbone to genera relevant for the current input names.
 This is designed as a pre-step before \code{wcvp_matching()} to reduce search space.
 

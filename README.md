@@ -6,10 +6,10 @@
 <!-- badges: start -->
 
 [![Lifecycle:
-stable](https://img.shields.io/badge/lifecycle-stable-blue.svg)](https://lifecycle.r-lib.org/articles/stages.html)
+experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html)
 [![CRAN
 status](https://www.r-pkg.org/badges/version/wcvpmatch)](https://CRAN.R-project.org/package=wcvpmatch)
-[![R-CMD-check](https://github.com/PaulESantos/wcvpmatch/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/PaulESantos/wcvpmatch/actions/workflows/R-CMD-check.yaml)
+[![R-CMD-check](https://github.com/PaulESantos/wcvpmatch/actions/workflows/R-CMD-check.yml/badge.svg)](https://github.com/PaulESantos/wcvpmatch/actions/workflows/R-CMD-check.yml)
 <!-- badges: end -->
 
 `wcvpmatch` is an R package for scientific plant name standardization
@@ -59,21 +59,31 @@ from source, `fozziejoin` requires a working Rust toolchain.
 
 ### 1) Install Rust
 
-Windows (GNU toolchain required for R + Rtools compatibility):
+Install Rust on your computer first. You can download the installer from
+<https://rust-lang.org/tools/install/>.
+
+On Windows, configure Rust for R + Rtools compatibility by running this
+command in the R terminal:
 
 ``` bash
-rustup install stable-x86_64-pc-windows-gnu
-rustup default stable-x86_64-pc-windows-gnu
-rustup target add x86_64-pc-windows-gnu --toolchain stable-x86_64-pc-windows-gnu
+rustup override set stable-x86_64-pc-windows-gnu
 ```
-
-Linux / macOS: install Rust with the official installer at
-<https://rust-lang.org/tools/install/>.
 
 ### 2) Install `fozziejoin` and `wcvpdata`:
 
 ``` r
+pak::pak("fozziejoin")
+```
+
+Or install the development version of `fozziejoin`:
+
+``` r
 pak::pak("fozzieverse/fozziejoin/fozziejoin-r")
+```
+
+Then install `wcvpdata`:
+
+``` r
 pak::pak("PaulESantos/wcvpdata")
 ```
 

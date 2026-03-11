@@ -67,6 +67,8 @@ columns: \code{matched_plant_name_id}, \code{matched_taxon_name}, \code{taxon_st
 \code{accepted_plant_name_id}, \code{accepted_taxon_name}, \code{is_accepted_name}.
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+
 Runs a matching pipeline with exact and partial matching for binomial and
 trinomial names, including infraspecific rank validation.
 }

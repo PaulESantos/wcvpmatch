@@ -1,5 +1,7 @@
 #' Direct Match Species & Genus Binomial or Trinomial names
 #' @description
+#' `r lifecycle::badge("experimental")`
+#'
 #' Tries to directly match Genus + Species | Genus + Species + Rank + Infraspecies to `WCVP data`.
 #'
 #' @param df `tibble` containing the species binomial split into the columns `Orig.Genus` and `Orig.Species`.

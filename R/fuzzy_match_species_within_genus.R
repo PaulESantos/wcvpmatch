@@ -1,5 +1,7 @@
 #' Fuzzy Match Species within Genus
 #' @description
+#' `r lifecycle::badge("experimental")`
+#'
 #' Tries to fuzzy match the species epithet within a matched genus against 'WCVP' (`wcvpdata::wcvp_checklist_names` by default).
 #'
 #' @param df `tibble` containing the species binomial split into the columns `Orig.Genus` and `Orig.Species`.

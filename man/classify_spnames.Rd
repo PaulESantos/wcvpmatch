@@ -25,6 +25,8 @@ A tibble with one row per input name and standardized columns/flags:
 }
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+
 Parse and classify scientific plant names into taxonomic components:
 genus, specific epithet, infraspecific rank, infraspecific epithet, and author.
 

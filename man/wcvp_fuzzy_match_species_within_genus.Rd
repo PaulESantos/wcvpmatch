@@ -24,6 +24,8 @@ wcvp_fuzzy_match_species_within_genus(
 Returns a \code{tibble} with the additional logical column \code{fuzzy_match_species_within_genus}, indicating whether the specific epithet was successfully fuzzy matched within the matched genus (\code{TRUE}) or not (\code{FALSE}).
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+
 Tries to fuzzy match the species epithet within a matched genus against 'WCVP' (\code{wcvpdata::wcvp_checklist_names} by default).
 }
 \examples{

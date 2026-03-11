@@ -18,6 +18,8 @@ A tibble with columns:
 }
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+
 Creates a compact genus-level index from the target backbone. The index stores
 one row per genus and a list-column with candidate \code{plant_name_id} values
 associated with each genus.
