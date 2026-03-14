@@ -85,6 +85,26 @@ wcvp_matching <- function(df,
     x
   }
   add_taxonomic_context <- function(x, target_tbl) {
+    normalize_public_taxon_status <- function(status, matched_id, accepted_id) {
+      status_lower <- tolower(as.character(status))
+      is_original_combination <- status_lower %in% c(
+        "original_name_combination",
+        "original_combination"
+      )
+      out <- dplyr::case_when(
+        is.na(status) ~ NA_character_,
+        status_lower == "accepted" ~ "accepted",
+        status_lower == "synonym" ~ "synonym",
+        is_original_combination &
+          !is.na(matched_id) &
+          !is.na(accepted_id) &
+          matched_id == accepted_id ~ "accepted",
+        is_original_combination ~ "synonym",
+        TRUE ~ as.character(status)
+      )
+      out
+    }
+
     meta_needed <- c("plant_name_id", "taxon_name", "taxon_status", "accepted_plant_name_id")
     has_taxon_authors <- "taxon_authors" %in% names(target_tbl)
     if (!all(meta_needed %in% names(target_tbl))) {
@@ -167,6 +187,11 @@ wcvp_matching <- function(df,
       ) %>%
       dplyr::left_join(accepted_lookup, by = c("accepted_plant_name_id" = "plant_name_id")) %>%
       dplyr::mutate(
+        taxon_status = normalize_public_taxon_status(
+          status = taxon_status,
+          matched_id = matched_plant_name_id,
+          accepted_id = accepted_plant_name_id
+        ),
         is_accepted_name = dplyr::if_else(
           is.na(taxon_status),
           as.logical(NA),

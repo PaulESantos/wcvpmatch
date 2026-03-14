@@ -26,4 +26,3 @@ df <- data.frame(Orig.Genus = "Opuntia", Orig.Species = "yanganucensis")
 wcvp_genus_match(df)
 \dontshow{\}) # examplesIf}
 }
-

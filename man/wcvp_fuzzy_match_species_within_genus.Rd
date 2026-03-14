@@ -35,4 +35,3 @@ df <- data.frame(Orig.Genus = "Opuntia", Orig.Species = "yanganucensiss", Matche
 wcvp_fuzzy_match_species_within_genus(df)
 \dontshow{\}) # examplesIf}
 }
-

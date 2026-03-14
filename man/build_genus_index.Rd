@@ -33,4 +33,3 @@ library(wcvpmatch)
 build_genus_index()
 \dontshow{\}) # examplesIf}
 }
-

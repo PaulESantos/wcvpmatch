@@ -28,4 +28,3 @@ df_parsed <- classify_spnames("Opuntia yanganucensis")
 wcvp_direct_match(df_parsed)
 \dontshow{\}) # examplesIf}
 }
-

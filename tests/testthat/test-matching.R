@@ -310,6 +310,41 @@ test_that("matching can standardize output names to snake_case", {
   expect_false(any(c("Orig.Genus", "Orig.Species", "Matched.Genus", "Input.Name") %in% names(out)))
 })
 
+test_that("original combination statuses are normalized to a public accepted-or-synonym status", {
+  target_df <- tibble::tibble(
+    genus = c("Arvicola", "Microtus", "Neacomys", "Papio"),
+    species = c("mexicanus", "mexicanus", "serranensis", "ursinus"),
+    infraspecific_rank = NA_character_,
+    infraspecies = NA_character_,
+    plant_name_id = c(10, 20, 30, 40),
+    taxon_name = c(
+      "Arvicola mexicanus",
+      "Microtus mexicanus",
+      "Neacomys serranensis",
+      "Papio ursinus"
+    ),
+    taxon_status = c(
+      "original_name_combination",
+      "Accepted",
+      "original_combination",
+      "Accepted"
+    ),
+    accepted_plant_name_id = c(20, 20, 30, 40)
+  )
+
+  input <- tibble::tibble(
+    Orig.Genus = c("Arvicola", "Neacomys"),
+    Orig.Species = c("mexicanus", "serranensis"),
+    Rank = 2
+  )
+
+  out <- wcvp_matching(input, target_df = target_df)
+
+  expect_equal(out$taxon_status, c("synonym", "accepted"))
+  expect_equal(out$is_accepted_name, c(FALSE, TRUE))
+  expect_equal(out$accepted_taxon_name, c("Microtus mexicanus", "Neacomys serranensis"))
+})
+
 test_that("matching can add fast pairwise input-vs-matched name distance", {
   target_df <- tibble::tibble(
     genus = c("Fagus", "Quercus"),

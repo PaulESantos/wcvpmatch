@@ -42,24 +42,18 @@ resolution workflows.
 
 ## Installation
 
-You can install the released version of `wcvpmatch` from [CRAN](https://CRAN.R-project.org) with:
-
-```r
-install.packages("wcvpmatch")
-```
-
-And the development version from [GitHub](https://github.com/) with:
+You can install the development version from [GitHub](https://github.com/) with:
 
 ```r
 # install.packages("pak")
 pak::pak("PaulESantos/wcvpmatch")
 ```
 
-`wcvpmatch` depends on `fozziejoin` for fuzzy matching. If installing from source, `fozziejoin` requires a working Rust toolchain.
+`wcvpmatch` depends on `fozziejoin` for fuzzy matching in the backend. For that reason, a working Rust toolchain is a practical prerequisite for a fully functional installation of `wcvpmatch`, especially when `fozziejoin` is installed from source.
 
 ### 1) Install Rust
 
-Install Rust on your computer first. You can download the installer from <https://rust-lang.org/tools/install/>.
+Install Rust on your computer first. This is required so that the `fozziejoin` backend used by `wcvpmatch` can compile and run the fuzzy matching components correctly. You can download the installer from <https://rust-lang.org/tools/install/>.
 
 On Windows, configure Rust for R + Rtools compatibility by running this command in the R terminal:
 
@@ -278,4 +272,5 @@ matching and avoids recomputing duplicated names.
 `wcvpmatch` builds on ideas used in the [`treemendous`](https://github.com/speckerf/treemendous) matching workflow and
 extends them for WCVP-focused reconciliation, richer parser diagnostics, and
 reproducible row-level traceability.
+
 

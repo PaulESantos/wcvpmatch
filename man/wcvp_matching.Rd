@@ -84,4 +84,3 @@ df <- classify_spnames(names)
 wcvp_matching(df, output_name_style = "snake_case")
 \dontshow{\}) # examplesIf}
 }
-
