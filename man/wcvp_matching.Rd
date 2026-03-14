@@ -74,6 +74,7 @@ trinomial names, including infraspecific rank validation.
 }
 \examples{
 \dontshow{if (rlang::is_installed("wcvpdata")) withAutoprint(\{ # examplesIf}
+\donttest{
 library(wcvpmatch)
 # Match a single name
 wcvp_matching(data.frame(Genus = "Opuntia", Species = "yanganucensis"))
@@ -82,5 +83,6 @@ wcvp_matching(data.frame(Genus = "Opuntia", Species = "yanganucensis"))
 names <- c("Aniba heterotepala", "Anthurium quipuscoae")
 df <- classify_spnames(names)
 wcvp_matching(df, output_name_style = "snake_case")
+}
 \dontshow{\}) # examplesIf}
 }

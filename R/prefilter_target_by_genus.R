@@ -19,8 +19,10 @@
 #'   \item{n_records}{Number of IDs per genus.}
 #' }
 #' @examplesIf rlang::is_installed("wcvpdata")
+#' \donttest{
 #' library(wcvpmatch)
 #' build_genus_index()
+#' }
 #' @export
 build_genus_index <- function(target_df = NULL) {
   target_norm <- if (is.null(target_df)) default_target_df() else normalize_target_df(target_df)

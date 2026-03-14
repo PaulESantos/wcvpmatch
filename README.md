@@ -40,26 +40,24 @@ taxonomic resolution workflows.
 
 ## Installation
 
-You can install the released version of `wcvpmatch` from
-[CRAN](https://CRAN.R-project.org) with:
-
-``` r
-install.packages("wcvpmatch")
-```
-
-And the development version from [GitHub](https://github.com/) with:
+You can install the development version from
+[GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("pak")
 pak::pak("PaulESantos/wcvpmatch")
 ```
 
-`wcvpmatch` depends on `fozziejoin` for fuzzy matching. If installing
-from source, `fozziejoin` requires a working Rust toolchain.
+`wcvpmatch` depends on `fozziejoin` for fuzzy matching in the backend.
+For that reason, a working Rust toolchain is a practical prerequisite
+for a fully functional installation of `wcvpmatch`, especially when
+`fozziejoin` is installed from source.
 
 ### 1) Install Rust
 
-Install Rust on your computer first. You can download the installer from
+Install Rust on your computer first. This is required so that the
+`fozziejoin` backend used by `wcvpmatch` can compile and run the fuzzy
+matching components correctly. You can download the installer from
 <https://rust-lang.org/tools/install/>.
 
 On Windows, configure Rust for R + Rtools compatibility by running this
@@ -69,7 +67,7 @@ command in the R terminal:
 rustup override set stable-x86_64-pc-windows-gnu
 ```
 
-### 2) Install `fozziejoin` and `wcvpdata`:
+### 2) Install dependencies:
 
 ``` r
 pak::pak("fozziejoin")
@@ -81,7 +79,8 @@ Or install the development version of `fozziejoin`:
 pak::pak("fozzieverse/fozziejoin/fozziejoin-r")
 ```
 
-Then install `wcvpdata`:
+If you want the package to use the default WCVP backbone automatically,
+install the optional companion package `wcvpdata`:
 
 ``` r
 pak::pak("PaulESantos/wcvpdata")
@@ -161,28 +160,28 @@ res |>
 #> 21             Stemodia piurenses              Stemodia piurensis
 #> 22 Weberbauerella brongnartioides Weberbauerella brongniartioides
 #>                accepted_taxon_name taxon_status
-#> 1               Aniba heterotepala     Accepted
-#> 2             Anthurium quipuscoae     Accepted
-#> 3             Centropogon reflexus     Accepted
-#> 4            Chuquiraga johnstonii     Accepted
-#> 5                Cyathea carolinae     Accepted
-#> 6               Ditassa violascens     Accepted
-#> 7           Borzicactus fieldianus      Synonym
-#> 8    Austrocylindropuntia floccosa      Synonym
-#> 9        Epidendrum trachydipterum     Accepted
-#> 10         Hebeclinium hylophorbum     Accepted
-#> 11            Jaltomata sagastegui     Accepted
-#> 12            Lepechinia tomentosa     Accepted
-#> 13               Lupinus cookianus     Accepted
-#> 14            Oxalis hochreutineri     Accepted
-#> 15          Passiflora heterohelix     Accepted
-#> 16         Peperomia arborigaudens     Accepted
-#> 17                 Piper setulosum     Accepted
-#> 18          Pycnophyllum aristatum     Accepted
-#> 19              Salvia subscandens     Accepted
-#> 20             Stellaria macbridei     Accepted
-#> 21              Stemodia piurensis     Accepted
-#> 22 Weberbauerella brongniartioides     Accepted
+#> 1               Aniba heterotepala     accepted
+#> 2             Anthurium quipuscoae     accepted
+#> 3             Centropogon reflexus     accepted
+#> 4            Chuquiraga johnstonii     accepted
+#> 5                Cyathea carolinae     accepted
+#> 6               Ditassa violascens     accepted
+#> 7           Borzicactus fieldianus      synonym
+#> 8    Austrocylindropuntia floccosa      synonym
+#> 9        Epidendrum trachydipterum     accepted
+#> 10         Hebeclinium hylophorbum     accepted
+#> 11            Jaltomata sagastegui     accepted
+#> 12            Lepechinia tomentosa     accepted
+#> 13               Lupinus cookianus     accepted
+#> 14            Oxalis hochreutineri     accepted
+#> 15          Passiflora heterohelix     accepted
+#> 16         Peperomia arborigaudens     accepted
+#> 17                 Piper setulosum     accepted
+#> 18          Pycnophyllum aristatum     accepted
+#> 19              Salvia subscandens     accepted
+#> 20             Stellaria macbridei     accepted
+#> 21              Stemodia piurensis     accepted
+#> 22 Weberbauerella brongniartioides     accepted
 ```
 
 ## Matching workflow
@@ -271,22 +270,22 @@ fia_result <- fia |>
     taxon_status,
     accepted_taxon_name
   )
-#> Warning: Multiple fuzzy matches for some genera (tied distances). The first
-#> match is selected.
+#> Warning: ! Multiple fuzzy matches for some genera (tied distances).
+#> ℹ The first match is selected.
 fia_result
 #> # A tibble: 2,169 × 7
 #>    input_name orig_genus matched_genus orig_species matched_species taxon_status
 #>    <chr>      <chr>      <chr>         <chr>        <chr>           <chr>       
-#>  1 Abies ama… Abies      Abies         amabilis     amabilis        Accepted    
-#>  2 Abies bal… Abies      Abies         balsamea     balsamea        Accepted    
-#>  3 Abies bra… Abies      Abies         bracteata    bracteata       Accepted    
-#>  4 Abies con… Abies      Abies         concolor     concolor        Accepted    
-#>  5 Abies fra… Abies      Abies         fraseri      fraseri         Accepted    
-#>  6 Abies gra… Abies      Abies         grandis      grandis         Accepted    
-#>  7 Abies las… Abies      Abies         lasiocarpa   lasiocarpa      Accepted    
-#>  8 Abies mag… Abies      Abies         magnifica    magnifica       Accepted    
-#>  9 Abies pro… Abies      Abies         procera      procera         Accepted    
-#> 10 Abies sha… Abies      Abies         shastensis   shastensis      Synonym     
+#>  1 Abies ama… Abies      Abies         amabilis     amabilis        accepted    
+#>  2 Abies bal… Abies      Abies         balsamea     balsamea        accepted    
+#>  3 Abies bra… Abies      Abies         bracteata    bracteata       accepted    
+#>  4 Abies con… Abies      Abies         concolor     concolor        accepted    
+#>  5 Abies fra… Abies      Abies         fraseri      fraseri         accepted    
+#>  6 Abies gra… Abies      Abies         grandis      grandis         accepted    
+#>  7 Abies las… Abies      Abies         lasiocarpa   lasiocarpa      accepted    
+#>  8 Abies mag… Abies      Abies         magnifica    magnifica       accepted    
+#>  9 Abies pro… Abies      Abies         procera      procera         accepted    
+#> 10 Abies sha… Abies      Abies         shastensis   shastensis      synonym     
 #> # ℹ 2,159 more rows
 #> # ℹ 1 more variable: accepted_taxon_name <chr>
 ```
@@ -332,15 +331,15 @@ amb_g |>
     taxon_status,
     accepted_taxon_name
   )
-#> Warning: Multiple fuzzy matches for some genera (tied distances). The first
-#> match is selected.
+#> Warning: ! Multiple fuzzy matches for some genera (tied distances).
+#> ℹ The first match is selected.
 #> # A tibble: 4 × 7
 #>   input_name  orig_genus matched_genus orig_species matched_species taxon_status
 #>   <chr>       <chr>      <chr>         <chr>        <chr>           <chr>       
-#> 1 Howeia for… Howeia     Howea         forsteriana  forsteriana     Accepted    
-#> 2 Howeia for… Howeia     Howea         forsteriana  forsteriana     Accepted    
-#> 3 Hyeronima … Hyeronima  Hieronyma     clusioides   clusioides      Accepted    
-#> 4 Hyeronima … Hyeronima  Hieronyma     clusioides   clusioides      Accepted    
+#> 1 Howeia for… Howeia     Howea         forsteriana  forsteriana     accepted    
+#> 2 Howeia for… Howeia     Howea         forsteriana  forsteriana     accepted    
+#> 3 Hyeronima … Hyeronima  Hieronyma     clusioides   clusioides      accepted    
+#> 4 Hyeronima … Hyeronima  Hieronyma     clusioides   clusioides      accepted    
 #> # ℹ 1 more variable: accepted_taxon_name <chr>
 ```
 
@@ -381,4 +380,3 @@ species-level matching and avoids recomputing duplicated names.
 [`treemendous`](https://github.com/speckerf/treemendous) matching
 workflow and extends them for WCVP-focused reconciliation, richer parser
 diagnostics, and reproducible row-level traceability.
-

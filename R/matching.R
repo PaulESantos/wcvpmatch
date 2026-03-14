@@ -41,6 +41,7 @@
 #'   columns: `matched_plant_name_id`, `matched_taxon_name`, `taxon_status`,
 #'   `accepted_plant_name_id`, `accepted_taxon_name`, `is_accepted_name`.
 #' @examplesIf rlang::is_installed("wcvpdata")
+#' \donttest{
 #' library(wcvpmatch)
 #' # Match a single name
 #' wcvp_matching(data.frame(Genus = "Opuntia", Species = "yanganucensis"))
@@ -49,6 +50,7 @@
 #' names <- c("Aniba heterotepala", "Anthurium quipuscoae")
 #' df <- classify_spnames(names)
 #' wcvp_matching(df, output_name_style = "snake_case")
+#' }
 #' @export
 wcvp_matching <- function(df,
                      target_df = NULL,
