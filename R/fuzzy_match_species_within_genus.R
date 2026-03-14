@@ -11,10 +11,7 @@
 #'
 #' @return
 #' Returns a `tibble` with the additional logical column `fuzzy_match_species_within_genus`, indicating whether the specific epithet was successfully fuzzy matched within the matched genus (`TRUE`) or not (`FALSE`).
-#' @examplesIf rlang::is_installed("wcvpdata")
-#' library(wcvpmatch)
-#' df <- data.frame(Orig.Genus = "Opuntia", Orig.Species = "yanganucensiss", Matched.Genus = "Opuntia")
-#' wcvp_fuzzy_match_species_within_genus(df)
+#'
 #' @export
 #'
 wcvp_fuzzy_match_species_within_genus <- function(df, target_df = NULL, max_dist = 1, method = "osa"){

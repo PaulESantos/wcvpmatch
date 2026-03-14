@@ -28,10 +28,3 @@ Returns a \code{tibble} with the additional logical column \code{fuzzy_match_spe
 
 Tries to fuzzy match the species epithet within a matched genus against 'WCVP' (using the optional \code{wcvpdata} checklist by default when available).
 }
-\examples{
-\dontshow{if (rlang::is_installed("wcvpdata")) withAutoprint(\{ # examplesIf}
-library(wcvpmatch)
-df <- data.frame(Orig.Genus = "Opuntia", Orig.Species = "yanganucensiss", Matched.Genus = "Opuntia")
-wcvp_fuzzy_match_species_within_genus(df)
-\dontshow{\}) # examplesIf}
-}

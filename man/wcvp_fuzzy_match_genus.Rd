@@ -26,8 +26,10 @@ Tries to fuzzy match the genus name to the 'WCVP' table (using the optional \cod
 }
 \examples{
 \dontshow{if (rlang::is_installed("wcvpdata")) withAutoprint(\{ # examplesIf}
+\donttest{
 library(wcvpmatch)
 df <- data.frame(Orig.Genus = "Opuntiaa", Orig.Species = "yanganucensis")
 wcvp_fuzzy_match_genus(df)
+}
 \dontshow{\}) # examplesIf}
 }

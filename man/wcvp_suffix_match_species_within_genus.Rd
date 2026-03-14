@@ -22,8 +22,10 @@ The following suffixes are captured: \code{c("a", "i", "is", "um", "us", "ae")}.
 }
 \examples{
 \dontshow{if (rlang::is_installed("wcvpdata")) withAutoprint(\{ # examplesIf}
+\donttest{
 library(wcvpmatch)
 df <- data.frame(Orig.Genus = "Opuntia", Orig.Species = "yanganucensa", Matched.Genus = "Opuntia")
 wcvp_suffix_match_species_within_genus(df)
+}
 \dontshow{\}) # examplesIf}
 }

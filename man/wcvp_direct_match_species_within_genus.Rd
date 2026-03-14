@@ -19,10 +19,3 @@ Returns a \code{tibble} with the additional logical column \code{direct_match_sp
 
 Tries to directly match the specific epithet within an already matched genus in 'WCVP'.
 }
-\examples{
-\dontshow{if (rlang::is_installed("wcvpdata")) withAutoprint(\{ # examplesIf}
-library(wcvpmatch)
-df <- data.frame(Orig.Genus = "Opuntia", Orig.Species = "yanganucensis", Matched.Genus = "Opuntia")
-wcvp_direct_match_species_within_genus(df)
-\dontshow{\}) # examplesIf}
-}

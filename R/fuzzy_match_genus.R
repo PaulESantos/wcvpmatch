@@ -13,9 +13,11 @@
 #' Returns a `tibble` with the additional logical column `fuzzy_match_genus`, indicating whether the genus was successfully matched (`TRUE`) or not (`FALSE`).
 #' Further, the additional column `fuzzy_genus_dist` returns the distance for every match.
 #' @examplesIf rlang::is_installed("wcvpdata")
+#' \donttest{
 #' library(wcvpmatch)
 #' df <- data.frame(Orig.Genus = "Opuntiaa", Orig.Species = "yanganucensis")
 #' wcvp_fuzzy_match_genus(df)
+#' }
 #' @export
 #'
 

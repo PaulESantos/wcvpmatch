@@ -72,9 +72,11 @@ build_genus_index <- function(target_df = NULL) {
 #'   \item{fuzzy_genera}{Character vector of fuzzy matched genera.}
 #' }
 #' @examplesIf rlang::is_installed("wcvpdata")
+#' \donttest{
 #' library(wcvpmatch)
 #' df <- data.frame(Genus = "Opuntia", Species = "yanganucensis")
 #' prefilter_target_by_genus(df)
+#' }
 #' @export
 prefilter_target_by_genus <- function(df,
                                       target_df = NULL,

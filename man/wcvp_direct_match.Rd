@@ -22,9 +22,11 @@ Tries to directly match Genus + Species | Genus + Species + Rank + Infraspecies 
 }
 \examples{
 \dontshow{if (rlang::is_installed("wcvpdata")) withAutoprint(\{ # examplesIf}
+\donttest{
 library(wcvpmatch)
 # Simple binomial match
 df_parsed <- classify_spnames("Opuntia yanganucensis")
 wcvp_direct_match(df_parsed)
+}
 \dontshow{\}) # examplesIf}
 }

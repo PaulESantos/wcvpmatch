@@ -11,10 +11,12 @@
 #' Returns a `tibble` with the additional logical column `direct_match`, indicating whether the binomial was successfully matched (`TRUE`) or not (`FALSE`).
 #' Returns original columns plus `Matched.Genus`, `Matched.Species`, `Matched.Infra.Rank`, and `Matched.Infraspecies`.
 #' @examplesIf rlang::is_installed("wcvpdata")
+#' \donttest{
 #' library(wcvpmatch)
 #' # Simple binomial match
 #' df_parsed <- classify_spnames("Opuntia yanganucensis")
 #' wcvp_direct_match(df_parsed)
+#' }
 #' @export
 wcvp_direct_match <- function(df, target_df = NULL) {
   df <- check_df_format(df)

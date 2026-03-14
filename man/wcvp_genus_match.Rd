@@ -19,10 +19,3 @@ Returns a \code{tibble} with the additional logical column \code{genus_match}, i
 
 Tries to match the genus name to the 'WCVP' table (using the optional \code{wcvpdata} checklist by default when available).
 }
-\examples{
-\dontshow{if (rlang::is_installed("wcvpdata")) withAutoprint(\{ # examplesIf}
-library(wcvpmatch)
-df <- data.frame(Orig.Genus = "Opuntia", Orig.Species = "yanganucensis")
-wcvp_genus_match(df)
-\dontshow{\}) # examplesIf}
-}

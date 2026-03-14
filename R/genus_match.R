@@ -10,10 +10,7 @@
 #'
 #' @return
 #' Returns a `tibble` with the additional logical column `genus_match`, indicating whether the genus was successfully matched (`TRUE`) or not (`FALSE`).
-#' @examplesIf rlang::is_installed("wcvpdata")
-#' library(wcvpmatch)
-#' df <- data.frame(Orig.Genus = "Opuntia", Orig.Species = "yanganucensis")
-#' wcvp_genus_match(df)
+#'
 #' @export
 wcvp_genus_match <- function(df, target_df = NULL){
   df <- check_df_format(df)

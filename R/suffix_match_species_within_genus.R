@@ -11,9 +11,11 @@
 #' @return
 #' Returns a `tibble` with the additional logical column `suffix_match_species_within_genus`, indicating whether the specific epithet was successfully matched within the matched genus (`TRUE`) or not (`FALSE`).
 #' @examplesIf rlang::is_installed("wcvpdata")
+#' \donttest{
 #' library(wcvpmatch)
 #' df <- data.frame(Orig.Genus = "Opuntia", Orig.Species = "yanganucensa", Matched.Genus = "Opuntia")
 #' wcvp_suffix_match_species_within_genus(df)
+#' }
 #' @export
 #'
 wcvp_suffix_match_species_within_genus <- function(df, target_df = NULL){
