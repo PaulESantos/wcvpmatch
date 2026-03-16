@@ -1,4 +1,5 @@
 test_that("all fuzzy matches", {
+  skip_if_no_default_backbone()
   df1 <- get_testset(mutation = 2) |>
     wcvp_fuzzy_match_genus()
   df2 <- get_testset(mutation = 3) |>

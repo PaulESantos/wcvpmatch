@@ -7,8 +7,6 @@
 
 [![Lifecycle:
 experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html)
-[![CRAN
-status](https://www.r-pkg.org/badges/version/wcvpmatch)](https://CRAN.R-project.org/package=wcvpmatch)
 [![R-CMD-check](https://github.com/PaulESantos/wcvpmatch/actions/workflows/R-CMD-check.yml/badge.svg)](https://github.com/PaulESantos/wcvpmatch/actions/workflows/R-CMD-check.yml)
 <!-- badges: end -->
 
@@ -80,10 +78,21 @@ pak::pak("fozzieverse/fozziejoin/fozziejoin-r")
 ```
 
 If you want the package to use the default WCVP backbone automatically,
-install the optional companion package `wcvpdata`:
+install the companion package `wcvpdata` from `r-universe`:
 
 ``` r
-pak::pak("PaulESantos/wcvpdata")
+install.packages(
+  "wcvpdata",
+  repos = c("https://paulesantos.r-universe.dev", "https://cloud.r-project.org")
+)
+```
+
+After loading `wcvpmatch`, you can check whether the default backbone is
+available with:
+
+``` r
+library(wcvpmatch)
+wcvp_setup_info()
 ```
 
 ## Quick start

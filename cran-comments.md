@@ -3,10 +3,14 @@
 This is the initial submission of 'wcvpmatch', an R package for scientific plant name reconciliation against the World Checklist of Vascular Plants (WCVP).
 
 Since the previous draft, the package was adjusted to better align with CRAN expectations:
-* `wcvpdata` is used by `wcvpmatch` as the default WCVP backbone source during matching workflows.
+* `wcvpdata` is listed in `Suggests` and is available from `r-universe` at `https://paulesantos.r-universe.dev` because the full backbone exceeds CRAN size limits.
+* `wcvpmatch` works with a user-supplied backbone through `target_df`.
+* When `target_df` is `NULL`, `wcvpmatch` uses `wcvpdata` as the default backbone if it is installed; otherwise it fails with an informative message explaining how to install `wcvpdata` from `r-universe` or how to pass `target_df` explicitly.
+* `fozziejoin` is available on CRAN. On Windows, users installing from source may also need a working Rust toolchain because `fozziejoin` uses Rust in the fuzzy-matching backend.
 * Startup messaging and GitHub installation instructions were removed from package attachment.
 * Session-wide side effects from `options(warn = 1)` were fixed by restoring user options on exit.
-* Documentation was updated to describe `target_df` as the primary explicit backbone input.
+* Documentation was updated to describe `target_df` as the primary explicit backbone input and to document the `r-universe` installation path for `wcvpdata`.
+* Tests that require the default external backbone are now skipped when `wcvpdata` is not installed, while deterministic tests continue to run against local `target_df` fixtures.
 * The package license was migrated to MIT.
 
 ## Test Environments
@@ -15,7 +19,7 @@ Since the previous draft, the package was adjusted to better align with CRAN exp
 ## R CMD build / check status
 
 * `R CMD build` succeeds locally.
-* `devtools::check()` completed successfully with `0 errors | 0 warnings | 0 notes`.
+* `devtools::check(cran = TRUE)` completed successfully with `0 errors | 0 warnings | 0 notes`.
 * Check duration on the local machine was 5m 11.8s.
 
 ## Method References

@@ -1,4 +1,5 @@
 test_that("correct matches for test6 dataset", {
+  skip_if_no_default_backbone()
   df <- get_testset(mutation = 0) |>
     wcvp_matching(prefilter_genus = TRUE)
 
@@ -43,81 +44,73 @@ test_that("correct matches for test6 dataset", {
 # })
 
 test_that("test inconsistent input types", {
+  target_df <- tibble::tibble(
+    genus = "Fagus",
+    species = "sylvatica",
+    infraspecific_rank = NA_character_,
+    infraspecies = NA_character_
+  )
+  run_match <- function(input) {
+    wcvp_matching(input, prefilter_genus = TRUE, target_df = target_df)
+  }
+
   ###
   # These cases should cause errors
   ###
 
   ## NA in input
   input <- tibble::tibble(Genus = c('Fagus'), Species = c(NA))
-  expect_error(input |>
-                 wcvp_matching(prefilter_genus = TRUE))
+  expect_error(run_match(input))
   input <- tibble::tibble(Genus = c(NA), Species = c('sylvatica'))
-  expect_error(input |>
-                 wcvp_matching(prefilter_genus = TRUE))
+  expect_error(run_match(input))
   ## duplicates
   input <- tibble::tibble(Genus = rep('Fagus', 2), Species = rep('sylvatica', 2))
-  expect_error(input |>
-                 wcvp_matching(prefilter_genus = TRUE))
+  expect_error(run_match(input))
   ## Genus first letter upper case
   input <- tibble::tibble(Genus = c('fagus'), Species = c('sylvatica'))
-  expect_error(input |>
-                 wcvp_matching(prefilter_genus = TRUE))
+  expect_error(run_match(input))
   ## Only one uppercase letter in Genus
   input <- tibble::tibble(Genus = c('Fagus-Pinus'), Species = c('sylvatica'))
-  expect_error(input |>
-                 wcvp_matching(prefilter_genus = TRUE))
+  expect_error(run_match(input))
   input <- tibble::tibble(Genus = c('FAGUS'), Species = c('sylvatica'))
-  expect_error(input |>
-                 wcvp_matching(prefilter_genus = TRUE))
+  expect_error(run_match(input))
   input <- tibble::tibble(Genus = c('FAgus'), Species = c('sylvatica'))
-  expect_error(input |>
-                 wcvp_matching(prefilter_genus = TRUE))
+  expect_error(run_match(input))
   ## No uppercase letter in Species
   input <- tibble::tibble(Genus = c('Fagus'), Species = c('Sylvatica'))
-  expect_error(input |>
-                 wcvp_matching(prefilter_genus = TRUE))
+  expect_error(run_match(input))
   input <- tibble::tibble(Genus = c('Fagus'), Species = c('sylvaTica'))
-  expect_error(input |>
-                 wcvp_matching(prefilter_genus = TRUE))
+  expect_error(run_match(input))
   input <- tibble::tibble(Genus = c('Fagus'), Species = c('SYLVATICA'))
-  expect_error(input |>
-                 wcvp_matching(prefilter_genus = TRUE))
+  expect_error(run_match(input))
   ## no hybrid characters in Genus name
   input <- tibble::tibble(Genus = c('Fagus\u00D7pinus'), Species = c('sylvatica'))
-  expect_error(input |>
-                 wcvp_matching(prefilter_genus = TRUE))
+  expect_error(run_match(input))
   input <- tibble::tibble(Genus = c('\u00D7Fagus'), Species = c('sylvatica'))
-  expect_error(input |>
-                 wcvp_matching(prefilter_genus = TRUE))
+  expect_error(run_match(input))
   input <- tibble::tibble(Genus = c('Fagus\u00D7'), Species = c('sylvatica'))
-  expect_error(input |>
-                 wcvp_matching(prefilter_genus = TRUE))
+  expect_error(run_match(input))
 
   ###
   # These cases should trigger warnings
   ###
   ## trailing spaces
   input <- tibble::tibble(Genus = c('Fagus'), Species = c('sylvatica '))
-  expect_warning(input |>
-                   wcvp_matching(prefilter_genus = TRUE))
+  expect_warning(run_match(input))
   input <- tibble::tibble(Genus = c('Fagus '), Species = c('sylvatica'))
-  expect_warning(input |>
-                   wcvp_matching(prefilter_genus = TRUE))
+  expect_warning(run_match(input))
   ## leading spaces
   input <- tibble::tibble(Genus = c('Fagus'), Species = c(' sylvatica'))
-  expect_warning(input |>
-                   wcvp_matching(prefilter_genus = TRUE))
+  expect_warning(run_match(input))
   input <- tibble::tibble(Genus = c(' Fagus'), Species = c('sylvatica'))
-  expect_warning(input |>
-                   wcvp_matching(prefilter_genus = TRUE))
+  expect_warning(run_match(input))
 
   ###
   # These should trigger messages
   ###
   ## input is data.frame and not tibble::tibble
   input <- data.frame(Genus = c('Fagus'), Species = c('sylvatica'))
-  expect_message(input |>
-                   wcvp_matching(prefilter_genus = TRUE))
+  expect_message(run_match(input))
 
 })
 

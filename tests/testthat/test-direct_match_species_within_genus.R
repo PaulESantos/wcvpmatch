@@ -1,4 +1,5 @@
 test_that("all species within genus names matched in test", {
+ skip_if_no_default_backbone()
  df <- get_testset(mutation = 2) %>%
    wcvp_direct_match() %>%
    wcvp_genus_match() %>%

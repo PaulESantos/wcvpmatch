@@ -1,4 +1,5 @@
 test_that("correct one character fuzzy match", {
+  skip_if_no_default_backbone()
   df <- get_testset(mutation = 1) |>
     wcvp_genus_match() |>
     wcvp_fuzzy_match_species_within_genus()
@@ -8,6 +9,7 @@ test_that("correct one character fuzzy match", {
 })
 
 test_that("transposition of adjacent characters: expect distance one based on optimal string alignment distance (osa): see stringdist", {
+  skip_if_no_default_backbone()
   # set.seed(100)
   # df <- Trees.Full %>% dplyr::select(Genus, Species) %>% dplyr::rename(Orig.Genus = Genus, Orig.Species = Species) %>% dplyr::sample_n(10)
   genera <- c("Deguelia", "Maerua", "Dortmanna", "Photinia", "Dolicholus", "Mimosa", "Freycinetia", "Photinia")
@@ -42,6 +44,7 @@ test_that("transposition of adjacent characters: expect distance one based on op
 })
 
 test_that("correct two character fuzzy match", {
+  skip_if_no_default_backbone()
   # set.seed(100)
   genera <- c("Deguelia", "Koanophyllon", "Maerua", "Dortmanna", "Photinia",
               "Salvia", "Dolicholus", "Mimosa", "Freycinetia", "Photinia")

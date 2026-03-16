@@ -1,4 +1,5 @@
 test_that("all suffix ending matches", {
+  skip_if_no_default_backbone()
 
   test_dat <- tibble::tibble(Orig.Genus = rep("Abarema", 2),
                              Orig.Species = c("angulatum", "abbottiae"))

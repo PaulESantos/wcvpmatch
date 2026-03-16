@@ -204,7 +204,8 @@ default_target_df <- function() {
   if (is.null(wcvp_data)) {
     cli::cli_abort(c(
       "x" = "Object {.val wcvp_checklist_names} was not found in package {.pkg wcvpdata}.",
-      "i" = "Pass a backbone explicitly with {.arg target_df} or update the optional companion package."
+      "i" = "Reinstall or update {.pkg wcvpdata} from {.url https://paulesantos.r-universe.dev}.",
+      "i" = "Or pass a backbone explicitly with {.arg target_df}."
     ))
   }
 
