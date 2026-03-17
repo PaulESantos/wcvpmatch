@@ -390,3 +390,37 @@ test_that("matched TRUE is always coherent with matched_taxon_name", {
 
   expect_true(all(!out$matched | !is.na(out$matched_taxon_name)))
 })
+
+test_that("matching can attach per-stage timings for profiling", {
+  target_df <- tibble::tibble(
+    genus = c("Aniba", "Jaltomata"),
+    species = c("heterotepala", "sagastegui"),
+    infraspecific_rank = NA_character_,
+    infraspecies = NA_character_,
+    plant_name_id = c(1, 2),
+    taxon_name = c("Aniba heterotepala", "Jaltomata sagastegui"),
+    taxon_status = c("Accepted", "Accepted"),
+    accepted_plant_name_id = c(1, 2)
+  )
+
+  input <- classify_spnames(c(
+    "Aniba heterotepala",
+    "Jaltometa sagasteguii"
+  ))
+
+  out <- wcvp_matching(
+    input,
+    target_df = target_df,
+    max_dist = 2,
+    method = "osa",
+    allow_duplicates = TRUE,
+    add_name_distance = TRUE,
+    profile = TRUE
+  )
+
+  timings <- attr(out, "timings")
+  expect_true(tibble::is_tibble(timings))
+  expect_true(all(c("stage", "elapsed_seconds", "rows") %in% names(timings)))
+  expect_true("total" %in% timings$stage)
+  expect_true(all(is.finite(timings$elapsed_seconds)))
+})

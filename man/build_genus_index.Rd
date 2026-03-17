@@ -15,6 +15,7 @@ A tibble with columns:
 \item{genus}{Genus name (character).}
 \item{plant_name_id}{List-column of unique IDs per genus.}
 \item{n_records}{Number of IDs per genus.}
+\item{genus_nchar}{Number of characters in the genus name.}
 }
 }
 \description{

@@ -33,6 +33,9 @@
 #'   (`Input.Name` fallback `Orig.Name`) and `matched_taxon_name`.
 #' @param name_distance_method Method passed to `stringdist::stringdist`
 #'   when `add_name_distance = TRUE` (for example `"osa"`).
+#' @param profile Logical. If `TRUE`, attach a timing table in the
+#'   `"timings"` attribute of the returned tibble, with elapsed seconds per
+#'   pipeline stage.
 #' @param output_name_style Naming style for output columns:
 #'   - `"snake_case"` returns standardized lower snake_case names.
 #'   - `"legacy"` keeps the historical mixed naming convention.
@@ -50,6 +53,10 @@
 #' names <- c("Aniba heterotepala", "Anthurium quipuscoae")
 #' df <- classify_spnames(names)
 #' wcvp_matching(df, output_name_style = "snake_case")
+#'
+#' # Attach per-stage timings for profiling
+#' out <- wcvp_matching(df, output_name_style = "snake_case", profile = TRUE)
+#' attr(out, "timings")
 #' }
 #' @export
 wcvp_matching <- function(df,
@@ -60,8 +67,29 @@ wcvp_matching <- function(df,
                      method = "osa",
                      add_name_distance = FALSE,
                      name_distance_method = "osa",
+                     profile = FALSE,
                      output_name_style = c("snake_case", "legacy")) {
   output_name_style <- match.arg(output_name_style)
+
+  timings <- list()
+  profile_stage <- function(stage, expr, rows = NA_integer_) {
+    if (!isTRUE(profile)) {
+      return(force(expr))
+    }
+
+    t0 <- unname(proc.time()[["elapsed"]])
+    value <- force(expr)
+    elapsed <- unname(proc.time()[["elapsed"]]) - t0
+
+    timings[[length(timings) + 1L]] <<- tibble::tibble(
+      stage = stage,
+      elapsed_seconds = elapsed,
+      rows = as.integer(rows)
+    )
+
+    value
+  }
+  total_start <- unname(proc.time()[["elapsed"]])
 
   standardize_output_names <- function(x) {
     rename_map <- c(
@@ -86,7 +114,7 @@ wcvp_matching <- function(df,
     names(x) <- mapped
     x
   }
-  add_taxonomic_context <- function(x, target_tbl) {
+  add_taxonomic_context <- function(x, target_tbl, context_data = NULL) {
     normalize_public_taxon_status <- function(status, matched_id, accepted_id) {
       status_lower <- tolower(as.character(status))
       is_original_combination <- status_lower %in% c(
@@ -107,9 +135,11 @@ wcvp_matching <- function(df,
       out
     }
 
-    meta_needed <- c("plant_name_id", "taxon_name", "taxon_status", "accepted_plant_name_id")
-    has_taxon_authors <- "taxon_authors" %in% names(target_tbl)
-    if (!all(meta_needed %in% names(target_tbl))) {
+    if (is.null(context_data)) {
+      context_data <- prepare_taxonomic_context_data(target_tbl)
+    }
+
+    if (!isTRUE(context_data$has_taxon_context)) {
       x$matched_plant_name_id <- NA_real_
       x$matched_taxon_name <- NA_character_
       x$matched_taxon_authors <- NA_character_
@@ -121,64 +151,67 @@ wcvp_matching <- function(df,
       return(x)
     }
 
-    db_meta <- target_tbl %>%
-      dplyr::select(
-        genus, species, infraspecific_rank, infraspecies,
-        plant_name_id, taxon_name, taxon_status, accepted_plant_name_id,
-        dplyr::any_of("taxon_authors")
-      ) %>%
-      dplyr::mutate(
-        taxon_authors = if (has_taxon_authors) as.character(taxon_authors) else NA_character_
-      ) %>%
-      dplyr::mutate(
-        infraspecific_rank = .rank_to_upper(infraspecific_rank),
-        .taxon_name_clean = tolower(stringr::str_squish(as.character(taxon_name)))
-      ) %>%
-      dplyr::distinct()
-
-    accepted_lookup <- db_meta %>%
-      dplyr::select(
-        plant_name_id,
-        accepted_taxon_name = taxon_name,
-        accepted_taxon_authors = taxon_authors
-      ) %>%
-      dplyr::distinct()
+    db_meta <- context_data$db_meta
+    key_index <- context_data$key_index
+    accepted_name_map <- context_data$accepted_name_map
+    accepted_authors_map <- context_data$accepted_authors_map
 
     x_work <- x %>%
       dplyr::mutate(
         .row_id = dplyr::row_number(),
         .matched_rank_upper = .rank_to_upper(Matched.Infra.Rank),
-        .input_name_clean = tolower(stringr::str_squish(dplyr::coalesce(Input.Name, Orig.Name, "")))
+        .input_name_clean = tolower(stringr::str_squish(dplyr::coalesce(Input.Name, Orig.Name, ""))),
+        .taxon_key = .make_taxon_key(
+          Matched.Genus,
+          Matched.Species,
+          .matched_rank_upper,
+          Matched.Infraspecies
+        )
       )
 
-    best_match <- x_work %>%
-      dplyr::left_join(
-        db_meta,
-        by = c(
-          "Matched.Genus" = "genus",
-          "Matched.Species" = "species",
-          ".matched_rank_upper" = "infraspecific_rank",
-          "Matched.Infraspecies" = "infraspecies"
-        )
-      ) %>%
-      dplyr::mutate(
-        .name_exact = !is.na(taxon_name) & (.input_name_clean == .taxon_name_clean),
-        .status_rank = dplyr::case_when(
-          tolower(taxon_status) == "accepted" ~ 2L,
-          tolower(taxon_status) == "synonym" ~ 1L,
-          TRUE ~ 0L
-        )
-      ) %>%
-      dplyr::group_by(.row_id) %>%
-      dplyr::arrange(
-        dplyr::desc(.name_exact),
-        dplyr::desc(.status_rank),
-        plant_name_id,
-        .by_group = TRUE
-      ) %>%
-      dplyr::slice_head(n = 1) %>%
-      dplyr::ungroup() %>%
-      dplyr::select(.row_id, plant_name_id, taxon_name, taxon_authors, taxon_status, accepted_plant_name_id)
+    best_match_list <- lapply(seq_len(nrow(x_work)), function(i) {
+      idx <- key_index[[x_work$.taxon_key[i]]]
+
+      if (is.null(idx) || length(idx) == 0) {
+        return(list(
+          plant_name_id = NA_real_,
+          taxon_name = NA_character_,
+          taxon_authors = NA_character_,
+          taxon_status = NA_character_,
+          accepted_plant_name_id = NA_real_
+        ))
+      }
+
+      candidates <- db_meta[idx, , drop = FALSE]
+      name_exact <- !is.na(candidates$taxon_name) &
+        (x_work$.input_name_clean[i] == candidates$.taxon_name_clean)
+      status_rank <- ifelse(
+        tolower(candidates$taxon_status) == "accepted",
+        2L,
+        ifelse(tolower(candidates$taxon_status) == "synonym", 1L, 0L)
+      )
+      ord <- order(-as.integer(name_exact), -status_rank, candidates$plant_name_id)
+      best <- candidates[ord[1], , drop = FALSE]
+
+      list(
+        plant_name_id = best$plant_name_id[[1]],
+        taxon_name = best$taxon_name[[1]],
+        taxon_authors = best$taxon_authors[[1]],
+        taxon_status = best$taxon_status[[1]],
+        accepted_plant_name_id = best$accepted_plant_name_id[[1]]
+      )
+    })
+
+    best_match <- tibble::tibble(
+      .row_id = x_work$.row_id,
+      plant_name_id = vapply(best_match_list, function(x) x$plant_name_id, numeric(1)),
+      taxon_name = vapply(best_match_list, function(x) x$taxon_name, character(1)),
+      taxon_authors = vapply(best_match_list, function(x) x$taxon_authors, character(1)),
+      taxon_status = vapply(best_match_list, function(x) x$taxon_status, character(1)),
+      accepted_plant_name_id = vapply(best_match_list, function(x) x$accepted_plant_name_id, numeric(1))
+    )
+    best_match$plant_name_id[is.nan(best_match$plant_name_id)] <- NA_real_
+    best_match$accepted_plant_name_id[is.nan(best_match$accepted_plant_name_id)] <- NA_real_
 
     out <- x_work %>%
       dplyr::left_join(best_match, by = ".row_id") %>%
@@ -187,8 +220,9 @@ wcvp_matching <- function(df,
         matched_taxon_name = taxon_name,
         matched_taxon_authors = taxon_authors
       ) %>%
-      dplyr::left_join(accepted_lookup, by = c("accepted_plant_name_id" = "plant_name_id")) %>%
       dplyr::mutate(
+        accepted_taxon_name = unname(accepted_name_map[as.character(accepted_plant_name_id)]),
+        accepted_taxon_authors = unname(accepted_authors_map[as.character(accepted_plant_name_id)]),
         taxon_status = normalize_public_taxon_status(
           status = taxon_status,
           matched_id = matched_plant_name_id,
@@ -216,7 +250,7 @@ wcvp_matching <- function(df,
         )
       ) %>%
       dplyr::select(-dplyr::any_of(c(
-        ".row_id", ".matched_rank_upper", ".input_name_clean"
+        ".row_id", ".matched_rank_upper", ".input_name_clean", ".taxon_key"
       )))
 
     out
@@ -230,7 +264,7 @@ wcvp_matching <- function(df,
     dplyr::mutate(x, dplyr::across(dplyr::all_of(present), as.character))
   }
 
-  df <- check_df_format(df)
+  df <- profile_stage("check_df_format", check_df_format(df), rows = nrow(df))
   df$input_index <- seq_len(nrow(df))
 
   is_binom <- !is.na(df$Orig.Species) & (is.na(df$Rank) | df$Rank <= 2)
@@ -268,67 +302,99 @@ wcvp_matching <- function(df,
     ))
   }
 
-  df_work <- if (isTRUE(allow_duplicates)) {
-    df %>%
-      dplyr::group_by(.dedup_key) %>%
-      dplyr::slice_head(n = 1) %>%
-      dplyr::ungroup()
-  } else {
-    df
-  }
+  df_work <- profile_stage(
+    "deduplicate_input",
+    if (isTRUE(allow_duplicates)) {
+      df %>%
+        dplyr::group_by(.dedup_key) %>%
+        dplyr::slice_head(n = 1) %>%
+        dplyr::ungroup()
+    } else {
+      df
+    },
+    rows = nrow(df)
+  )
 
-  check_df_consistency(df_work)
+  profile_stage("check_df_consistency", check_df_consistency(df_work), rows = nrow(df_work))
 
-  target_df_full <- get_db(target_df = target_df)
+  target_df_full <- profile_stage("get_db", get_db(target_df = target_df))
   target_df_match <- target_df_full
   if (isTRUE(prefilter_genus)) {
-    target_df_match <- prefilter_target_by_genus(
-      df = df_work,
-      target_df = target_df_match,
-      include_fuzzy = TRUE,
-      max_dist = max_dist,
-      method = method
+    target_df_match <- profile_stage(
+      "prefilter_target_by_genus",
+      prefilter_target_by_genus(
+        df = df_work,
+        target_df = target_df_match,
+        include_fuzzy = TRUE,
+        max_dist = max_dist,
+        method = method
+      ),
+      rows = nrow(df_work)
     )
   }
 
-  node_1 <- wcvp_direct_match(df_work, target_df = target_df_match)
+  node_1 <- profile_stage(
+    "wcvp_direct_match",
+    wcvp_direct_match(df_work, target_df = target_df_match),
+    rows = nrow(df_work)
+  )
   n1_true <- dplyr::filter(node_1, direct_match)
   n1_false <- dplyr::filter(node_1, !direct_match)
 
-  node_2 <- wcvp_genus_match(n1_false, target_df = target_df_match)
+  node_2 <- profile_stage(
+    "wcvp_genus_match",
+    wcvp_genus_match(n1_false, target_df = target_df_match),
+    rows = nrow(n1_false)
+  )
   n2_true <- dplyr::filter(node_2, genus_match)
   n2_false <- dplyr::filter(node_2, !genus_match)
 
-  node_3 <- wcvp_fuzzy_match_genus(
-    n2_false,
-    target_df = target_df_match,
-    max_dist = max_dist,
-    method = method
+  node_3 <- profile_stage(
+    "wcvp_fuzzy_match_genus",
+    wcvp_fuzzy_match_genus(
+      n2_false,
+      target_df = target_df_match,
+      max_dist = max_dist,
+      method = method
+    ),
+    rows = nrow(n2_false)
   )
   ambiguous_genus <- attr(node_3, "ambiguous_genus")
   n3_true <- dplyr::filter(node_3, fuzzy_match_genus)
   n3_false <- dplyr::filter(node_3, !fuzzy_match_genus)
 
   node_4_in <- dplyr::bind_rows(coerce_tax_char(n2_true), coerce_tax_char(n3_true))
-  node_4 <- wcvp_direct_match_species_within_genus(
-    node_4_in,
-    target_df = target_df_match
+  node_4 <- profile_stage(
+    "wcvp_direct_match_species_within_genus",
+    wcvp_direct_match_species_within_genus(
+      node_4_in,
+      target_df = target_df_match
+    ),
+    rows = nrow(node_4_in)
   )
   n4_true <- dplyr::filter(node_4, direct_match_species_within_genus)
   n4_false <- dplyr::filter(node_4, !direct_match_species_within_genus)
 
-  node_5a <- wcvp_suffix_match_species_within_genus(
-    n4_false,
-    target_df = target_df_match
+  node_5a <- profile_stage(
+    "wcvp_suffix_match_species_within_genus",
+    wcvp_suffix_match_species_within_genus(
+      n4_false,
+      target_df = target_df_match
+    ),
+    rows = nrow(n4_false)
   )
   n5a_true <- dplyr::filter(node_5a, suffix_match_species_within_genus)
   n5a_false <- dplyr::filter(node_5a, !suffix_match_species_within_genus)
 
-  node_5b <- wcvp_fuzzy_match_species_within_genus(
-    n5a_false,
-    target_df = target_df_match,
-    max_dist = max_dist,
-    method = method
+  node_5b <- profile_stage(
+    "wcvp_fuzzy_match_species_within_genus",
+    wcvp_fuzzy_match_species_within_genus(
+      n5a_false,
+      target_df = target_df_match,
+      max_dist = max_dist,
+      method = method
+    ),
+    rows = nrow(n5a_false)
   )
   ambiguous_species <- attr(node_5b, "ambiguous_species")
   n5b_true <- dplyr::filter(node_5b, fuzzy_match_species_within_genus)
@@ -355,9 +421,13 @@ wcvp_matching <- function(df,
       )
 
     if (nrow(sp_with_infra) > 0) {
-      node_6 <- direct_match_infra_rank_within_species(
-        sp_with_infra,
-        target_df = target_df_match
+      node_6 <- profile_stage(
+        "direct_match_infra_rank_within_species",
+        direct_match_infra_rank_within_species(
+          sp_with_infra,
+          target_df = target_df_match
+        ),
+        rows = nrow(sp_with_infra)
       )
       n6_true <- dplyr::filter(node_6, direct_match_infra_rank)
       n6_false <- dplyr::filter(node_6, !direct_match_infra_rank) %>%
@@ -366,11 +436,15 @@ wcvp_matching <- function(df,
           fuzzy_infraspecies_dist = NA_real_
         )
 
-      node_7 <- fuzzy_match_infraspecies_within_species(
-        n6_true,
-        target_df = target_df_match,
-        max_dist = max_dist,
-        method = method
+      node_7 <- profile_stage(
+        "fuzzy_match_infraspecies_within_species",
+        fuzzy_match_infraspecies_within_species(
+          n6_true,
+          target_df = target_df_match,
+          max_dist = max_dist,
+          method = method
+        ),
+        rows = nrow(n6_true)
       )
       n7_true <- dplyr::filter(node_7, fuzzy_match_infraspecies)
       n7_false <- dplyr::filter(node_7, !fuzzy_match_infraspecies)
@@ -421,18 +495,31 @@ wcvp_matching <- function(df,
       names(df)
     )
 
-    res <- df %>%
-      dplyr::select(.dedup_key, dplyr::all_of(original_cols)) %>%
-      dplyr::left_join(
-        res %>% dplyr::select(.dedup_key, dplyr::all_of(result_cols)),
-        by = ".dedup_key"
-      ) %>%
-      dplyr::arrange(sorter)
+    res <- profile_stage(
+      "expand_duplicates",
+      df %>%
+        dplyr::select(.dedup_key, dplyr::all_of(original_cols)) %>%
+        dplyr::left_join(
+          res %>% dplyr::select(.dedup_key, dplyr::all_of(result_cols)),
+          by = ".dedup_key"
+        ) %>%
+        dplyr::arrange(sorter),
+      rows = nrow(df)
+    )
   }
 
   # Internal key is only used for dedup/expansion and should not leak to users.
   res <- dplyr::select(res, -dplyr::any_of(".dedup_key"))
-  res <- add_taxonomic_context(res, target_df_full)
+  context_data <- profile_stage(
+    "prepare_taxonomic_context_data",
+    prepare_taxonomic_context_data(target_df_full, matched_df = res),
+    rows = nrow(res)
+  )
+  res <- profile_stage(
+    "add_taxonomic_context",
+    add_taxonomic_context(res, target_df_full, context_data = context_data),
+    rows = nrow(res)
+  )
 
   # Safety guard: do not report rows as matched when no taxon context was found.
   # This keeps boolean match flags coherent with matched_taxon_name.
@@ -448,41 +535,44 @@ wcvp_matching <- function(df,
   }
 
   if (isTRUE(add_name_distance)) {
-    input_name_vec <- dplyr::coalesce(res$Input.Name, res$Orig.Name, "")
+    res <- profile_stage("add_name_distance", {
+      input_name_vec <- dplyr::coalesce(res$Input.Name, res$Orig.Name, "")
 
-    gen_vec <- if ("Matched.Genus" %in% names(res)) as.character(res$Matched.Genus) else rep(NA_character_, nrow(res))
-    spp_vec <- if ("Matched.Species" %in% names(res)) as.character(res$Matched.Species) else rep(NA_character_, nrow(res))
-    rk_vec <- if ("Matched.Infra.Rank" %in% names(res)) as.character(res$Matched.Infra.Rank) else rep(NA_character_, nrow(res))
-    inf_vec <- if ("Matched.Infraspecies" %in% names(res)) as.character(res$Matched.Infraspecies) else rep(NA_character_, nrow(res))
+      gen_vec <- if ("Matched.Genus" %in% names(res)) as.character(res$Matched.Genus) else rep(NA_character_, nrow(res))
+      spp_vec <- if ("Matched.Species" %in% names(res)) as.character(res$Matched.Species) else rep(NA_character_, nrow(res))
+      rk_vec <- if ("Matched.Infra.Rank" %in% names(res)) as.character(res$Matched.Infra.Rank) else rep(NA_character_, nrow(res))
+      inf_vec <- if ("Matched.Infraspecies" %in% names(res)) as.character(res$Matched.Infraspecies) else rep(NA_character_, nrow(res))
 
-    fallback_matched_name <- vapply(
-      seq_len(nrow(res)),
-      function(i) {
-        parts <- c(gen_vec[i], spp_vec[i], rk_vec[i], inf_vec[i])
-        parts <- parts[!is.na(parts) & nzchar(parts)]
-        if (length(parts) == 0) return(NA_character_)
-        paste(parts, collapse = " ")
-      },
-      FUN.VALUE = character(1)
-    )
-
-    matched_name_vec <- dplyr::coalesce(res$matched_taxon_name, fallback_matched_name, "")
-    has_pair <- !is.na(matched_name_vec) &
-      nzchar(input_name_vec) &
-      nzchar(matched_name_vec)
-
-    dist_out <- rep(NA_real_, nrow(res))
-    if (any(has_pair)) {
-      left_names <- tolower(stringr::str_squish(input_name_vec[has_pair]))
-      right_names <- tolower(stringr::str_squish(matched_name_vec[has_pair]))
-      dist_out[has_pair] <- stringdist::stringdist(
-        a = left_names,
-        b = right_names,
-        method = name_distance_method,
-        useBytes = TRUE
+      fallback_matched_name <- vapply(
+        seq_len(nrow(res)),
+        function(i) {
+          parts <- c(gen_vec[i], spp_vec[i], rk_vec[i], inf_vec[i])
+          parts <- parts[!is.na(parts) & nzchar(parts)]
+          if (length(parts) == 0) return(NA_character_)
+          paste(parts, collapse = " ")
+        },
+        FUN.VALUE = character(1)
       )
-    }
-    res$matched_dist <- dist_out
+
+      matched_name_vec <- dplyr::coalesce(res$matched_taxon_name, fallback_matched_name, "")
+      has_pair <- !is.na(matched_name_vec) &
+        nzchar(input_name_vec) &
+        nzchar(matched_name_vec)
+
+      dist_out <- rep(NA_real_, nrow(res))
+      if (any(has_pair)) {
+        left_names <- tolower(stringr::str_squish(input_name_vec[has_pair]))
+        right_names <- tolower(stringr::str_squish(matched_name_vec[has_pair]))
+        dist_out[has_pair] <- stringdist::stringdist(
+          a = left_names,
+          b = right_names,
+          method = name_distance_method,
+          useBytes = TRUE
+        )
+      }
+      res$matched_dist <- dist_out
+      res
+    }, rows = nrow(res))
   }
 
   relocate_cols <- c(
@@ -515,9 +605,17 @@ wcvp_matching <- function(df,
   }
 
   if (identical(output_name_style, "snake_case")) {
-    res <- standardize_output_names(res)
+    res <- profile_stage("standardize_output_names", standardize_output_names(res), rows = nrow(res))
+  }
+
+  if (isTRUE(profile)) {
+    timings[[length(timings) + 1L]] <- tibble::tibble(
+      stage = "total",
+      elapsed_seconds = unname(proc.time()[["elapsed"]]) - total_start,
+      rows = as.integer(nrow(res))
+    )
+    attr(res, "timings") <- dplyr::bind_rows(timings)
   }
 
   res
 }
-

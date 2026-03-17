@@ -148,6 +148,18 @@ check_df_format <- function(df) {
   )
 }
 
+.is_edit_distance_method <- function(method) {
+  tolower(method) %in% c(
+    "osa",
+    "levenshtein",
+    "lv",
+    "dl",
+    "damerau_levensthein",
+    "damerau_levenshtein",
+    "hamming"
+  )
+}
+
 normalize_target_df <- function(target_df) {
   assertthat::assert_that(
     inherits(target_df, "data.frame"),
@@ -193,7 +205,158 @@ normalize_target_df <- function(target_df) {
   x
 }
 
+is_normalized_target_df <- function(x) {
+  inherits(x, "data.frame") &&
+    all(c("genus", "species", "infraspecific_rank", "infraspecies") %in% names(x))
+}
+
+prepare_target_db <- function(target_df) {
+  target_df %>%
+    dplyr::mutate(
+      Genus = if ("Genus" %in% names(.)) as.character(Genus) else as.character(genus),
+      Species = if ("Species" %in% names(.)) as.character(Species) else as.character(species)
+    ) %>%
+    tidyr::drop_na(genus, species) %>%
+    dplyr::distinct() %>%
+    dplyr::mutate(
+      .taxon_key = .make_taxon_key(
+        genus,
+        species,
+        infraspecific_rank,
+        infraspecies
+      )
+    )
+}
+
+.make_taxon_key <- function(genus, species, infraspecific_rank, infraspecies) {
+  sep <- "\r"
+  paste(
+    dplyr::coalesce(as.character(genus), "__NA__"),
+    dplyr::coalesce(as.character(species), "__NA__"),
+    dplyr::coalesce(as.character(infraspecific_rank), "__NA__"),
+    dplyr::coalesce(as.character(infraspecies), "__NA__"),
+    sep = sep
+  )
+}
+
+prepare_taxonomic_context_data <- function(target_tbl, matched_df = NULL) {
+  meta_needed <- c("plant_name_id", "taxon_name", "taxon_status", "accepted_plant_name_id")
+  has_taxon_authors <- "taxon_authors" %in% names(target_tbl)
+
+  if (!all(meta_needed %in% names(target_tbl))) {
+    return(list(
+      has_taxon_context = FALSE,
+      db_meta = NULL,
+      accepted_name_map = NULL,
+      accepted_authors_map = NULL
+    ))
+  }
+
+  context_tbl <- target_tbl
+  if (!is.null(matched_df) && all(c("Matched.Genus", "Matched.Species") %in% names(matched_df))) {
+    query_keys <- matched_df %>%
+      dplyr::transmute(
+        Matched.Genus = as.character(Matched.Genus),
+        Matched.Species = as.character(Matched.Species),
+        .matched_rank_upper = .rank_to_upper(Matched.Infra.Rank),
+        Matched.Infraspecies = as.character(Matched.Infraspecies),
+        .taxon_key = .make_taxon_key(
+          Matched.Genus,
+          Matched.Species,
+          .matched_rank_upper,
+          Matched.Infraspecies
+        )
+      ) %>%
+      dplyr::filter(!is.na(Matched.Genus), !is.na(Matched.Species)) %>%
+      dplyr::pull(.taxon_key) %>%
+      unique()
+
+    if (length(query_keys) == 0) {
+      return(list(
+        has_taxon_context = FALSE,
+        db_meta = NULL,
+        key_index = NULL,
+        accepted_name_map = NULL,
+        accepted_authors_map = NULL
+      ))
+    }
+
+    context_tbl <- context_tbl %>%
+      dplyr::filter(.taxon_key %in% query_keys)
+  }
+
+  db_meta <- context_tbl %>%
+    dplyr::select(
+      genus, species, infraspecific_rank, infraspecies, .taxon_key,
+      plant_name_id, taxon_name, taxon_status, accepted_plant_name_id,
+      dplyr::any_of("taxon_authors")
+    ) %>%
+    dplyr::mutate(
+      taxon_authors = if (has_taxon_authors) as.character(taxon_authors) else NA_character_
+    ) %>%
+    dplyr::mutate(
+      infraspecific_rank = .rank_to_upper(infraspecific_rank),
+      .taxon_name_clean = tolower(stringr::str_squish(as.character(taxon_name)))
+    ) %>%
+    dplyr::distinct()
+
+  if (nrow(db_meta) == 0) {
+    return(list(
+      has_taxon_context = FALSE,
+      db_meta = NULL,
+      key_index = NULL,
+      accepted_name_map = NULL,
+      accepted_authors_map = NULL
+    ))
+  }
+
+  accepted_ids <- unique(stats::na.omit(db_meta$accepted_plant_name_id))
+  accepted_lookup <- target_tbl %>%
+    dplyr::filter(plant_name_id %in% accepted_ids) %>%
+    dplyr::select(
+      plant_name_id,
+      accepted_taxon_name = taxon_name,
+      dplyr::any_of("taxon_authors")
+    ) %>%
+    dplyr::mutate(
+      accepted_taxon_authors = if ("taxon_authors" %in% names(.)) {
+        as.character(taxon_authors)
+      } else {
+        NA_character_
+      }
+    ) %>%
+    dplyr::select(plant_name_id, accepted_taxon_name, accepted_taxon_authors) %>%
+    dplyr::distinct()
+
+  key_levels <- unique(db_meta$.taxon_key)
+  group_id <- match(db_meta$.taxon_key, key_levels)
+  key_index <- split(seq_len(nrow(db_meta)), group_id)
+  names(key_index) <- key_levels
+
+  accepted_name_map <- setNames(
+    accepted_lookup$accepted_taxon_name,
+    as.character(accepted_lookup$plant_name_id)
+  )
+  accepted_authors_map <- setNames(
+    accepted_lookup$accepted_taxon_authors,
+    as.character(accepted_lookup$plant_name_id)
+  )
+
+  list(
+    has_taxon_context = TRUE,
+    db_meta = db_meta,
+    key_index = key_index,
+    accepted_name_map = accepted_name_map,
+    accepted_authors_map = accepted_authors_map
+  )
+}
+
 default_target_df <- function() {
+  cached <- .wcvpmatch_cache[["default_target_df"]]
+  if (!is.null(cached)) {
+    return(cached)
+  }
+
   .require_wcvpdata()
 
   # Read dataset directly, fail with clear message if object is unavailable.
@@ -209,14 +372,25 @@ default_target_df <- function() {
     ))
   }
 
-  return(normalize_target_df(wcvp_data))
+  normalized <- normalize_target_df(wcvp_data)
+  .wcvpmatch_cache[["default_target_df"]] <- normalized
+  normalized
 }
 
 get_db <- function(target_df = NULL) {
-  out <- if (!is.null(target_df)) normalize_target_df(target_df) else default_target_df()
-  out %>%
-    tidyr::drop_na(genus, species) %>%
-    dplyr::distinct()
+  if (is.null(target_df)) {
+    cached <- .wcvpmatch_cache[["default_target_db"]]
+    if (!is.null(cached)) {
+      return(cached)
+    }
+
+    out <- prepare_target_db(default_target_df())
+    .wcvpmatch_cache[["default_target_db"]] <- out
+    return(out)
+  }
+
+  out <- if (is_normalized_target_df(target_df)) target_df else normalize_target_df(target_df)
+  prepare_target_db(out)
 }
 
 # ---------------------------------------------------------------

@@ -70,5 +70,8 @@ utils::globalVariables(c(
   "fuzzy_match_genus",
   "fuzzy_match_species_within_genus",
   "genus_match",
-  "suffix_match_species_within_genus"
+  "suffix_match_species_within_genus",
+  ".taxon_key",
+  "setNames", "genus_nchar",
+  ".species_nchar", "Root"
 ))

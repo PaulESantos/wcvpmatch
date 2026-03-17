@@ -1,3 +1,19 @@
+.wcvpmatch_cache <- new.env(parent = emptyenv())
+
+.onAttach <- function(libname, pkgname) {
+  if (!interactive()) {
+    return(invisible())
+  }
+
+  if (isTRUE(getOption("wcvpmatch.quiet", FALSE))) {
+    return(invisible())
+  }
+
+  packageStartupMessage(
+    paste(.wcvpmatch_startup_message(), collapse = "\n")
+  )
+}
+
 .require_wcvpdata <- function() {
   ok <- requireNamespace("wcvpdata", quietly = TRUE)
   if (ok) return(invisible(TRUE))

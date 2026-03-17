@@ -13,6 +13,7 @@ wcvp_matching(
   method = "osa",
   add_name_distance = FALSE,
   name_distance_method = "osa",
+  profile = FALSE,
   output_name_style = c("snake_case", "legacy")
 )
 }
@@ -55,6 +56,10 @@ rows. Output includes \code{input_index} for traceability to the original input.
 \item{name_distance_method}{Method passed to \code{stringdist::stringdist}
 when \code{add_name_distance = TRUE} (for example \code{"osa"}).}
 
+\item{profile}{Logical. If \code{TRUE}, attach a timing table in the
+\code{"timings"} attribute of the returned tibble, with elapsed seconds per
+pipeline stage.}
+
 \item{output_name_style}{Naming style for output columns:
 \itemize{
 \item \code{"snake_case"} returns standardized lower snake_case names.
@@ -83,6 +88,10 @@ wcvp_matching(data.frame(Genus = "Opuntia", Species = "yanganucensis"))
 names <- c("Aniba heterotepala", "Anthurium quipuscoae")
 df <- classify_spnames(names)
 wcvp_matching(df, output_name_style = "snake_case")
+
+# Attach per-stage timings for profiling
+out <- wcvp_matching(df, output_name_style = "snake_case", profile = TRUE)
+attr(out, "timings")
 }
 \dontshow{\}) # examplesIf}
 }

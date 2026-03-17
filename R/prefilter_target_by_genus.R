@@ -17,6 +17,7 @@
 #'   \item{genus}{Genus name (character).}
 #'   \item{plant_name_id}{List-column of unique IDs per genus.}
 #'   \item{n_records}{Number of IDs per genus.}
+#'   \item{genus_nchar}{Number of characters in the genus name.}
 #' }
 #' @examplesIf rlang::is_installed("wcvpdata")
 #' \donttest{
@@ -25,20 +26,37 @@
 #' }
 #' @export
 build_genus_index <- function(target_df = NULL) {
-  target_norm <- if (is.null(target_df)) default_target_df() else normalize_target_df(target_df)
+  if (is.null(target_df)) {
+    cached <- .wcvpmatch_cache[["default_genus_index"]]
+    if (!is.null(cached)) {
+      return(cached)
+    }
+    target_norm <- default_target_df()
+  } else {
+    target_norm <- if (is_normalized_target_df(target_df)) target_df else normalize_target_df(target_df)
+  }
 
   if (!"plant_name_id" %in% names(target_norm)) {
     target_norm <- dplyr::mutate(target_norm, plant_name_id = as.numeric(dplyr::row_number()))
   }
 
-  target_norm %>%
+  out <- target_norm %>%
     dplyr::filter(!is.na(genus), nzchar(genus)) %>%
     dplyr::group_by(genus) %>%
     dplyr::summarise(
       n_records = dplyr::n_distinct(plant_name_id),
       plant_name_id = list(unique(plant_name_id)),
       .groups = "drop"
+    ) %>%
+    dplyr::mutate(
+      genus_nchar = nchar(genus)
     )
+
+  if (is.null(target_df)) {
+    .wcvpmatch_cache[["default_genus_index"]] <- out
+  }
+
+  out
 }
 
 
@@ -85,7 +103,7 @@ prefilter_target_by_genus <- function(df,
                                       max_dist = 1,
                                       method = "osa") {
   df <- check_df_format(df)
-  target_norm <- get_db(target_df = target_df)
+  target_norm <- if (is_normalized_target_df(target_df)) target_df else get_db(target_df = target_df)
 
   if (is.null(genus_index)) {
     genus_index <- build_genus_index(target_df = target_norm)
@@ -108,18 +126,45 @@ prefilter_target_by_genus <- function(df,
     return(out)
   }
 
-  available_genera <- genus_index %>% dplyr::distinct(genus)
+  available_genera <- genus_index %>%
+    dplyr::distinct(genus, .keep_all = TRUE) %>%
+    dplyr::mutate(
+      genus_nchar = if ("genus_nchar" %in% names(.)) genus_nchar else nchar(genus)
+    )
 
   exact_genera <- input_genera %>%
     dplyr::semi_join(available_genera, by = c("Orig.Genus" = "genus")) %>%
     dplyr::pull(Orig.Genus) %>%
     unique()
 
+  unresolved_genera <- input_genera %>%
+    dplyr::anti_join(
+      tibble::tibble(genus = exact_genera),
+      by = c("Orig.Genus" = "genus")
+    )
+
   fuzzy_genera <- character(0)
-  if (isTRUE(include_fuzzy)) {
-    fuzzy_tbl <- input_genera %>%
+  if (isTRUE(include_fuzzy) && nrow(unresolved_genera) > 0) {
+    available_genera_fuzzy <- available_genera
+
+    if (.is_edit_distance_method(method)) {
+      unresolved_lengths <- nchar(unresolved_genera$Orig.Genus)
+      allowed_lengths <- if (tolower(method) == "hamming") {
+        unique(unresolved_lengths)
+      } else {
+        unique(unlist(lapply(
+          unresolved_lengths,
+          function(x) seq.int(max(0L, x - max_dist), x + max_dist)
+        )))
+      }
+
+      available_genera_fuzzy <- available_genera_fuzzy %>%
+        dplyr::filter(genus_nchar %in% allowed_lengths)
+    }
+
+    fuzzy_tbl <- unresolved_genera %>%
       fozziejoin::fozzie_string_left_join(
-        available_genera,
+        available_genera_fuzzy %>% dplyr::select(genus),
         by = c("Orig.Genus" = "genus"),
         max_distance = max_dist,
         method = method,
@@ -149,4 +194,3 @@ prefilter_target_by_genus <- function(df,
   attr(out, "fuzzy_genera") <- fuzzy_genera
   out
 }
-

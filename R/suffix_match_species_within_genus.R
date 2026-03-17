@@ -33,10 +33,51 @@ wcvp_suffix_match_species_within_genus <- function(df, target_df = NULL){
     }
   }
 
-  res <- df %>%
-    dplyr::group_by(Matched.Genus) %>%
-    dplyr::group_split() %>%
-    purrr::map_dfr(suffix_match_species_within_genus_helper, target_df)
+  common_suffixes <- rev(c("a", "i", "is", "um", "us", "ae"))
+  catch_suffixes <- paste0("(.*?)(", paste0(common_suffixes, collapse = "|"), ")$")
+
+  df_work <- df %>%
+    dplyr::mutate(
+      .row_id = dplyr::row_number(),
+      Root = stringr::str_match(Orig.Species, catch_suffixes)[, 2]
+    )
+
+  database_subset <- target_df %>%
+    dplyr::semi_join(
+      df_work %>% dplyr::distinct(Matched.Genus),
+      by = c("Genus" = "Matched.Genus")
+    ) %>%
+    dplyr::select(Genus, Species) %>%
+    dplyr::distinct() %>%
+    dplyr::mutate(
+      Root = stringr::str_match(Species, catch_suffixes)[, 2]
+    )
+
+  matched <- df_work %>%
+    dplyr::inner_join(
+      database_subset,
+      by = c("Matched.Genus" = "Genus", "Root" = "Root"),
+      na_matches = "never"
+    ) %>%
+    dplyr::mutate(Matched.Species = Species) %>%
+    dplyr::select(-c(Species, Root)) %>%
+    dplyr::group_by(.row_id) %>%
+    dplyr::slice_head(n = 1) %>%
+    dplyr::ungroup()
+
+  unmatched <- df_work %>%
+    dplyr::anti_join(
+      matched %>% dplyr::select(.row_id),
+      by = ".row_id"
+    ) %>%
+    dplyr::select(-Root)
+
+  assertthat::assert_that(nrow(df_work) == (nrow(matched) + nrow(unmatched)))
+
+  res <- dplyr::bind_rows(matched, unmatched, .id = 'suffix_match_species_within_genus') %>%
+    dplyr::mutate(suffix_match_species_within_genus = (suffix_match_species_within_genus == 1)) %>%
+    dplyr::select(-dplyr::any_of(".row_id")) %>%
+    dplyr::relocate(c('Orig.Genus', 'Orig.Species'))
 
   return(res)
 }
@@ -78,4 +119,3 @@ suffix_match_species_within_genus_helper <- function(df, target_df){
     dplyr::relocate(c('Orig.Genus', 'Orig.Species')) ## Genus & Species column at the beginning of tibble
   return(combined)
 }
-

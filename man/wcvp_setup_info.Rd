@@ -12,7 +12,8 @@ wcvp_setup_info(inform = TRUE)
 \value{
 Invisibly returns a named list with setup status fields:
 \code{default_backbone_available}, \code{wcvpdata_installed},
-\code{wcvpdata_has_backbone}, \code{repository}, and \code{install_command}.
+\code{wcvpdata_has_backbone}, \code{wcvpdata_version}, \code{repository}, and
+\code{install_command}.
 }
 \description{
 Reports whether the optional companion package \code{wcvpdata} is available for
