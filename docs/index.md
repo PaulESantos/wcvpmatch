@@ -1,17 +1,4 @@
-
-<!-- README.md is generated from README.Rmd. Please edit that file -->
-
 # wcvpmatch
-
-<!-- badges: start -->
-
-[![Lifecycle:
-experimental](https://img.shields.io/badge/lifecycle-stable-green.svg)](https://lifecycle.r-lib.org/articles/stages.html#stable)
-[![CRAN
-status](https://www.r-pkg.org/badges/version/wcvpmatch)](https://CRAN.R-project.org/package=wcvpmatch)
-[![](http://cranlogs.r-pkg.org/badges/grand-total/wcvpmatch?color=green)](https://cran.r-project.org/package=wcvpmatch)
-[![](http://cranlogs.r-pkg.org/badges/last-week/wcvpmatch?color=green)](https://cran.r-project.org/package=wcvpmatch)
-<!-- badges: end -->
 
 `wcvpmatch` is an R package for scientific plant name standardization
 and taxonomic reconciliation against the [World Checklist of Vascular
@@ -25,9 +12,9 @@ taxonomic resolution workflows.
 ## What `wcvpmatch` adds
 
 - robust parsing and normalization of scientific names
-  (`classify_spnames()`)
+  ([`classify_spnames()`](https://paulesantos.github.io/wcvpmatch/reference/classify_spnames.md))
 - staged exact + fuzzy matching at genus/species/infraspecies levels
-  (`wcvp_matching()`)
+  ([`wcvp_matching()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_matching.md))
 - infraspecific rank-aware reconciliation (trinomial support)
 - optional genus prefiltering for performance
 - duplicate-aware matching with full row traceability
@@ -205,14 +192,15 @@ res |>
 
 ## Matching workflow
 
-`wcvp_matching()` follows a staged pipeline:
+[`wcvp_matching()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_matching.md)
+follows a staged pipeline:
 
-1.  `wcvp_direct_match()`
-2.  `wcvp_genus_match()`
-3.  `wcvp_fuzzy_match_genus()`
-4.  `wcvp_direct_match_species_within_genus()`
-5.  `wcvp_suffix_match_species_within_genus()`
-6.  `wcvp_fuzzy_match_species_within_genus()`
+1.  [`wcvp_direct_match()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_direct_match.md)
+2.  [`wcvp_genus_match()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_genus_match.md)
+3.  [`wcvp_fuzzy_match_genus()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_fuzzy_match_genus.md)
+4.  [`wcvp_direct_match_species_within_genus()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_direct_match_species_within_genus.md)
+5.  [`wcvp_suffix_match_species_within_genus()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_suffix_match_species_within_genus.md)
+6.  [`wcvp_fuzzy_match_species_within_genus()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_fuzzy_match_species_within_genus.md)
 7.  infraspecific checks (rank + fuzzy infraspecies, when applicable)
 
 This staged design prioritizes strict evidence first, then progressively
@@ -220,9 +208,11 @@ relaxes criteria to recover additional valid matches.
 
 ## Input requirements
 
-`wcvp_matching()` accepts:
+[`wcvp_matching()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_matching.md)
+accepts:
 
-- parsed output from `classify_spnames()`
+- parsed output from
+  [`classify_spnames()`](https://paulesantos.github.io/wcvpmatch/reference/classify_spnames.md)
 - or a tibble/data.frame with minimal columns `Genus` and `Species`
 
 Optional columns:
@@ -233,7 +223,8 @@ Optional columns:
 
 ## Output highlights
 
-`wcvp_matching()` returns:
+[`wcvp_matching()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_matching.md)
+returns:
 
 - traceable rows via `input_index`
 - original taxon components (`Orig.*`) and matched components
@@ -252,7 +243,9 @@ Optional columns:
 
 ## Example: FIA data and ambiguous genus ties
 
-When input genera have tied fuzzy candidates, `wcvp_matching()` emits:
+When input genera have tied fuzzy candidates,
+[`wcvp_matching()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_matching.md)
+emits:
 
 `Multiple fuzzy matches for some genera (tied distances). The first match is selected.`
 
@@ -382,16 +375,16 @@ species-level matching and avoids recomputing duplicated names.
 
 ## Core public functions
 
-- `classify_spnames()`
-- `wcvp_matching()`
-- `build_genus_index()`
-- `prefilter_target_by_genus()`
-- `wcvp_direct_match()`
-- `wcvp_genus_match()`
-- `wcvp_fuzzy_match_genus()`
-- `wcvp_direct_match_species_within_genus()`
-- `wcvp_fuzzy_match_species_within_genus()`
-- `wcvp_suffix_match_species_within_genus()`
+- [`classify_spnames()`](https://paulesantos.github.io/wcvpmatch/reference/classify_spnames.md)
+- [`wcvp_matching()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_matching.md)
+- [`build_genus_index()`](https://paulesantos.github.io/wcvpmatch/reference/build_genus_index.md)
+- [`prefilter_target_by_genus()`](https://paulesantos.github.io/wcvpmatch/reference/prefilter_target_by_genus.md)
+- [`wcvp_direct_match()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_direct_match.md)
+- [`wcvp_genus_match()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_genus_match.md)
+- [`wcvp_fuzzy_match_genus()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_fuzzy_match_genus.md)
+- [`wcvp_direct_match_species_within_genus()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_direct_match_species_within_genus.md)
+- [`wcvp_fuzzy_match_species_within_genus()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_fuzzy_match_species_within_genus.md)
+- [`wcvp_suffix_match_species_within_genus()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_suffix_match_species_within_genus.md)
 
 ## Acknowledgement
 

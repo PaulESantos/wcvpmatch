@@ -1,0 +1,157 @@
+# Match Scientific Names Against WCVP
+
+**\[experimental\]**
+
+Runs a matching pipeline with exact and partial matching for binomial
+and trinomial names, including infraspecific rank validation.
+
+## Usage
+
+``` r
+wcvp_matching(
+  df,
+  target_df = NULL,
+  prefilter_genus = TRUE,
+  allow_duplicates = FALSE,
+  max_dist = 1,
+  method = "osa",
+  add_name_distance = FALSE,
+  name_distance_method = "osa",
+  profile = FALSE,
+  output_name_style = c("snake_case", "legacy")
+)
+```
+
+## Arguments
+
+- df:
+
+  Input tibble/data.frame with either `Genus`/`Species` or
+  `Orig.Genus`/`Orig.Species`. For trinomials, include `Infra.Rank` and
+  `Infraspecies` (or `Orig.Infra.Rank`/`Orig.Infraspecies`).
+
+- target_df:
+
+  Optional custom target table. If `NULL`, data are read from the
+  optional `wcvpdata` checklist when available; otherwise pass
+  `target_df` explicitly.
+
+- prefilter_genus:
+
+  Logical. If `TRUE`, prefilter `target_df` to candidate genera (exact +
+  fuzzy) before running the matching pipeline.
+
+- allow_duplicates:
+
+  Logical. If `TRUE`, duplicated taxon keys are deduplicated internally
+  for matching and then expanded back to original rows. Output includes
+  `input_index` for traceability to the original input.
+
+- max_dist:
+
+  Maximum distance used in all fuzzy matching stages (genus, species,
+  infraspecies).
+
+- method:
+
+  A string indicating the fuzzy matching method (passed to
+  `fozziejoin`). Supported methods:
+
+  - `"levenshtein"`: Levenshtein edit distance (default).
+
+  - `"osa"`: Optimal string alignment.
+
+  - `"damerau_levensthein"` or `"dl"`: Damerau-Levenshtein distance.
+
+  - `"hamming"`: Hamming distance (equal-length strings only).
+
+  - `"lcs"`: Longest common subsequence.
+
+  - `"qgram"`: Q-gram similarity (requires `q`).
+
+  - `"cosine"`: Cosine similarity (requires `q`).
+
+  - `"jaccard"`: Jaccard similarity (requires `q`).
+
+  - `"jaro"`: Jaro similarity.
+
+  - `"jaro_winkler"` or `"jw"`: Jaro-Winkler similarity.
+
+  - `"soundex"`: Soundex codes based on the National Archives standard.
+
+- add_name_distance:
+
+  Logical. If `TRUE`, add `matched_dist` as pairwise distance between
+  input name (`Input.Name` fallback `Orig.Name`) and
+  `matched_taxon_name`.
+
+- name_distance_method:
+
+  Method passed to
+  [`stringdist::stringdist`](https://rdrr.io/pkg/stringdist/man/stringdist.html)
+  when `add_name_distance = TRUE` (for example `"osa"`).
+
+- profile:
+
+  Logical. If `TRUE`, attach a timing table in the `"timings"` attribute
+  of the returned tibble, with elapsed seconds per pipeline stage.
+
+- output_name_style:
+
+  Naming style for output columns:
+
+  - `"snake_case"` returns standardized lower snake_case names.
+
+  - `"legacy"` keeps the historical mixed naming convention.
+
+## Value
+
+Tibble with matched names, process flags, and taxonomic context columns:
+`matched_plant_name_id`, `matched_taxon_name`, `taxon_status`,
+`accepted_plant_name_id`, `accepted_taxon_name`, `is_accepted_name`.
+
+## Examples
+
+``` r
+# \donttest{
+library(wcvpmatch)
+# Match a single name
+wcvp_matching(data.frame(Genus = "Opuntia", Species = "yanganucensis"))
+#> ℹ Input was converted from <data.frame> to a <tibble>.
+#>   See <https://tibble.tidyverse.org/> for more details.
+#> # A tibble: 1 × 43
+#>   input_index input_name            orig_name orig_genus orig_species infra_rank
+#>         <int> <chr>                 <chr>     <chr>      <chr>        <chr>     
+#> 1           1 Opuntia yanganucensis NA        Opuntia    yanganucens… NA        
+#> # ℹ 37 more variables: orig_infraspecies <chr>, matched_genus <chr>,
+#> #   matched_species <chr>, matched_infra_rank <chr>,
+#> #   matched_infraspecies <chr>, author <chr>, matched_plant_name_id <dbl>,
+#> #   matched_taxon_name <chr>, matched_taxon_authors <chr>, taxon_status <chr>,
+#> #   accepted_plant_name_id <dbl>, accepted_taxon_name <chr>,
+#> #   accepted_taxon_authors <chr>, is_accepted_name <lgl>, matched <lgl>,
+#> #   direct_match <lgl>, genus_match <lgl>, fuzzy_match_genus <lgl>, …
+
+# Match multiple names with snake_case output
+names <- c("Aniba heterotepala", "Anthurium quipuscoae")
+df <- classify_spnames(names)
+wcvp_matching(df, output_name_style = "snake_case")
+#> # A tibble: 2 × 43
+#>   input_index input_name           orig_name  orig_genus orig_species infra_rank
+#>         <int> <chr>                <chr>      <chr>      <chr>        <chr>     
+#> 1           1 Aniba heterotepala   Aniba het… Aniba      heterotepala NA        
+#> 2           2 Anthurium quipuscoae Anthurium… Anthurium  quipuscoae   NA        
+#> # ℹ 37 more variables: orig_infraspecies <chr>, matched_genus <chr>,
+#> #   matched_species <chr>, matched_infra_rank <chr>,
+#> #   matched_infraspecies <chr>, author <chr>, matched_plant_name_id <dbl>,
+#> #   matched_taxon_name <chr>, matched_taxon_authors <chr>, taxon_status <chr>,
+#> #   accepted_plant_name_id <dbl>, accepted_taxon_name <chr>,
+#> #   accepted_taxon_authors <chr>, is_accepted_name <lgl>, matched <lgl>,
+#> #   direct_match <lgl>, genus_match <lgl>, fuzzy_match_genus <lgl>, …
+
+# Attach per-stage timings for profiling
+out <- wcvp_matching(df, output_name_style = "snake_case", profile = TRUE)
+#> Error in wcvp_matching(df, output_name_style = "snake_case", profile = TRUE): unused argument (profile = TRUE)
+attr(out, "timings")
+#> Error: object 'out' not found
+# }
+```

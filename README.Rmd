@@ -50,6 +50,13 @@ You can install the development version from [GitHub](https://github.com/) with:
 pak::pak("PaulESantos/wcvpmatch")
 ```
 
+You can install the stable version from CRAN with:
+
+```r
+# install.packages("pak")
+pak::pak("wcvpmatch")
+```
+
 `wcvpmatch` depends on `fozziejoin` for fuzzy matching in the backend. For that reason, a working Rust toolchain is a practical prerequisite for a fully functional installation of `wcvpmatch`, especially when `fozziejoin` is installed from source.
 
 ### 1) Install Rust
