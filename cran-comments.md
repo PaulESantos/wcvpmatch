@@ -1,6 +1,10 @@
 ## Submission Summary
 
-This is the initial submission of 'wcvpmatch', an R package for scientific plant name reconciliation against the World Checklist of Vascular Plants (WCVP).
+This is a resubmission of 'wcvpmatch', an R package for scientific plant name reconciliation against the World Checklist of Vascular Plants (WCVP).
+
+This resubmission addresses the CRAN URL check for the `fia` dataset documentation:
+* The outdated FIA source URL was replaced with the current USDA Forest Service FIA DataMart URL: `https://research.fs.usda.gov/products/dataandtools/fia-datamart`.
+* The update was applied in the dataset source documentation and regenerated man page for `fia`.
 
 The package was adjusted to better align with CRAN expectations:
 * `wcvpdata` is listed in `Suggests` and is available from `r-universe` at `https://paulesantos.r-universe.dev` because the full WCVP backbone exceeds CRAN size limits.

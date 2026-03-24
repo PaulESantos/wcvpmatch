@@ -6,8 +6,11 @@
 <!-- badges: start -->
 
 [![Lifecycle:
-experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html)
-[![R-CMD-check](https://github.com/PaulESantos/wcvpmatch/actions/workflows/R-CMD-check.yml/badge.svg)](https://github.com/PaulESantos/wcvpmatch/actions/workflows/R-CMD-check.yml)
+experimental](https://img.shields.io/badge/lifecycle-stable-green.svg)](https://lifecycle.r-lib.org/articles/stages.html#stable)
+[![CRAN
+status](https://www.r-pkg.org/badges/version/wcvpmatch)](https://CRAN.R-project.org/package=wcvpmatch)
+[![](http://cranlogs.r-pkg.org/badges/grand-total/wcvpmatch?color=green)](https://cran.r-project.org/package=wcvpmatch)
+[![](http://cranlogs.r-pkg.org/badges/last-week/wcvpmatch?color=green)](https://cran.r-project.org/package=wcvpmatch)
 <!-- badges: end -->
 
 `wcvpmatch` is an R package for scientific plant name standardization
