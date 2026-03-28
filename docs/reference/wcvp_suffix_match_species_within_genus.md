@@ -1,6 +1,6 @@
 # Suffix Match Species within Genus
 
-**\[experimental\]**
+**\[stable\]**
 
 Tries to match the specific epithet by exchanging common suffixes within
 an already matched genus in 'WCVP'. The following suffixes are captured:

@@ -1,6 +1,6 @@
 #' Direct Match Species & Genus Binomial or Trinomial names
 #' @description
-#' `r lifecycle::badge("experimental")`
+#' `r lifecycle::badge("stable")`
 #'
 #' Tries to directly match Genus + Species | Genus + Species + Rank + Infraspecies to `WCVP data`.
 #'
@@ -164,5 +164,4 @@ wcvp_direct_match <- function(df, target_df = NULL) {
   dplyr::bind_rows(df_r1_out, df_r2_out, df_r3_ranked_out, df_r3_implied_out, df_other) |>
     dplyr::arrange(sorter)
 }
-
 

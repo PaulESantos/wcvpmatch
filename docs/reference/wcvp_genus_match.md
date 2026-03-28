@@ -1,6 +1,6 @@
 # Match Genus name
 
-**\[experimental\]**
+**\[stable\]**
 
 Tries to match the genus name to the 'WCVP' table (using the optional
 `wcvpdata` checklist by default when available).

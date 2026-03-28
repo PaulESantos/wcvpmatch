@@ -1,81 +1,54 @@
 # wcvpmatch
 
-`wcvpmatch` is an R package for scientific plant name standardization
-and taxonomic reconciliation against the [World Checklist of Vascular
-Plants (WCVP)](https://powo.science.kew.org/about-wcvp).
+`wcvpmatch` standardizes scientific plant names and reconciles them
+against a World Checklist of Vascular Plants (WCVP)-style backbone. It
+combines parsing, exact and fuzzy matching, accepted-name resolution,
+and optional distribution retrieval in a single workflow.
 
-The package is inspired by the matching workflow implemented in
-‘treemendous’ (especially its staged ‘matching’ logic), and extends that
-approach with broader functionality for robust and reproducible
-taxonomic resolution workflows.
+The package is built around three main pieces:
 
-## What `wcvpmatch` adds
-
-- robust parsing and normalization of scientific names
-  ([`classify_spnames()`](https://paulesantos.github.io/wcvpmatch/reference/classify_spnames.md))
-- staged exact + fuzzy matching at genus/species/infraspecies levels
-  ([`wcvp_matching()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_matching.md))
-- infraspecific rank-aware reconciliation (trinomial support)
-- optional genus prefiltering for performance
-- duplicate-aware matching with full row traceability
-  (`allow_duplicates`, `input_index`)
-- taxonomic context output (`matched_taxon_name`, `accepted_taxon_name`,
-  status fields)
-- author metadata propagation from ‘WCVP’ (`matched_taxon_authors`,
-  `accepted_taxon_authors`)
-- optional standardized output names in snake_case
-  (`output_name_style = "snake_case"`)
+- [`classify_spnames()`](https://paulesantos.github.io/wcvpmatch/reference/classify_spnames.md)
+  parses and normalizes submitted names.
+- [`wcvp_matching()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_matching.md)
+  resolves names against a WCVP-like backbone.
+- [`wcvp_distribution()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_distribution.md)
+  retrieves species, genus, or family distribution from WCVP name and
+  distribution tables.
 
 ## Installation
 
-You can install the development version from
-[GitHub](https://github.com/) with:
+Install the development version from GitHub:
 
 ``` r
 # install.packages("pak")
 pak::pak("PaulESantos/wcvpmatch")
 ```
 
-You can install the stable version from CRAN with:
+Install the CRAN release:
 
 ``` r
 # install.packages("pak")
 pak::pak("wcvpmatch")
 ```
 
-`wcvpmatch` depends on `fozziejoin` for fuzzy matching in the backend.
-For that reason, a working Rust toolchain is a practical prerequisite
-for a fully functional installation of `wcvpmatch`, especially when
-`fozziejoin` is installed from source.
+`wcvpmatch` uses `fozziejoin` for fuzzy matching. If `fozziejoin` is
+installed from source, a working Rust toolchain is needed.
 
-### 1) Install Rust
-
-Install Rust on your computer first. This is required so that the
-`fozziejoin` backend used by `wcvpmatch` can compile and run the fuzzy
-matching components correctly. You can download the installer from
-<https://rust-lang.org/tools/install/>.
-
-On Windows, configure Rust for R + Rtools compatibility by running this
-command in the R terminal:
+Install Rust from <https://rust-lang.org/tools/install/>. On Windows,
+the most practical setup for R + Rtools is:
 
 ``` bash
 rustup override set stable-x86_64-pc-windows-gnu
 ```
 
-### 2) Install dependencies:
+Install `fozziejoin`:
 
 ``` r
 pak::pak("fozziejoin")
 ```
 
-Or install the development version of `fozziejoin`:
-
-``` r
-pak::pak("fozzieverse/fozziejoin/fozziejoin-r")
-```
-
-If you want the package to use the default WCVP backbone automatically,
-install the companion package `wcvpdata` from `r-universe`:
+To use the default WCVP backbone automatically, install `wcvpdata` from
+`r-universe`:
 
 ``` r
 install.packages(
@@ -84,314 +57,140 @@ install.packages(
 )
 ```
 
-After loading `wcvpmatch`, you can check whether the default backbone is
-available with:
+## Quick example: `wcvp_matching()`
 
 ``` r
-library(wcvpmatch)
-wcvp_setup_info()
-```
-
-## Quick start
-
-``` r
-library(wcvpmatch)
-
-sp_names <- c(
-  "Aniba heterotepala",          
-  "Anthurium quipuscoae",        
-  "Centropogon reflexus",        
-  "Chuquiraga jonhstonii",       
-  "Cyathea carolinae",           
-  "Ditassa violascens",   
-  "Cleistocactus fieldianus",
-  "Opuntia yanganucensis",
-  "Epidendrum trachydipterum",  
-  "Hebeclinium hylophorbum",     
-  "Jaltometa sagastegui",        # Jaltomata sagastegui
-  "Lepechinia tomentosa",        
-  "Lupinus cookianos",           # Lupinus cookianus
-  "Oxalis hochreutinerii",       # Oxalis hochreutineri
-  "Passiflora heterohelix",     
-  "Peperomia arborigaudens",     # Peperromia arborigaudens
-  "Piper setulosum",             
-  "Pycnophyllum aristattum",     # Pycnophyllum aristatum
-  "Salvia subscadens",           # Salvia subscandens
-  "Stellaria macbridei",         
-  "Stemodia piurenses",          # Stemodia piurensis
-  "Weberbauerella brongnartioides" 
+matching_backbone <- tibble(
+  genus = c("Aniba", "Jaltomata", "Veronica", "Veronica"),
+  species = c("heterotepala", "sagastegui", "vulcanica", "spathulata"),
+  infraspecific_rank = NA_character_,
+  infraspecies = NA_character_,
+  plant_name_id = c(1, 2, 10, 200),
+  taxon_name = c(
+    "Aniba heterotepala",
+    "Jaltomata sagastegui",
+    "Veronica vulcanica",
+    "Veronica spathulata"
+  ),
+  taxon_authors = c("A.Author", "B.Author", "C.Author", "D.Author"),
+  taxon_status = c("Accepted", "Accepted", "Synonym", "Accepted"),
+  accepted_plant_name_id = c(1, 2, 200, 200)
 )
 
-
-res <- 
-  classify_spnames(sp_names) |> 
+matching_result <- classify_spnames(
+  c("Aniba heterotepala", "Jaltometa sagasteguii", "Veronica vulcanica")
+) |>
   wcvp_matching(
-  prefilter_genus = TRUE,
-  allow_duplicates = TRUE,
-  max_dist = 2,
-  method = "osa",
-  output_name_style = "snake_case"
-)
-
-res |>  dim()
-#> [1] 22 43
-
-res |> 
-  dplyr::select(input_name,
-                matched_taxon_name,
-                accepted_taxon_name, 
-                taxon_status) |> 
-  as.data.frame()
-#>                        input_name              matched_taxon_name
-#> 1              Aniba heterotepala              Aniba heterotepala
-#> 2            Anthurium quipuscoae            Anthurium quipuscoae
-#> 3            Centropogon reflexus            Centropogon reflexus
-#> 4           Chuquiraga jonhstonii           Chuquiraga johnstonii
-#> 5               Cyathea carolinae               Cyathea carolinae
-#> 6              Ditassa violascens              Ditassa violascens
-#> 7        Cleistocactus fieldianus        Cleistocactus fieldianus
-#> 8           Opuntia yanganucensis           Opuntia yanganucensis
-#> 9       Epidendrum trachydipterum       Epidendrum trachydipterum
-#> 10        Hebeclinium hylophorbum         Hebeclinium hylophorbum
-#> 11           Jaltometa sagastegui            Jaltomata sagastegui
-#> 12           Lepechinia tomentosa            Lepechinia tomentosa
-#> 13              Lupinus cookianos               Lupinus cookianus
-#> 14          Oxalis hochreutinerii            Oxalis hochreutineri
-#> 15         Passiflora heterohelix          Passiflora heterohelix
-#> 16        Peperomia arborigaudens         Peperomia arborigaudens
-#> 17                Piper setulosum                 Piper setulosum
-#> 18        Pycnophyllum aristattum          Pycnophyllum aristatum
-#> 19              Salvia subscadens              Salvia subscandens
-#> 20            Stellaria macbridei             Stellaria macbridei
-#> 21             Stemodia piurenses              Stemodia piurensis
-#> 22 Weberbauerella brongnartioides Weberbauerella brongniartioides
-#>                accepted_taxon_name taxon_status
-#> 1               Aniba heterotepala     accepted
-#> 2             Anthurium quipuscoae     accepted
-#> 3             Centropogon reflexus     accepted
-#> 4            Chuquiraga johnstonii     accepted
-#> 5                Cyathea carolinae     accepted
-#> 6               Ditassa violascens     accepted
-#> 7           Borzicactus fieldianus      synonym
-#> 8    Austrocylindropuntia floccosa      synonym
-#> 9        Epidendrum trachydipterum     accepted
-#> 10         Hebeclinium hylophorbum     accepted
-#> 11            Jaltomata sagastegui     accepted
-#> 12            Lepechinia tomentosa     accepted
-#> 13               Lupinus cookianus     accepted
-#> 14            Oxalis hochreutineri     accepted
-#> 15          Passiflora heterohelix     accepted
-#> 16         Peperomia arborigaudens     accepted
-#> 17                 Piper setulosum     accepted
-#> 18          Pycnophyllum aristatum     accepted
-#> 19              Salvia subscandens     accepted
-#> 20             Stellaria macbridei     accepted
-#> 21              Stemodia piurensis     accepted
-#> 22 Weberbauerella brongniartioides     accepted
-```
-
-## Matching workflow
-
-[`wcvp_matching()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_matching.md)
-follows a staged pipeline:
-
-1.  [`wcvp_direct_match()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_direct_match.md)
-2.  [`wcvp_genus_match()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_genus_match.md)
-3.  [`wcvp_fuzzy_match_genus()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_fuzzy_match_genus.md)
-4.  [`wcvp_direct_match_species_within_genus()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_direct_match_species_within_genus.md)
-5.  [`wcvp_suffix_match_species_within_genus()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_suffix_match_species_within_genus.md)
-6.  [`wcvp_fuzzy_match_species_within_genus()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_fuzzy_match_species_within_genus.md)
-7.  infraspecific checks (rank + fuzzy infraspecies, when applicable)
-
-This staged design prioritizes strict evidence first, then progressively
-relaxes criteria to recover additional valid matches.
-
-## Input requirements
-
-[`wcvp_matching()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_matching.md)
-accepts:
-
-- parsed output from
-  [`classify_spnames()`](https://paulesantos.github.io/wcvpmatch/reference/classify_spnames.md)
-- or a tibble/data.frame with minimal columns `Genus` and `Species`
-
-Optional columns:
-
-- `Infra.Rank`, `Infraspecies` for trinomial matching
-- `Input.Name` to preserve original query text
-- `Author` (from parser) as contextual information in output
-
-## Output highlights
-
-[`wcvp_matching()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_matching.md)
-returns:
-
-- traceable rows via `input_index`
-- original taxon components (`Orig.*`) and matched components
-  (`Matched.*`)
-- pathway flags (`direct_match`, `fuzzy_match_genus`, etc.)
-- final logical indicator `matched`
-- taxonomic context fields:
-- `matched_plant_name_id`
-- `matched_taxon_name`
-- `matched_taxon_authors`
-- `taxon_status`
-- `accepted_plant_name_id`
-- `accepted_taxon_name`
-- `accepted_taxon_authors`
-- `is_accepted_name`
-
-## Example: FIA data and ambiguous genus ties
-
-When input genera have tied fuzzy candidates,
-[`wcvp_matching()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_matching.md)
-emits:
-
-`Multiple fuzzy matches for some genera (tied distances). The first match is selected.`
-
-Example with an FIA-like table (`Orig.Genus`, `Orig.Species`):
-
-``` r
-fia
-#> # A tibble: 2,169 × 2
-#>    Orig.Genus Orig.Species
-#>    <chr>      <chr>       
-#>  1 Abies      amabilis    
-#>  2 Abies      balsamea    
-#>  3 Abies      bracteata   
-#>  4 Abies      concolor    
-#>  5 Abies      fraseri     
-#>  6 Abies      grandis     
-#>  7 Abies      lasiocarpa  
-#>  8 Abies      magnifica   
-#>  9 Abies      procera     
-#> 10 Abies      shastensis  
-#> # ℹ 2,159 more rows
-
-fia_result <- fia |>
-  wcvp_matching(
+    target_df = matching_backbone,
     allow_duplicates = TRUE,
-    max_dist = 2
+    max_dist = 2,
+    method = "osa",
+    add_name_distance = TRUE,
+    output_name_style = "snake_case"
   ) |>
-  dplyr::select(
+  select(
     input_name,
-    orig_genus,
-    matched_genus,
-    orig_species,
-    matched_species,
+    matched_taxon_name,
+    accepted_taxon_name,
     taxon_status,
-    accepted_taxon_name
+    matched_dist
   )
-#> Warning: ! Multiple fuzzy matches for some genera (tied distances).
-#> ℹ The first match is selected.
-fia_result
-#> # A tibble: 2,169 × 7
-#>    input_name orig_genus matched_genus orig_species matched_species taxon_status
-#>    <chr>      <chr>      <chr>         <chr>        <chr>           <chr>       
-#>  1 Abies ama… Abies      Abies         amabilis     amabilis        accepted    
-#>  2 Abies bal… Abies      Abies         balsamea     balsamea        accepted    
-#>  3 Abies bra… Abies      Abies         bracteata    bracteata       accepted    
-#>  4 Abies con… Abies      Abies         concolor     concolor        accepted    
-#>  5 Abies fra… Abies      Abies         fraseri      fraseri         accepted    
-#>  6 Abies gra… Abies      Abies         grandis      grandis         accepted    
-#>  7 Abies las… Abies      Abies         lasiocarpa   lasiocarpa      accepted    
-#>  8 Abies mag… Abies      Abies         magnifica    magnifica       accepted    
-#>  9 Abies pro… Abies      Abies         procera      procera         accepted    
-#> 10 Abies sha… Abies      Abies         shastensis   shastensis      synonym     
-#> # ℹ 2,159 more rows
-#> # ℹ 1 more variable: accepted_taxon_name <chr>
+
+matching_result
+#> # A tibble: 3 × 5
+#>   input_name    matched_taxon_name accepted_taxon_name taxon_status matched_dist
+#>   <chr>         <chr>              <chr>               <chr>               <dbl>
+#> 1 Aniba hetero… Aniba heterotepala Aniba heterotepala  accepted                0
+#> 2 Jaltometa sa… Jaltomata sagaste… Jaltomata sagasteg… accepted                2
+#> 3 Veronica vul… Veronica vulcanica Veronica spathulata synonym                 0
 ```
 
-Inspect ambiguous genus cases from the result attribute:
+## Quick example: `wcvp_distribution()`
 
 ``` r
-amb_g <- attr(fia_result, "ambiguous_genus")
-amb_g
-#> # A tibble: 4 × 28
-#> # Groups:   .row_id [2]
-#>   Orig.Genus Orig.Species genus_match Input.Name           Orig.Name Author
-#>   <chr>      <chr>        <lgl>       <chr>                <chr>     <chr> 
-#> 1 Howeia     forsteriana  FALSE       Howeia forsteriana   <NA>      ""    
-#> 2 Howeia     forsteriana  FALSE       Howeia forsteriana   <NA>      ""    
-#> 3 Hyeronima  clusioides   FALSE       Hyeronima clusioides <NA>      ""    
-#> 4 Hyeronima  clusioides   FALSE       Hyeronima clusioides <NA>      ""    
-#> # ℹ 22 more variables: Orig.Infraspecies <chr>, Infra.Rank <chr>, Rank <dbl>,
-#> #   has_cf <lgl>, has_aff <lgl>, is_sp <lgl>, is_spp <lgl>, had_hybrid <lgl>,
-#> #   rank_late <lgl>, rank_missing_infra <lgl>, had_na_author <lgl>,
-#> #   implied_infra <lgl>, sorter <dbl>, input_index <int>, .dedup_key <chr>,
-#> #   direct_match <lgl>, Matched.Genus <chr>, Matched.Species <chr>,
-#> #   Matched.Infraspecies <chr>, Matched.Infra.Rank <chr>, .row_id <int>,
-#> #   fuzzy_genus_dist <dbl>
-```
-
-Re-run only those ambiguous names for focused review:
-
-``` r
-amb_g |>
-  dplyr::ungroup() |>
-  dplyr::select(Orig.Genus, Orig.Species) |>
-  wcvp_matching(
-    allow_duplicates = TRUE,
-    max_dist = 2
-  ) |>
-  dplyr::select(
-    input_name,
-    orig_genus,
-    matched_genus,
-    orig_species,
-    matched_species,
-    taxon_status,
-    accepted_taxon_name
+distribution_names <- tibble(
+  plant_name_id = c(1, 2, 3, 4, 5, 6),
+  accepted_plant_name_id = c(NA, 3, NA, NA, 1, NA),
+  taxon_rank = c("Species", "Species", "Species", "Species", "Species", "Species"),
+  taxon_status = c("Accepted", "Synonym", "Accepted", "Accepted", "Synonym", "Accepted"),
+  family = c("Cactaceae", "Cactaceae", "Cactaceae", "Fagaceae", "Cactaceae", "Cactaceae"),
+  genus = c("Opuntia", "Nopalea", "Opuntia", "Quercus", "Opuntia", "Mammillaria"),
+  species = c("ficus-indica", "cochenillifera", "cochenillifera", "robur", "tuna", "elongata"),
+  taxon_name = c(
+    "Opuntia ficus-indica",
+    "Nopalea cochenillifera",
+    "Opuntia cochenillifera",
+    "Quercus robur",
+    "Opuntia tuna",
+    "Mammillaria elongata"
   )
-#> Warning: ! Multiple fuzzy matches for some genera (tied distances).
-#> ℹ The first match is selected.
-#> # A tibble: 4 × 7
-#>   input_name  orig_genus matched_genus orig_species matched_species taxon_status
-#>   <chr>       <chr>      <chr>         <chr>        <chr>           <chr>       
-#> 1 Howeia for… Howeia     Howea         forsteriana  forsteriana     accepted    
-#> 2 Howeia for… Howeia     Howea         forsteriana  forsteriana     accepted    
-#> 3 Hyeronima … Hyeronima  Hieronyma     clusioides   clusioides      accepted    
-#> 4 Hyeronima … Hyeronima  Hieronyma     clusioides   clusioides      accepted    
-#> # ℹ 1 more variable: accepted_taxon_name <chr>
-```
-
-In this example, the ambiguous genus spellings (`Howeia`, `Hyeronima`)
-are resolved to accepted genera (`Howea`, `Hieronyma`) after
-species-level checks.
-
-## Performance notes
-
-For medium/large inputs, recommended settings are:
-
-``` r
-wcvp_matching(
-  parsed_df,
-  allow_duplicates = TRUE
 )
+
+distribution_records <- tibble(
+  plant_locality_id = 1:7,
+  plant_name_id = c(1, 2, 3, 3, 4, 5, 6),
+  continent_code_l1 = c("8", "8", "8", "4", "1", "8", "8"),
+  continent = c(
+    "SOUTHERN AMERICA", "SOUTHERN AMERICA", "SOUTHERN AMERICA",
+    "NORTHERN AMERICA", "EUROPE", "SOUTHERN AMERICA", "SOUTHERN AMERICA"
+  ),
+  region_code_l2 = c("83", "83", "83", "41", "10", "85", "83"),
+  region = c(
+    "Western South America", "Western South America", "Western South America",
+    "Mexico", "Europe", "Southern South America", "Western South America"
+  ),
+  area_code_l3 = c("MEX", "PER", "COL", "MEX", "ESP", "GAL", "MEX"),
+  area = c("Mexico", "Peru", "Colombia", "Mexico", "Spain", "Galapagos", "Mexico"),
+  introduced = c(0, 0, 0, 1, 0, 0, 0),
+  extinct = c(0, 0, 0, 0, 0, 0, 0),
+  location_doubtful = c(0, 0, 0, 0, 0, 0, 0)
+)
+
+distribution_result <- wcvp_distribution(
+  c("Nopalea cochenilliferaa", "Taxon inexistente"),
+  taxon_rank = "species",
+  summarise_by_input = TRUE,
+  wcvp_names = distribution_names,
+  wcvp_distributions = distribution_records
+) |>
+  select(
+    submited_name,
+    accepted_taxon_name,
+    distribution_status,
+    distribution,
+    n_areas
+  )
+
+distribution_result
+#> # A tibble: 2 × 5
+#>   submited_name     accepted_taxon_name distribution_status distribution n_areas
+#>   <chr>             <chr>               <chr>               <chr>          <int>
+#> 1 Nopalea cochenil… Opuntia cochenilli… distribution_found  Colombia - …       2
+#> 2 Taxon inexistente <NA>                no_match            <NA>               0
 ```
 
-This typically reduces runtime by limiting candidate genera before
-species-level matching and avoids recomputing duplicated names.
+## Learn more
 
-## Core public functions
+The `README` keeps the examples short. For full guides, see the package
+vignettes:
 
-- [`classify_spnames()`](https://paulesantos.github.io/wcvpmatch/reference/classify_spnames.md)
-- [`wcvp_matching()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_matching.md)
-- [`build_genus_index()`](https://paulesantos.github.io/wcvpmatch/reference/build_genus_index.md)
-- [`prefilter_target_by_genus()`](https://paulesantos.github.io/wcvpmatch/reference/prefilter_target_by_genus.md)
-- [`wcvp_direct_match()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_direct_match.md)
-- [`wcvp_genus_match()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_genus_match.md)
-- [`wcvp_fuzzy_match_genus()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_fuzzy_match_genus.md)
-- [`wcvp_direct_match_species_within_genus()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_direct_match_species_within_genus.md)
-- [`wcvp_fuzzy_match_species_within_genus()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_fuzzy_match_species_within_genus.md)
-- [`wcvp_suffix_match_species_within_genus()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_suffix_match_species_within_genus.md)
+- [`vignette("wcvp-matching", package = "wcvpmatch")`](https://paulesantos.github.io/wcvpmatch/articles/wcvp-matching.md)
+- [`vignette("wcvp-distribution", package = "wcvpmatch")`](https://paulesantos.github.io/wcvpmatch/articles/wcvp-distribution.md)
+
+Those articles describe:
+
+- accepted-name resolution and status handling
+- staged fuzzy matching and diagnostics
+- duplicate handling and profiling
+- species, genus, and family distribution retrieval
+- occurrence filters and summarised output
 
 ## Acknowledgement
 
 `wcvpmatch` builds on ideas used in the
 [`treemendous`](https://github.com/speckerf/treemendous) matching
-workflow and extends them for WCVP-focused reconciliation, richer parser
-diagnostics, and reproducible row-level traceability.
+workflow and extends them for WCVP-focused reconciliation and
+reproducible row-level traceability.
 
 # Package index
 
@@ -401,10 +200,13 @@ Main entry points for parsing names, checking setup, and running the
 full reconciliation pipeline.
 
 - [`classify_spnames()`](https://paulesantos.github.io/wcvpmatch/reference/classify_spnames.md)
-  **\[experimental\]** : Classify Scientific Plant Names into Taxonomic
+  **\[estable\]** : Classify Scientific Plant Names into Taxonomic
   Components
 - [`wcvp_matching()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_matching.md)
-  **\[experimental\]** : Match Scientific Names Against WCVP
+  **\[estable\]** : Match Scientific Names Against WCVP
+- [`wcvp_distribution()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_distribution.md)
+  **\[estable\]** : Retrieve WCVP Distribution by Species, Genus, or
+  Family
 - [`wcvp_setup_info()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_setup_info.md)
   : Check Default Backbone Setup
 
@@ -414,31 +216,39 @@ Lower-level helpers that expose the staged matching strategy used
 internally by the main pipeline.
 
 - [`wcvp_direct_match()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_direct_match.md)
-  **\[experimental\]** : Direct Match Species & Genus Binomial or
-  Trinomial names
+  **\[estable\]** : Direct Match Species & Genus Binomial or Trinomial
+  names
 - [`wcvp_genus_match()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_genus_match.md)
-  **\[experimental\]** : Match Genus name
+  **\[estable\]** : Match Genus name
 - [`wcvp_fuzzy_match_genus()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_fuzzy_match_genus.md)
-  **\[experimental\]** : Fuzzy Match Genus Name
+  **\[estable\]** : Fuzzy Match Genus Name
 - [`wcvp_direct_match_species_within_genus()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_direct_match_species_within_genus.md)
-  **\[experimental\]** : Direct Match Species within Genus
+  **\[estable\]** : Direct Match Species within Genus
 - [`wcvp_fuzzy_match_species_within_genus()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_fuzzy_match_species_within_genus.md)
-  **\[experimental\]** : Fuzzy Match Species within Genus
+  **\[estable\]** : Fuzzy Match Species within Genus
 - [`wcvp_suffix_match_species_within_genus()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_suffix_match_species_within_genus.md)
-  **\[experimental\]** : Suffix Match Species within Genus
+  **\[estable\]** : Suffix Match Species within Genus
 
 ## Backbone utilities
 
 Utilities for prefiltering and indexing a WCVP-like target backbone.
 
 - [`build_genus_index()`](https://paulesantos.github.io/wcvpmatch/reference/build_genus_index.md)
-  **\[experimental\]** : Build a Genus Index for Fast Prefiltering
+  **\[estable\]** : Build a Genus Index for Fast Prefiltering
 - [`prefilter_target_by_genus()`](https://paulesantos.github.io/wcvpmatch/reference/prefilter_target_by_genus.md)
-  **\[experimental\]** : Prefilter Target Backbone by Input Genera
-  (Exact + Fuzzy)
+  **\[estable\]** : Prefilter Target Backbone by Input Genera (Exact +
+  Fuzzy)
 
 ## Example data
 
 - [`fia`](https://paulesantos.github.io/wcvpmatch/reference/fia.md) :
   Cleaned Master Tree Species List from FIA
 
+# Articles
+
+### Guides
+
+- [Resolve Names with
+  wcvp_matching()](https://paulesantos.github.io/wcvpmatch/articles/wcvp-matching.md):
+- [Retrieve Distribution with
+  wcvp_distribution()](https://paulesantos.github.io/wcvpmatch/articles/wcvp-distribution.md):

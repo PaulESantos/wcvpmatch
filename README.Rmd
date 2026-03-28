@@ -9,79 +9,76 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   fig.path = "man/figures/README-",
-  out.width = "100%"
+  out.width = "100%",
+  message = FALSE,
+  warning = FALSE
 )
+
+if (file.exists("DESCRIPTION") && requireNamespace("pkgload", quietly = TRUE)) {
+  pkgload::load_all(".", export_all = FALSE, helpers = FALSE, quiet = TRUE)
+} else {
+  library(wcvpmatch)
+}
+
+library(tibble)
+library(dplyr)
 ```
 
 # wcvpmatch
 
 <!-- badges: start -->
-[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-stable-green.svg)](https://lifecycle.r-lib.org/articles/stages.html#stable)
+[![Lifecycle: stable](https://img.shields.io/badge/lifecycle-stable-green.svg)](https://lifecycle.r-lib.org/articles/stages.html#stable)
 [![CRAN status](https://www.r-pkg.org/badges/version/wcvpmatch)](https://CRAN.R-project.org/package=wcvpmatch)
 [![](http://cranlogs.r-pkg.org/badges/grand-total/wcvpmatch?color=green)](https://cran.r-project.org/package=wcvpmatch)
 [![](http://cranlogs.r-pkg.org/badges/last-week/wcvpmatch?color=green)](https://cran.r-project.org/package=wcvpmatch)
 <!-- badges: end -->
 
-`wcvpmatch` is an R package for scientific plant name standardization and
-taxonomic reconciliation against the [World Checklist of Vascular Plants (WCVP)](https://powo.science.kew.org/about-wcvp).
+`wcvpmatch` standardizes scientific plant names and reconciles them against a
+World Checklist of Vascular Plants (WCVP)-style backbone. It combines parsing,
+exact and fuzzy matching, accepted-name resolution, and optional distribution
+retrieval in a single workflow.
 
-The package is inspired by the matching workflow implemented in
-'treemendous' (especially its staged 'matching' logic), and extends that
-approach with broader functionality for robust and reproducible taxonomic
-resolution workflows.
+The package is built around three main pieces:
 
-## What `wcvpmatch` adds
-
-- robust parsing and normalization of scientific names (`classify_spnames()`)
-- staged exact + fuzzy matching at genus/species/infraspecies levels (`wcvp_matching()`)
-- infraspecific rank-aware reconciliation (trinomial support)
-- optional genus prefiltering for performance
-- duplicate-aware matching with full row traceability (`allow_duplicates`, `input_index`)
-- taxonomic context output (`matched_taxon_name`, `accepted_taxon_name`, status fields)
-- author metadata propagation from 'WCVP' (`matched_taxon_authors`, `accepted_taxon_authors`)
-- optional standardized output names in snake_case (`output_name_style = "snake_case"`)
+- `classify_spnames()` parses and normalizes submitted names.
+- `wcvp_matching()` resolves names against a WCVP-like backbone.
+- `wcvp_distribution()` retrieves species, genus, or family distribution from
+  WCVP name and distribution tables.
 
 ## Installation
 
-You can install the development version from [GitHub](https://github.com/) with:
+Install the development version from GitHub:
 
 ```r
 # install.packages("pak")
 pak::pak("PaulESantos/wcvpmatch")
 ```
 
-You can install the stable version from CRAN with:
+Install the CRAN release:
 
 ```r
 # install.packages("pak")
 pak::pak("wcvpmatch")
 ```
 
-`wcvpmatch` depends on `fozziejoin` for fuzzy matching in the backend. For that reason, a working Rust toolchain is a practical prerequisite for a fully functional installation of `wcvpmatch`, especially when `fozziejoin` is installed from source.
+`wcvpmatch` uses `fozziejoin` for fuzzy matching. If `fozziejoin` is installed
+from source, a working Rust toolchain is needed.
 
-### 1) Install Rust
-
-Install Rust on your computer first. This is required so that the `fozziejoin` backend used by `wcvpmatch` can compile and run the fuzzy matching components correctly. You can download the installer from <https://rust-lang.org/tools/install/>.
-
-On Windows, configure Rust for R + Rtools compatibility by running this command in the R terminal:
+Install Rust from <https://rust-lang.org/tools/install/>. On Windows, the most
+practical setup for R + Rtools is:
 
 ```bash
 rustup override set stable-x86_64-pc-windows-gnu
 ```
 
-### 2) Install dependencies:
+Install `fozziejoin`:
 
 ```r
 pak::pak("fozziejoin")
 ```
 
-Or install the development version of `fozziejoin`:
-
-```r
-pak::pak("fozzieverse/fozziejoin/fozziejoin-r")
-```
-
-If you want the package to use the default WCVP backbone automatically, install the companion package `wcvpdata` from `r-universe`:
+To use the default WCVP backbone automatically, install `wcvpdata` from
+`r-universe`:
 
 ```r
 install.packages(
@@ -90,203 +87,126 @@ install.packages(
 )
 ```
 
-After loading `wcvpmatch`, you can check whether the default backbone is available with:
-
-```r
-library(wcvpmatch)
-wcvp_setup_info()
-```
-
-## Quick start
+## Quick example: `wcvp_matching()`
 
 ```{r}
-library(wcvpmatch)
-
-sp_names <- c(
-  "Aniba heterotepala",          
-  "Anthurium quipuscoae",        
-  "Centropogon reflexus",        
-  "Chuquiraga jonhstonii",       
-  "Cyathea carolinae",           
-  "Ditassa violascens",   
-  "Cleistocactus fieldianus",
-  "Opuntia yanganucensis",
-  "Epidendrum trachydipterum",  
-  "Hebeclinium hylophorbum",     
-  "Jaltometa sagastegui",        # Jaltomata sagastegui
-  "Lepechinia tomentosa",        
-  "Lupinus cookianos",           # Lupinus cookianus
-  "Oxalis hochreutinerii",       # Oxalis hochreutineri
-  "Passiflora heterohelix",     
-  "Peperomia arborigaudens",     # Peperromia arborigaudens
-  "Piper setulosum",             
-  "Pycnophyllum aristattum",     # Pycnophyllum aristatum
-  "Salvia subscadens",           # Salvia subscandens
-  "Stellaria macbridei",         
-  "Stemodia piurenses",          # Stemodia piurensis
-  "Weberbauerella brongnartioides" 
+matching_backbone <- tibble(
+  genus = c("Aniba", "Jaltomata", "Veronica", "Veronica"),
+  species = c("heterotepala", "sagastegui", "vulcanica", "spathulata"),
+  infraspecific_rank = NA_character_,
+  infraspecies = NA_character_,
+  plant_name_id = c(1, 2, 10, 200),
+  taxon_name = c(
+    "Aniba heterotepala",
+    "Jaltomata sagastegui",
+    "Veronica vulcanica",
+    "Veronica spathulata"
+  ),
+  taxon_authors = c("A.Author", "B.Author", "C.Author", "D.Author"),
+  taxon_status = c("Accepted", "Accepted", "Synonym", "Accepted"),
+  accepted_plant_name_id = c(1, 2, 200, 200)
 )
 
-
-res <- 
-  classify_spnames(sp_names) |> 
+matching_result <- classify_spnames(
+  c("Aniba heterotepala", "Jaltometa sagasteguii", "Veronica vulcanica")
+) |>
   wcvp_matching(
-  prefilter_genus = TRUE,
-  allow_duplicates = TRUE,
-  max_dist = 2,
-  method = "osa",
-  output_name_style = "snake_case"
-)
-
-res |>  dim()
-
-res |> 
-  dplyr::select(input_name,
-                matched_taxon_name,
-                accepted_taxon_name, 
-                taxon_status) |> 
-  as.data.frame()
-
-```
-
-## Matching workflow
-
-`wcvp_matching()` follows a staged pipeline:
-
-1. `wcvp_direct_match()`
-2. `wcvp_genus_match()`
-3. `wcvp_fuzzy_match_genus()`
-4. `wcvp_direct_match_species_within_genus()`
-5. `wcvp_suffix_match_species_within_genus()`
-6. `wcvp_fuzzy_match_species_within_genus()`
-7. infraspecific checks (rank + fuzzy infraspecies, when applicable)
-
-This staged design prioritizes strict evidence first, then progressively
-relaxes criteria to recover additional valid matches.
-
-
-## Input requirements
-
-`wcvp_matching()` accepts:
-
-- parsed output from `classify_spnames()`
-- or a tibble/data.frame with minimal columns `Genus` and `Species`
-
-Optional columns:
-
-- `Infra.Rank`, `Infraspecies` for trinomial matching
-- `Input.Name` to preserve original query text
-- `Author` (from parser) as contextual information in output
-
-## Output highlights
-
-`wcvp_matching()` returns:
-
-- traceable rows via `input_index`
-- original taxon components (`Orig.*`) and matched components (`Matched.*`)
-- pathway flags (`direct_match`, `fuzzy_match_genus`, etc.)
-- final logical indicator `matched`
-- taxonomic context fields:
-- `matched_plant_name_id`
-- `matched_taxon_name`
-- `matched_taxon_authors`
-- `taxon_status`
-- `accepted_plant_name_id`
-- `accepted_taxon_name`
-- `accepted_taxon_authors`
-- `is_accepted_name`
-
-## Example: FIA data and ambiguous genus ties
-
-When input genera have tied fuzzy candidates, `wcvp_matching()` emits:
-
-`Multiple fuzzy matches for some genera (tied distances). The first match is selected.`
-
-Example with an FIA-like table (`Orig.Genus`, `Orig.Species`):
-
-```{r}
-fia
-
-fia_result <- fia |>
-  wcvp_matching(
+    target_df = matching_backbone,
     allow_duplicates = TRUE,
-    max_dist = 2
+    max_dist = 2,
+    method = "osa",
+    add_name_distance = TRUE,
+    output_name_style = "snake_case"
   ) |>
-  dplyr::select(
+  select(
     input_name,
-    orig_genus,
-    matched_genus,
-    orig_species,
-    matched_species,
+    matched_taxon_name,
+    accepted_taxon_name,
     taxon_status,
-    accepted_taxon_name
+    matched_dist
   )
-fia_result
+
+matching_result
 ```
 
-Inspect ambiguous genus cases from the result attribute:
+## Quick example: `wcvp_distribution()`
 
 ```{r}
-amb_g <- attr(fia_result, "ambiguous_genus")
-amb_g
-```
-
-Re-run only those ambiguous names for focused review:
-
-```{r}
-amb_g |>
-  dplyr::ungroup() |>
-  dplyr::select(Orig.Genus, Orig.Species) |>
-  wcvp_matching(
-    allow_duplicates = TRUE,
-    max_dist = 2
-  ) |>
-  dplyr::select(
-    input_name,
-    orig_genus,
-    matched_genus,
-    orig_species,
-    matched_species,
-    taxon_status,
-    accepted_taxon_name
+distribution_names <- tibble(
+  plant_name_id = c(1, 2, 3, 4, 5, 6),
+  accepted_plant_name_id = c(NA, 3, NA, NA, 1, NA),
+  taxon_rank = c("Species", "Species", "Species", "Species", "Species", "Species"),
+  taxon_status = c("Accepted", "Synonym", "Accepted", "Accepted", "Synonym", "Accepted"),
+  family = c("Cactaceae", "Cactaceae", "Cactaceae", "Fagaceae", "Cactaceae", "Cactaceae"),
+  genus = c("Opuntia", "Nopalea", "Opuntia", "Quercus", "Opuntia", "Mammillaria"),
+  species = c("ficus-indica", "cochenillifera", "cochenillifera", "robur", "tuna", "elongata"),
+  taxon_name = c(
+    "Opuntia ficus-indica",
+    "Nopalea cochenillifera",
+    "Opuntia cochenillifera",
+    "Quercus robur",
+    "Opuntia tuna",
+    "Mammillaria elongata"
   )
-```
-
-In this example, the ambiguous genus spellings (`Howeia`, `Hyeronima`) are
-resolved to accepted genera (`Howea`, `Hieronyma`) after species-level checks.
-
-
-## Performance notes
-
-For medium/large inputs, recommended settings are:
-
-```r
-wcvp_matching(
-  parsed_df,
-  allow_duplicates = TRUE
 )
+
+distribution_records <- tibble(
+  plant_locality_id = 1:7,
+  plant_name_id = c(1, 2, 3, 3, 4, 5, 6),
+  continent_code_l1 = c("8", "8", "8", "4", "1", "8", "8"),
+  continent = c(
+    "SOUTHERN AMERICA", "SOUTHERN AMERICA", "SOUTHERN AMERICA",
+    "NORTHERN AMERICA", "EUROPE", "SOUTHERN AMERICA", "SOUTHERN AMERICA"
+  ),
+  region_code_l2 = c("83", "83", "83", "41", "10", "85", "83"),
+  region = c(
+    "Western South America", "Western South America", "Western South America",
+    "Mexico", "Europe", "Southern South America", "Western South America"
+  ),
+  area_code_l3 = c("MEX", "PER", "COL", "MEX", "ESP", "GAL", "MEX"),
+  area = c("Mexico", "Peru", "Colombia", "Mexico", "Spain", "Galapagos", "Mexico"),
+  introduced = c(0, 0, 0, 1, 0, 0, 0),
+  extinct = c(0, 0, 0, 0, 0, 0, 0),
+  location_doubtful = c(0, 0, 0, 0, 0, 0, 0)
+)
+
+distribution_result <- wcvp_distribution(
+  c("Nopalea cochenilliferaa", "Taxon inexistente"),
+  taxon_rank = "species",
+  summarise_by_input = TRUE,
+  wcvp_names = distribution_names,
+  wcvp_distributions = distribution_records
+) |>
+  select(
+    submited_name,
+    accepted_taxon_name,
+    distribution_status,
+    distribution,
+    n_areas
+  )
+
+distribution_result
 ```
 
-This typically reduces runtime by limiting candidate genera before species-level
-matching and avoids recomputing duplicated names.
+## Learn more
 
+The `README` keeps the examples short. For full guides, see the package
+vignettes:
 
+- `vignette("wcvp-matching", package = "wcvpmatch")`
+- `vignette("wcvp-distribution", package = "wcvpmatch")`
 
-## Core public functions
+Those articles describe:
 
-- `classify_spnames()`
-- `wcvp_matching()`
-- `build_genus_index()`
-- `prefilter_target_by_genus()`
-- `wcvp_direct_match()`
-- `wcvp_genus_match()`
-- `wcvp_fuzzy_match_genus()`
-- `wcvp_direct_match_species_within_genus()`
-- `wcvp_fuzzy_match_species_within_genus()`
-- `wcvp_suffix_match_species_within_genus()`
+- accepted-name resolution and status handling
+- staged fuzzy matching and diagnostics
+- duplicate handling and profiling
+- species, genus, and family distribution retrieval
+- occurrence filters and summarised output
 
 ## Acknowledgement
 
-`wcvpmatch` builds on ideas used in the [`treemendous`](https://github.com/speckerf/treemendous) matching workflow and
-extends them for WCVP-focused reconciliation, richer parser diagnostics, and
-reproducible row-level traceability.
+`wcvpmatch` builds on ideas used in the
+[`treemendous`](https://github.com/speckerf/treemendous) matching workflow and
+extends them for WCVP-focused reconciliation and reproducible row-level
+traceability.

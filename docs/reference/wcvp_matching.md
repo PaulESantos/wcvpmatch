@@ -1,6 +1,6 @@
 # Match Scientific Names Against WCVP
 
-**\[experimental\]**
+**\[stable\]**
 
 Runs a matching pipeline with exact and partial matching for binomial
 and trinomial names, including infraspecific rank validation.
@@ -150,8 +150,24 @@ wcvp_matching(df, output_name_style = "snake_case")
 
 # Attach per-stage timings for profiling
 out <- wcvp_matching(df, output_name_style = "snake_case", profile = TRUE)
-#> Error in wcvp_matching(df, output_name_style = "snake_case", profile = TRUE): unused argument (profile = TRUE)
 attr(out, "timings")
-#> Error: object 'out' not found
+#> # A tibble: 15 × 3
+#>    stage                                  elapsed_seconds  rows
+#>    <chr>                                            <dbl> <int>
+#>  1 check_df_format                                0.01000     2
+#>  2 deduplicate_input                              0           2
+#>  3 check_df_consistency                           0           2
+#>  4 get_db                                         0          NA
+#>  5 prefilter_target_by_genus                      1.78        2
+#>  6 wcvp_direct_match                              0.0500      2
+#>  7 wcvp_genus_match                               0.0200      0
+#>  8 wcvp_fuzzy_match_genus                         0           0
+#>  9 wcvp_direct_match_species_within_genus         0           0
+#> 10 wcvp_suffix_match_species_within_genus         0.0200      0
+#> 11 wcvp_fuzzy_match_species_within_genus          0           0
+#> 12 prepare_taxonomic_context_data                 0.130       2
+#> 13 add_taxonomic_context                          0           2
+#> 14 standardize_output_names                       0           2
+#> 15 total                                          2.23        2
 # }
 ```

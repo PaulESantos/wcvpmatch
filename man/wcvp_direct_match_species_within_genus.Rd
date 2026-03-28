@@ -15,7 +15,7 @@ wcvp_direct_match_species_within_genus(df, target_df = NULL)
 Returns a \code{tibble} with the additional logical column \code{direct_match_species_within_genus}, indicating whether the specific epithet was successfully matched within the matched genus (\code{TRUE}) or not (\code{FALSE}).
 }
 \description{
-\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#stable}{\figure{lifecycle-stable.svg}{options: alt='[Stable]'}}}{\strong{[Stable]}}
 
 Tries to directly match the specific epithet within an already matched genus in 'WCVP'.
 }

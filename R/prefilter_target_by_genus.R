@@ -1,7 +1,7 @@
 #' Build a Genus Index for Fast Prefiltering
 #'
 #' @description
-#' `r lifecycle::badge("experimental")`
+#' `r lifecycle::badge("stable")`
 #'
 #' Creates a compact genus-level index from the target backbone. The index stores
 #' one row per genus and a list-column with candidate `plant_name_id` values
@@ -63,7 +63,7 @@ build_genus_index <- function(target_df = NULL) {
 #' Prefilter Target Backbone by Input Genera (Exact + Fuzzy)
 #'
 #' @description
-#' `r lifecycle::badge("experimental")`
+#' `r lifecycle::badge("stable")`
 #'
 #' Reduces the target backbone to genera relevant for the current input names.
 #' This is designed as a pre-step before `wcvp_matching()` to reduce search space.
@@ -172,7 +172,7 @@ prefilter_target_by_genus <- function(df,
       ) %>%
       dplyr::filter(!is.na(genus), !is.na(fuzzy_genus_dist), fuzzy_genus_dist <= max_dist) %>%
       dplyr::group_by(Orig.Genus) %>%
-      dplyr::filter(fuzzy_genus_dist == min(fuzzy_genus_dist)) %>%
+      dplyr::slice_min(order_by = fuzzy_genus_dist, n = 1, with_ties = TRUE) %>%
       dplyr::ungroup()
 
     fuzzy_genera <- unique(fuzzy_tbl$genus)

@@ -1,6 +1,6 @@
 # Direct Match Species & Genus Binomial or Trinomial names
 
-**\[experimental\]**
+**\[stable\]**
 
 Tries to directly match Genus + Species \| Genus + Species + Rank +
 Infraspecies to `WCVP data`.

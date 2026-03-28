@@ -11,6 +11,7 @@ Standardizes and reconciles scientific plant names against a World Checklist of 
 \seealso{
 Useful links:
 \itemize{
+  \item \url{https://paulesantos.github.io/wcvpmatch/}
   \item \url{https://github.com/PaulESantos/wcvpmatch}
   \item Report bugs at \url{https://github.com/PaulESantos/wcvpmatch/issues}
 }

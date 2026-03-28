@@ -35,13 +35,18 @@ Depends:
     R (>= 4.1.0)
 LazyData: true
 LazyDataCompression: xz
-Suggests: 
+Suggests:
+    knitr,
+    pkgload,
     rlang (>= 1.0.0),
+    rmarkdown,
     testthat (>= 3.0.0),
     wcvpdata
+VignetteBuilder: knitr
 Additional_repositories: https://paulesantos.r-universe.dev
 Config/testthat/edition: 3
 Config/Needs/website: pkgdown
 URL: https://paulesantos.github.io/wcvpmatch/,
     https://github.com/PaulESantos/wcvpmatch
 BugReports: https://github.com/PaulESantos/wcvpmatch/issues
+

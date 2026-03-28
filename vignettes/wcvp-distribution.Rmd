@@ -1,0 +1,211 @@
+---
+title: "Retrieve Distribution with wcvp_distribution()"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Retrieve Distribution with wcvp_distribution()}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  warning = FALSE
+)
+
+if (file.exists("../DESCRIPTION") && requireNamespace("pkgload", quietly = TRUE)) {
+  pkgload::load_all("..", export_all = FALSE, helpers = FALSE, quiet = TRUE)
+} else {
+  library(wcvpmatch)
+}
+
+library(tibble)
+library(dplyr)
+```
+
+`wcvp_distribution()` retrieves geographic distribution from a pair of WCVP-like
+tables: one names table and one distribution table. In regular use those tables
+can come from `wcvpdata::wcvp_checklist_names` and
+`wcvpdata::wcvp_checklist_distribution`, but the function also works with
+user-supplied tables that follow the same schema.
+
+This vignette uses a compact reproducible example so every code block runs
+without depending on external data packages.
+
+## Example backbone
+
+```{r}
+make_distribution_names <- function() {
+  tibble(
+    plant_name_id = c(1, 2, 3, 4, 5, 6),
+    accepted_plant_name_id = c(NA, 3, NA, NA, 1, NA),
+    taxon_rank = c("Species", "Species", "Species", "Species", "Species", "Species"),
+    taxon_status = c("Accepted", "Synonym", "Accepted", "Accepted", "Synonym", "Accepted"),
+    family = c("Cactaceae", "Cactaceae", "Cactaceae", "Fagaceae", "Cactaceae", "Cactaceae"),
+    genus = c("Opuntia", "Nopalea", "Opuntia", "Quercus", "Opuntia", "Mammillaria"),
+    species = c("ficus-indica", "cochenillifera", "cochenillifera", "robur", "tuna", "elongata"),
+    taxon_name = c(
+      "Opuntia ficus-indica",
+      "Nopalea cochenillifera",
+      "Opuntia cochenillifera",
+      "Quercus robur",
+      "Opuntia tuna",
+      "Mammillaria elongata"
+    )
+  )
+}
+
+make_distribution_records <- function() {
+  tibble(
+    plant_locality_id = 1:7,
+    plant_name_id = c(1, 2, 3, 3, 4, 5, 6),
+    continent_code_l1 = c("8", "8", "8", "4", "1", "8", "8"),
+    continent = c(
+      "SOUTHERN AMERICA", "SOUTHERN AMERICA", "SOUTHERN AMERICA",
+      "NORTHERN AMERICA", "EUROPE", "SOUTHERN AMERICA", "SOUTHERN AMERICA"
+    ),
+    region_code_l2 = c("83", "83", "83", "41", "10", "85", "83"),
+    region = c(
+      "Western South America", "Western South America", "Western South America",
+      "Mexico", "Europe", "Southern South America", "Western South America"
+    ),
+    area_code_l3 = c("MEX", "PER", "COL", "MEX", "ESP", "GAL", "MEX"),
+    area = c("Mexico", "Peru", "Colombia", "Mexico", "Spain", "Galapagos", "Mexico"),
+    introduced = c(0, 0, 0, 1, 0, 0, 0),
+    extinct = c(0, 0, 0, 0, 0, 0, 0),
+    location_doubtful = c(0, 0, 0, 0, 0, 0, 0)
+  )
+}
+
+distribution_names <- make_distribution_names()
+distribution_records <- make_distribution_records()
+
+distribution_names
+distribution_records
+```
+
+## Species-level retrieval
+
+At species level, `wcvp_distribution()` parses input names, matches them through
+the same backend used by `wcvp_matching()`, resolves accepted names when
+possible, and then joins the result to the distribution table.
+
+```{r}
+species_out <- wcvp_distribution(
+  c("Nopalea cochenilliferaa", "Taxon inexistente"),
+  taxon_rank = "species",
+  wcvp_names = distribution_names,
+  wcvp_distributions = distribution_records
+)
+
+species_out |>
+  select(
+    submited_name,
+    matched_taxon,
+    accepted_taxon_name,
+    area_code_l3,
+    area,
+    distribution_status
+  )
+```
+
+The first query is fuzzy-matched to a synonym and then resolved to the accepted
+taxon `Opuntia cochenillifera`. The second query is preserved in the output with
+`distribution_status = "no_match"`.
+
+## One row per submitted name
+
+When `summarise_by_input = TRUE`, the function collapses the area-related
+columns to one row per input taxon.
+
+```{r}
+species_summary <- wcvp_distribution(
+  c("Nopalea cochenilliferaa", "Taxon inexistente"),
+  taxon_rank = "species",
+  summarise_by_input = TRUE,
+  wcvp_names = distribution_names,
+  wcvp_distributions = distribution_records
+)
+
+species_summary |>
+  select(
+    submited_name,
+    accepted_taxon_name,
+    distribution_status,
+    area_codes,
+    distribution,
+    n_areas
+  )
+```
+
+This format is useful for reporting and export because `distribution`,
+`areas`, `regions`, and `continents` are returned as collapsed text values
+separated by `" - "`.
+
+## Genus-level retrieval
+
+At genus level the function aggregates all accepted taxa in the genus and then
+summarises occurrences by area.
+
+```{r}
+genus_out <- wcvp_distribution(
+  "Opuntia",
+  taxon_rank = "genus",
+  introduced = FALSE,
+  wcvp_names = distribution_names,
+  wcvp_distributions = distribution_records
+)
+
+genus_out |>
+  select(matched_taxon, area_code_l3, area, occurrence_type, distribution_status)
+```
+
+The introduced Mexico record is excluded here because `introduced = FALSE`.
+
+## Family-level retrieval
+
+Family-level lookup can also use fuzzy matching through `fozziejoin`.
+
+```{r}
+family_out <- wcvp_distribution(
+  "Cactacee",
+  taxon_rank = "family",
+  max_dist = 1,
+  wcvp_names = distribution_names,
+  wcvp_distributions = distribution_records
+)
+
+family_out |>
+  select(matched_taxon, match_distance, area_code_l3, area) |>
+  distinct()
+```
+
+## Fallback from species to genus
+
+If a species query cannot recover species-level distribution, the function can
+fall back to the matched genus without interrupting execution.
+
+```{r}
+fallback_out <- wcvp_distribution(
+  "Opuntia especieinventada",
+  taxon_rank = "species",
+  wcvp_names = distribution_names,
+  wcvp_distributions = distribution_records
+)
+
+fallback_out |>
+  select(submited_name, matched_taxon, area_code_l3, area, distribution_status)
+```
+
+This fallback is marked with `distribution_status = "genus_distribution_fallback"`.
+
+## Practical notes
+
+- Use `summarise_by_input = TRUE` when you need one row per submitted name.
+- Keep the default output when you need one row per taxon-area combination.
+- The columns `native`, `introduced`, `extinct`, and `location_doubtful` can be
+  used as filters before the final summary is returned.
+- If `wcvpdata` is installed, you can omit `wcvp_names` and
+  `wcvp_distributions` to use the default backbone.

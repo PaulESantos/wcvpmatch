@@ -1,6 +1,6 @@
 # Direct Match Species within Genus
 
-**\[experimental\]**
+**\[stable\]**
 
 Tries to directly match the specific epithet within an already matched
 genus in 'WCVP'.

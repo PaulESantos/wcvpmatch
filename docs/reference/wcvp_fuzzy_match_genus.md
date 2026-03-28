@@ -1,6 +1,6 @@
 # Fuzzy Match Genus Name
 
-**\[experimental\]**
+**\[stable\]**
 
 Tries to fuzzy match the genus name to the 'WCVP' table (using the
 optional `wcvpdata` checklist by default when available).

@@ -15,3 +15,7 @@
 ^.*\\.Rcheck$
 ^r\\rust_helper\\.R
 ^_pkgdown\\.yml$
+^docs$
+^_pkgdown\.yml$
+^pkgdown$
+^\.github$

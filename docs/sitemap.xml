@@ -1,5 +1,8 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://paulesantos.github.io/wcvpmatch/404.html</loc></url>
+<url><loc>https://paulesantos.github.io/wcvpmatch/articles/index.html</loc></url>
+<url><loc>https://paulesantos.github.io/wcvpmatch/articles/wcvp-distribution.html</loc></url>
+<url><loc>https://paulesantos.github.io/wcvpmatch/articles/wcvp-matching.html</loc></url>
 <url><loc>https://paulesantos.github.io/wcvpmatch/authors.html</loc></url>
 <url><loc>https://paulesantos.github.io/wcvpmatch/index.html</loc></url>
 <url><loc>https://paulesantos.github.io/wcvpmatch/LICENSE-text.html</loc></url>
@@ -15,6 +18,7 @@
 <url><loc>https://paulesantos.github.io/wcvpmatch/reference/wcvpmatch-package.html</loc></url>
 <url><loc>https://paulesantos.github.io/wcvpmatch/reference/wcvp_direct_match.html</loc></url>
 <url><loc>https://paulesantos.github.io/wcvpmatch/reference/wcvp_direct_match_species_within_genus.html</loc></url>
+<url><loc>https://paulesantos.github.io/wcvpmatch/reference/wcvp_distribution.html</loc></url>
 <url><loc>https://paulesantos.github.io/wcvpmatch/reference/wcvp_fuzzy_match_genus.html</loc></url>
 <url><loc>https://paulesantos.github.io/wcvpmatch/reference/wcvp_fuzzy_match_species_within_genus.html</loc></url>
 <url><loc>https://paulesantos.github.io/wcvpmatch/reference/wcvp_genus_match.html</loc></url>

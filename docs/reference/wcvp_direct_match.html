@@ -18,6 +18,13 @@ Tries to directly match Genus + Species | Genus + Species + Rank + Infraspecies 
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Guides</h6></li>
+    <li><a class="dropdown-item" href="../articles/wcvp-matching.html">Resolve Names with wcvp_matching()</a></li>
+    <li><a class="dropdown-item" href="../articles/wcvp-distribution.html">Retrieve Distribution with wcvp_distribution()</a></li>
+  </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
@@ -36,7 +43,7 @@ Tries to directly match Genus + Species | Genus + Species + Rank + Infraspecies 
     </div>
 
     <div class="ref-description section level2">
-    <p><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental" class="external-link"><img src="figures/lifecycle-experimental.svg" alt="[Experimental]"></a></p>
+    <p><a href="https://lifecycle.r-lib.org/articles/stages.html#stable" class="external-link"><img src="figures/lifecycle-stable.svg" alt="[Stable]"></a></p>
 <p>Tries to directly match Genus + Species | Genus + Species + Rank + Infraspecies to <code>WCVP data</code>.</p>
     </div>
 
@@ -66,7 +73,7 @@ Returns original columns plus <code>Matched.Genus</code>, <code>Matched.Species<
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># \donttest{</span></span></span>
-<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/PaulESantos/wcvpmatch" class="external-link">wcvpmatch</a></span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://paulesantos.github.io/wcvpmatch/">wcvpmatch</a></span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="co"># Simple binomial match</span></span></span>
 <span class="r-in"><span><span class="va">df_parsed</span> <span class="op">&lt;-</span> <span class="fu"><a href="classify_spnames.html">classify_spnames</a></span><span class="op">(</span><span class="st">"Opuntia yanganucensis"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">wcvp_direct_match</span><span class="op">(</span><span class="va">df_parsed</span><span class="op">)</span></span></span>

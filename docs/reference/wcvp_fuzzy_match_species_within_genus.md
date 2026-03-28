@@ -1,6 +1,6 @@
 # Fuzzy Match Species within Genus
 
-**\[experimental\]**
+**\[stable\]**
 
 Tries to fuzzy match the species epithet within a matched genus against
 'WCVP' (using the optional `wcvpdata` checklist by default when

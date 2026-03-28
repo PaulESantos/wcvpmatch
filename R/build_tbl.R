@@ -1,7 +1,7 @@
 #' Classify Scientific Plant Names into Taxonomic Components
 #'
 #' @description
-#' `r lifecycle::badge("experimental")`
+#' `r lifecycle::badge("stable")`
 #'
 #' Parse and classify scientific plant names into taxonomic components:
 #' genus, specific epithet, infraspecific rank, infraspecific epithet, and author.

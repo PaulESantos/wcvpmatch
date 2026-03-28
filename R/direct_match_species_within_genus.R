@@ -1,7 +1,7 @@
 #' Direct Match Species within Genus
 #'
 #' @description
-#' `r lifecycle::badge("experimental")`
+#' `r lifecycle::badge("stable")`
 #'
 #' Tries to directly match the specific epithet within an already matched genus in 'WCVP'.
 #'
@@ -58,4 +58,3 @@ wcvp_direct_match_species_within_genus <- function(df, target_df = NULL){
 
   return(combined)
 }
-

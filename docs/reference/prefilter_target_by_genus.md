@@ -1,6 +1,6 @@
 # Prefilter Target Backbone by Input Genera (Exact + Fuzzy)
 
-**\[experimental\]**
+**\[stable\]**
 
 Reduces the target backbone to genera relevant for the current input
 names. This is designed as a pre-step before
@@ -88,7 +88,7 @@ df <- data.frame(Genus = "Opuntia", Species = "yanganucensis")
 prefilter_target_by_genus(df)
 #> ℹ Input was converted from <data.frame> to a <tibble>.
 #>   See <https://tibble.tidyverse.org/> for more details.
-#> # A tibble: 1,509 × 33
+#> # A tibble: 1,509 × 34
 #>    plant_name_id ipni_id    taxon_rank taxon_status family    genus_hybrid genus
 #>            <dbl> <chr>      <chr>      <chr>        <chr>     <chr>        <chr>
 #>  1       2401900 175654-2   Variety    Synonym      Cactaceae NA           Opun…
@@ -102,7 +102,7 @@ prefilter_target_by_genus(df)
 #>  9       2877259 175376-2   Variety    Synonym      Cactaceae NA           Opun…
 #> 10       2400776 175023-2   Variety    Synonym      Cactaceae NA           Opun…
 #> # ℹ 1,499 more rows
-#> # ℹ 26 more variables: species_hybrid <chr>, species <chr>,
+#> # ℹ 27 more variables: species_hybrid <chr>, species <chr>,
 #> #   infraspecific_rank <chr>, infraspecies <chr>, parenthetical_author <chr>,
 #> #   primary_author <chr>, publication_author <chr>, place_of_publication <chr>,
 #> #   volume_and_page <chr>, first_published <chr>, nomenclatural_remarks <chr>,

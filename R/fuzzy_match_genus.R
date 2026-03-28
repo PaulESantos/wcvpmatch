@@ -1,6 +1,6 @@
 #' Fuzzy Match Genus Name
 #' @description
-#' `r lifecycle::badge("experimental")`
+#' `r lifecycle::badge("stable")`
 #'
 #' Tries to fuzzy match the genus name to the 'WCVP' table (using the optional `wcvpdata` checklist by default when available).
 #'
@@ -61,8 +61,10 @@ wcvp_fuzzy_match_genus <- function(df, target_df = NULL, max_dist = 1, method = 
     # save matched Genus name to Matched.Genus
     dplyr::mutate(Matched.Genus = genus) %>%
     dplyr::select(-c('genus')) %>%
+    dplyr::filter(!is.na(Matched.Genus), !is.na(fuzzy_genus_dist)) %>%
     dplyr::group_by(.row_id) %>%
-    dplyr::filter(fuzzy_genus_dist == min(fuzzy_genus_dist))
+    dplyr::slice_min(order_by = fuzzy_genus_dist, n = 1, with_ties = TRUE) %>%
+    dplyr::ungroup()
 
   ambiguous_keys <- matched_temp %>%
     dplyr::count(.row_id, name = "n") %>%
@@ -105,4 +107,3 @@ wcvp_fuzzy_match_genus <- function(df, target_df = NULL, max_dist = 1, method = 
 
   return(res)
 }
-

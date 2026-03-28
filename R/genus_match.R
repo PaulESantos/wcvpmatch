@@ -1,7 +1,7 @@
 #' Match Genus name
 #'
 #' @description
-#' `r lifecycle::badge("experimental")`
+#' `r lifecycle::badge("stable")`
 #'
 #' Tries to match the genus name to the 'WCVP' table (using the optional `wcvpdata` checklist by default when available).
 #'
@@ -48,4 +48,3 @@ wcvp_genus_match <- function(df, target_df = NULL){
 
   return(combined)
 }
-

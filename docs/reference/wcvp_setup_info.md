@@ -28,8 +28,9 @@ Invisibly returns a named list with setup status fields:
 ``` r
 library(wcvpmatch)
 wcvp_setup_info()
-#> Warning: ! wcvpdata is installed, but the expected object "wcvp_checklist_names" was not
-#>   found.
-#> ℹ Reinstall wcvpdata from <https://paulesantos.r-universe.dev>.
-#> ℹ Or pass a backbone explicitly with `target_df`.
+#> ── Default WCVP Backbone ──────────────────────────────────── wcvpmatch 0.0.1 ──
+#> ✔ wcvpdata   0.5.0        
+#> ✔ backbone   available
+#> i repository https://paulesantos.r-universe.dev
+#> i Functions can use the default backbone when `target_df = NULL`.
 ```
