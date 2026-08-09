@@ -1,3 +1,5 @@
+# wcvpmatch 0.0.2
+
 # wcvpmatch 0.0.1
 
 * Initial release to CRAN.

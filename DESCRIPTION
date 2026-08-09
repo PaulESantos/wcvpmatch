@@ -1,6 +1,6 @@
 Package: wcvpmatch
 Title: Taxonomic Name Reconciliation Against the 'WCVP' Backbone
-Version: 0.0.1
+Version: 0.0.2
 Authors@R: c(
         person("Paul Efren", "Santos Andrade",
         email = "paulefrens@gmail.com", role = c("aut", "cre", "cph")))
@@ -17,7 +17,6 @@ Description: Standardizes and reconciles scientific plant names against
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 Imports: 
     assertthat,
     cli,
@@ -41,7 +40,7 @@ Suggests:
     rlang (>= 1.0.0),
     rmarkdown,
     testthat (>= 3.0.0),
-    wcvpdata
+    wcvpdata (>= 0.7.0)
 VignetteBuilder: knitr
 Additional_repositories: https://paulesantos.r-universe.dev
 Config/testthat/edition: 3
@@ -49,4 +48,4 @@ Config/Needs/website: pkgdown
 URL: https://paulesantos.github.io/wcvpmatch/,
     https://github.com/PaulESantos/wcvpmatch
 BugReports: https://github.com/PaulESantos/wcvpmatch/issues
-
+Config/roxygen2/version: 8.0.0
