@@ -49,7 +49,7 @@ A tibble with columns:
 # \donttest{
 target <- data.frame(genus = "Opuntia", species = "ficus-indica", plant_name_id = 1)
 wcvpmatch:::build_genus_index(target)
-#> # A tibble: 1 x 4
+#> # A tibble: 1 × 4
 #>   genus   n_records plant_name_id genus_nchar
 #>   <chr>       <int> <list>              <int>
 #> 1 Opuntia         1 <dbl [1]>               7

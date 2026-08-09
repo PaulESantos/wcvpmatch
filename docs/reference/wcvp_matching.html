@@ -168,13 +168,13 @@ name components, authorship, matched and accepted IDs/names, status, and
 <span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://paulesantos.github.io/wcvpmatch/">wcvpmatch</a></span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="co"># Match a single name</span></span></span>
 <span class="r-in"><span><span class="fu">wcvp_matching</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Genus <span class="op">=</span> <span class="st">"Opuntia"</span>, Species <span class="op">=</span> <span class="st">"yanganucensis"</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">i</span> Input was converted from <span style="color: #0000BB;">&lt;data.frame&gt;</span> to a <span style="color: #0000BB;">&lt;tibble&gt;</span>.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Input was converted from <span style="color: #0000BB;">&lt;data.frame&gt;</span> to a <span style="color: #0000BB;">&lt;tibble&gt;</span>.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   See <span style="color: #0000BB; font-style: italic;">&lt;https://tibble.tidyverse.org/&gt;</span> for more details.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 x 21</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 21</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   input_index input_name            orig_name orig_genus orig_species infra_rank</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                 <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>           1 Opuntia yanganucensis <span style="color: #BB0000;">NA</span>        Opuntia    yanganucens~ <span style="color: #BB0000;">NA</span>        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># i 15 more variables: orig_infraspecies &lt;chr&gt;, matched_genus &lt;chr&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>           1 Opuntia yanganucensis <span style="color: #BB0000;">NA</span>        Opuntia    yanganucens… <span style="color: #BB0000;">NA</span>        </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 15 more variables: orig_infraspecies &lt;chr&gt;, matched_genus &lt;chr&gt;,</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   matched_species &lt;chr&gt;, matched_infra_rank &lt;chr&gt;,</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   matched_infraspecies &lt;chr&gt;, author &lt;chr&gt;, matched_plant_name_id &lt;dbl&gt;,</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   matched_taxon_name &lt;chr&gt;, matched_taxon_authors &lt;chr&gt;, taxon_status &lt;chr&gt;,</span></span>
@@ -185,12 +185,12 @@ name components, authorship, matched and accepted IDs/names, status, and
 <span class="r-in"><span><span class="va">names</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Aniba heterotepala"</span>, <span class="st">"Anthurium quipuscoae"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="classify_spnames.html">classify_spnames</a></span><span class="op">(</span><span class="va">names</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">wcvp_matching</span><span class="op">(</span><span class="va">df</span>, output_name_style <span class="op">=</span> <span class="st">"snake_case"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 2 x 21</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 2 × 21</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   input_index input_name           orig_name  orig_genus orig_species infra_rank</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>           1 Aniba heterotepala   Aniba het~ Aniba      heterotepala <span style="color: #BB0000;">NA</span>        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span>           2 Anthurium quipuscoae Anthurium~ Anthurium  quipuscoae   <span style="color: #BB0000;">NA</span>        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># i 15 more variables: orig_infraspecies &lt;chr&gt;, matched_genus &lt;chr&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>           1 Aniba heterotepala   Aniba het… Aniba      heterotepala <span style="color: #BB0000;">NA</span>        </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span>           2 Anthurium quipuscoae Anthurium… Anthurium  quipuscoae   <span style="color: #BB0000;">NA</span>        </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 15 more variables: orig_infraspecies &lt;chr&gt;, matched_genus &lt;chr&gt;,</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   matched_species &lt;chr&gt;, matched_infra_rank &lt;chr&gt;,</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   matched_infraspecies &lt;chr&gt;, author &lt;chr&gt;, matched_plant_name_id &lt;dbl&gt;,</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   matched_taxon_name &lt;chr&gt;, matched_taxon_authors &lt;chr&gt;, taxon_status &lt;chr&gt;,</span></span>
@@ -200,24 +200,24 @@ name components, authorship, matched and accepted IDs/names, status, and
 <span class="r-in"><span><span class="co"># Attach per-stage timings for profiling</span></span></span>
 <span class="r-in"><span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu">wcvp_matching</span><span class="op">(</span><span class="va">df</span>, output_name_style <span class="op">=</span> <span class="st">"snake_case"</span>, profile <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">out</span>, <span class="st">"timings"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 15 x 3</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 15 × 3</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    stage                                  elapsed_seconds  rows</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                                            <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span> check_df_format                                0.030<span style="text-decoration: underline;">0</span>      2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span> check_df_format                                0.010<span style="text-decoration: underline;">0</span>      2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 2</span> deduplicate_input                              0           2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 3</span> check_df_consistency                           0.030<span style="text-decoration: underline;">0</span>      2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 3</span> check_df_consistency                           0           2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 4</span> get_db                                         0          <span style="color: #BB0000;">NA</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 5</span> prefilter_target_by_genus                      0.270       2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 6</span> wcvp_direct_match                              0.280       2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 7</span> wcvp_genus_match                               0.020<span style="text-decoration: underline;">0</span>      0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 8</span> wcvp_fuzzy_match_genus                         0.020<span style="text-decoration: underline;">0</span>      0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span> wcvp_direct_match_species_within_genus         0.010<span style="text-decoration: underline;">00</span>     0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span> wcvp_suffix_match_species_within_genus         0.010<span style="text-decoration: underline;">00</span>     0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">11</span> wcvp_fuzzy_match_species_within_genus          0.020<span style="text-decoration: underline;">0</span>      0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">12</span> prepare_taxonomic_context_data                 0.610       2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 5</span> prefilter_target_by_genus                      0.070<span style="text-decoration: underline;">0</span>      2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 6</span> wcvp_direct_match                              0.060<span style="text-decoration: underline;">0</span>      2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 7</span> wcvp_genus_match                               0.010<span style="text-decoration: underline;">00</span>     0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 8</span> wcvp_fuzzy_match_genus                         0           0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span> wcvp_direct_match_species_within_genus         0.020<span style="text-decoration: underline;">0</span>      0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span> wcvp_suffix_match_species_within_genus         0           0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">11</span> wcvp_fuzzy_match_species_within_genus          0           0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">12</span> prepare_taxonomic_context_data                 0.140       2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">13</span> add_taxonomic_context                          0           2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">14</span> standardize_output_names                       0           2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">15</span> total                                          1.58        2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">15</span> total                                          0.450       2</span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

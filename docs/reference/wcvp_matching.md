@@ -132,13 +132,13 @@ name components, authorship, matched and accepted IDs/names, status, and
 library(wcvpmatch)
 # Match a single name
 wcvp_matching(data.frame(Genus = "Opuntia", Species = "yanganucensis"))
-#> i Input was converted from <data.frame> to a <tibble>.
+#> ℹ Input was converted from <data.frame> to a <tibble>.
 #>   See <https://tibble.tidyverse.org/> for more details.
-#> # A tibble: 1 x 21
+#> # A tibble: 1 × 21
 #>   input_index input_name            orig_name orig_genus orig_species infra_rank
 #>         <int> <chr>                 <chr>     <chr>      <chr>        <chr>     
-#> 1           1 Opuntia yanganucensis NA        Opuntia    yanganucens~ NA        
-#> # i 15 more variables: orig_infraspecies <chr>, matched_genus <chr>,
+#> 1           1 Opuntia yanganucensis NA        Opuntia    yanganucens… NA        
+#> # ℹ 15 more variables: orig_infraspecies <chr>, matched_genus <chr>,
 #> #   matched_species <chr>, matched_infra_rank <chr>,
 #> #   matched_infraspecies <chr>, author <chr>, matched_plant_name_id <dbl>,
 #> #   matched_taxon_name <chr>, matched_taxon_authors <chr>, taxon_status <chr>,
@@ -149,12 +149,12 @@ wcvp_matching(data.frame(Genus = "Opuntia", Species = "yanganucensis"))
 names <- c("Aniba heterotepala", "Anthurium quipuscoae")
 df <- classify_spnames(names)
 wcvp_matching(df, output_name_style = "snake_case")
-#> # A tibble: 2 x 21
+#> # A tibble: 2 × 21
 #>   input_index input_name           orig_name  orig_genus orig_species infra_rank
 #>         <int> <chr>                <chr>      <chr>      <chr>        <chr>     
-#> 1           1 Aniba heterotepala   Aniba het~ Aniba      heterotepala NA        
-#> 2           2 Anthurium quipuscoae Anthurium~ Anthurium  quipuscoae   NA        
-#> # i 15 more variables: orig_infraspecies <chr>, matched_genus <chr>,
+#> 1           1 Aniba heterotepala   Aniba het… Aniba      heterotepala NA        
+#> 2           2 Anthurium quipuscoae Anthurium… Anthurium  quipuscoae   NA        
+#> # ℹ 15 more variables: orig_infraspecies <chr>, matched_genus <chr>,
 #> #   matched_species <chr>, matched_infra_rank <chr>,
 #> #   matched_infraspecies <chr>, author <chr>, matched_plant_name_id <dbl>,
 #> #   matched_taxon_name <chr>, matched_taxon_authors <chr>, taxon_status <chr>,
@@ -164,23 +164,23 @@ wcvp_matching(df, output_name_style = "snake_case")
 # Attach per-stage timings for profiling
 out <- wcvp_matching(df, output_name_style = "snake_case", profile = TRUE)
 attr(out, "timings")
-#> # A tibble: 15 x 3
+#> # A tibble: 15 × 3
 #>    stage                                  elapsed_seconds  rows
 #>    <chr>                                            <dbl> <int>
-#>  1 check_df_format                                0.0300      2
+#>  1 check_df_format                                0.0100      2
 #>  2 deduplicate_input                              0           2
-#>  3 check_df_consistency                           0.0300      2
+#>  3 check_df_consistency                           0           2
 #>  4 get_db                                         0          NA
-#>  5 prefilter_target_by_genus                      0.270       2
-#>  6 wcvp_direct_match                              0.280       2
-#>  7 wcvp_genus_match                               0.0200      0
-#>  8 wcvp_fuzzy_match_genus                         0.0200      0
-#>  9 wcvp_direct_match_species_within_genus         0.01000     0
-#> 10 wcvp_suffix_match_species_within_genus         0.01000     0
-#> 11 wcvp_fuzzy_match_species_within_genus          0.0200      0
-#> 12 prepare_taxonomic_context_data                 0.610       2
+#>  5 prefilter_target_by_genus                      0.0700      2
+#>  6 wcvp_direct_match                              0.0600      2
+#>  7 wcvp_genus_match                               0.01000     0
+#>  8 wcvp_fuzzy_match_genus                         0           0
+#>  9 wcvp_direct_match_species_within_genus         0.0200      0
+#> 10 wcvp_suffix_match_species_within_genus         0           0
+#> 11 wcvp_fuzzy_match_species_within_genus          0           0
+#> 12 prepare_taxonomic_context_data                 0.140       2
 #> 13 add_taxonomic_context                          0           2
 #> 14 standardize_output_names                       0           2
-#> 15 total                                          1.58        2
+#> 15 total                                          0.450       2
 # }
 ```

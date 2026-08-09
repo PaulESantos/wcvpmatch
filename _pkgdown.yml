@@ -1,7 +1,9 @@
 url: https://paulesantos.github.io/wcvpmatch/
+
 authors:
   Paul Efren Santos Andrade:
     href: https://paulefrensa.rbind.io/
+
 template:
   bootstrap: 5
   bslib:
@@ -12,51 +14,55 @@ template:
       google: Overpass Mono
     heading_font:
       google: Abhaya Libre
-    bg: '#f7f9f8'
-    fg: '#1a1a1a'
-    primary: '#1a6b6b'
-    secondary: '#a8cece'
-    link-color: '#1a6b6b'
-    info: '#cce4e4'
-    headings-color: '#0e4f4f'
-    navbar-bg: '#ffffff'
-    navbar-light-color: '#0e4f4f'
-    navbar-light-hover-color: '#1a6b6b'
+    bg: "#f7f9f8"
+    fg: "#1a1a1a"
+    primary: "#1a6b6b"
+    secondary: "#a8cece"
+    link-color: "#1a6b6b"
+    info: "#cce4e4"
+    headings-color: "#0e4f4f"
+    navbar-bg: "#ffffff"
+    navbar-light-color: "#0e4f4f"
+    navbar-light-hover-color: "#1a6b6b"
+
 home:
   title: wcvpmatch
   description: Taxonomic name reconciliation against the WCVP backbone.
   links:
-  - text: Source code
-    href: https://github.com/PaulESantos/wcvpmatch
-  - text: Report an issue
-    href: https://github.com/PaulESantos/wcvpmatch/issues
+    - text: Source code
+      href: https://github.com/PaulESantos/wcvpmatch
+    - text: Report an issue
+      href: https://github.com/PaulESantos/wcvpmatch/issues
+
 navbar:
   structure:
     left:
-    - intro
-    - reference
-    - articles
-    - news
+      - intro
+      - reference
+      - articles
+      - news
     right:
-    - search
-    - github
+      - search
+      - github
+
 reference:
-- title: Core workflow
-  desc: Main entry points for parsing names, checking setup, and running the full
-    reconciliation pipeline.
-  contents:
-  - classify_spnames
-  - wcvp_matching
-  - wcvp_distribution
-  - wcvp_synonyms
-  - wcvp_setup_info
-- title: Example data
-  contents: fia
+  - title: Core workflow
+    desc: Main entry points for parsing names, checking setup, and running the full reconciliation pipeline.
+    contents:
+      - classify_spnames
+      - wcvp_matching
+      - wcvp_distribution
+      - wcvp_synonyms
+      - wcvp_setup_info
+  - title: Example data
+    contents: fia
+
 articles:
-- title: Guides
-  navbar: Guides
-  contents:
-  - wcvp-matching
-  - wcvp-distribution
+  - title: Guides
+    navbar: Guides
+    contents:
+      - wcvp-matching
+      - wcvp-distribution
+
 news:
-  one_page: yes
+  one_page: true
