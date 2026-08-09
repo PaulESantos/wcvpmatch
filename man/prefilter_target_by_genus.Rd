@@ -49,11 +49,10 @@ Strategy:
 }
 }
 \examples{
-\dontshow{if (rlang::is_installed("wcvpdata")) withAutoprint(\{ # examplesIf}
 \donttest{
-library(wcvpmatch)
 df <- data.frame(Genus = "Opuntia", Species = "yanganucensis")
-prefilter_target_by_genus(df)
+target <- data.frame(genus = "Opuntia", species = "yanganucensis", plant_name_id = 1)
+wcvpmatch:::prefilter_target_by_genus(df, target_df = target)
 }
-\dontshow{\}) # examplesIf}
 }
+\keyword{internal}

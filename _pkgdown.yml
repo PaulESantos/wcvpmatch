@@ -48,22 +48,8 @@ reference:
   - classify_spnames
   - wcvp_matching
   - wcvp_distribution
+  - wcvp_synonyms
   - wcvp_setup_info
-- title: Matching stages
-  desc: Lower-level helpers that expose the staged matching strategy used internally
-    by the main pipeline.
-  contents:
-  - wcvp_direct_match
-  - wcvp_genus_match
-  - wcvp_fuzzy_match_genus
-  - wcvp_direct_match_species_within_genus
-  - wcvp_fuzzy_match_species_within_genus
-  - wcvp_suffix_match_species_within_genus
-- title: Backbone utilities
-  desc: Utilities for prefiltering and indexing a WCVP-like target backbone.
-  contents:
-  - build_genus_index
-  - prefilter_target_by_genus
 - title: Example data
   contents: fia
 articles:

@@ -20,6 +20,7 @@ The package is built around three main pieces:
 Install the development version from GitHub:
 
 ``` r
+
 # install.packages("pak")
 pak::pak("PaulESantos/wcvpmatch")
 ```
@@ -27,6 +28,7 @@ pak::pak("PaulESantos/wcvpmatch")
 Install the CRAN release:
 
 ``` r
+
 # install.packages("pak")
 pak::pak("wcvpmatch")
 ```
@@ -44,6 +46,7 @@ rustup override set stable-x86_64-pc-windows-gnu
 Install `fozziejoin`:
 
 ``` r
+
 pak::pak("fozziejoin")
 ```
 
@@ -51,6 +54,7 @@ To use the default WCVP backbone automatically, install `wcvpdata` from
 `r-universe`:
 
 ``` r
+
 install.packages(
   "wcvpdata",
   repos = c("https://paulesantos.r-universe.dev", "https://cloud.r-project.org")
@@ -60,6 +64,7 @@ install.packages(
 ## Quick example: `wcvp_matching()`
 
 ``` r
+
 matching_backbone <- tibble(
   genus = c("Aniba", "Jaltomata", "Veronica", "Veronica"),
   species = c("heterotepala", "sagastegui", "vulcanica", "spathulata"),
@@ -108,6 +113,7 @@ matching_result
 ## Quick example: `wcvp_distribution()`
 
 ``` r
+
 distribution_names <- tibble(
   plant_name_id = c(1, 2, 3, 4, 5, 6),
   accepted_plant_name_id = c(NA, 3, NA, NA, 1, NA),

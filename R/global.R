@@ -21,6 +21,7 @@ utils::globalVariables(c(
   ".rank_key",
   ".row_id",
   ".status_rank",
+  ".source_row",
   ".taxon_name_clean",
 
   # Column names used across NSE pipelines
@@ -111,5 +112,17 @@ utils::globalVariables(c(
   "suffix_match_species_within_genus",
   ".taxon_key",
   "setNames", "genus_nchar",
-  ".species_nchar", "Root"
+  ".species_nchar", "Root",
+  "Higher", "Order",
+  "accepted_taxon_name_from_backbone",
+  "backend_input_index",
+  "basionym_plant_name_id",
+  "homotypic_synonym",
+  "name_role",
+  "submited_name",
+  "submitted_name",
+  "synonym_authors",
+  "synonym_name",
+  "synonym_plant_name_id",
+  "synonym_status"
 ))

@@ -29,10 +29,9 @@ If \code{plant_name_id} is not present in \code{target_df}, a surrogate integer 
 created to keep the index usable with custom backbones.
 }
 \examples{
-\dontshow{if (rlang::is_installed("wcvpdata")) withAutoprint(\{ # examplesIf}
 \donttest{
-library(wcvpmatch)
-build_genus_index()
+target <- data.frame(genus = "Opuntia", species = "ficus-indica", plant_name_id = 1)
+wcvpmatch:::build_genus_index(target)
 }
-\dontshow{\}) # examplesIf}
 }
+\keyword{internal}

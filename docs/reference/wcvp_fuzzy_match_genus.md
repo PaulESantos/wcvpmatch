@@ -43,16 +43,16 @@ matched (`TRUE`) or not (`FALSE`). Further, the additional column
 
 ``` r
 # \donttest{
-library(wcvpmatch)
 df <- data.frame(Orig.Genus = "Opuntiaa", Orig.Species = "yanganucensis")
-wcvp_fuzzy_match_genus(df)
-#> ℹ Input was converted from <data.frame> to a <tibble>.
+target <- data.frame(genus = "Opuntia", species = "yanganucensis", plant_name_id = 1)
+wcvpmatch:::wcvp_fuzzy_match_genus(df, target_df = target)
+#> i Input was converted from <data.frame> to a <tibble>.
 #>   See <https://tibble.tidyverse.org/> for more details.
-#> # A tibble: 1 × 21
+#> # A tibble: 1 x 21
 #>   Orig.Genus Orig.Species  fuzzy_match_genus Input.Name         Orig.Name Author
 #>   <chr>      <chr>         <lgl>             <chr>              <chr>     <chr> 
-#> 1 Opuntiaa   yanganucensis TRUE              Opuntiaa yanganuc… NA        ""    
-#> # ℹ 15 more variables: Orig.Infraspecies <chr>, Infra.Rank <chr>, Rank <dbl>,
+#> 1 Opuntiaa   yanganucensis TRUE              Opuntiaa yanganuc~ NA        ""    
+#> # i 15 more variables: Orig.Infraspecies <chr>, Infra.Rank <chr>, Rank <dbl>,
 #> #   has_cf <lgl>, has_aff <lgl>, is_sp <lgl>, is_spp <lgl>, had_hybrid <lgl>,
 #> #   rank_late <lgl>, rank_missing_infra <lgl>, had_na_author <lgl>,
 #> #   implied_infra <lgl>, sorter <dbl>, fuzzy_genus_dist <dbl>,

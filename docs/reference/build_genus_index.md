@@ -47,21 +47,11 @@ A tibble with columns:
 
 ``` r
 # \donttest{
-library(wcvpmatch)
-build_genus_index()
-#> # A tibble: 39,847 × 4
-#>    genus         n_records plant_name_id genus_nchar
-#>    <chr>             <int> <list>              <int>
-#>  1 Aa                   45 <dbl [45]>              2
-#>  2 Aakia                 2 <dbl [2]>               5
-#>  3 Aalius               21 <dbl [21]>              6
-#>  4 Aamaealoe             1 <dbl [1]>               9
-#>  5 Aapaca                1 <dbl [1]>               6
-#>  6 Aaronsohnia           5 <dbl [5]>              11
-#>  7 Abacopterella         2 <dbl [2]>              13
-#>  8 Abacopteris          52 <dbl [52]>             11
-#>  9 Abacosa              13 <dbl [13]>              7
-#> 10 Abalemis              1 <dbl [1]>               8
-#> # ℹ 39,837 more rows
+target <- data.frame(genus = "Opuntia", species = "ficus-indica", plant_name_id = 1)
+wcvpmatch:::build_genus_index(target)
+#> # A tibble: 1 x 4
+#>   genus   n_records plant_name_id genus_nchar
+#>   <chr>       <int> <list>              <int>
+#> 1 Opuntia         1 <dbl [1]>               7
 # }
 ```

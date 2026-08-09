@@ -1,5 +1,7 @@
 #' Check Default Backbone Setup
 #'
+#' `r lifecycle::badge("stable")`
+#'
 #' Reports whether the optional companion package `wcvpdata` is available for
 #' use as the default WCVP backbone and, if not, explains how to install it
 #' from `r-universe`.
@@ -48,11 +50,8 @@ wcvp_setup_info <- function(inform = TRUE) {
 }
 
 .wcvpmatch_has_backbone_dataset <- function(pkg) {
-  items <- tryCatch(
-    utils::data(package = pkg)$results[, "Item"],
-    error = function(e) character()
-  )
-  "wcvp_checklist_names" %in% items
+  requireNamespace(pkg, quietly = TRUE) &&
+    "wcvp_matching_names" %in% getNamespaceExports(pkg)
 }
 
 .wcvpmatch_setup_header <- function() {
@@ -118,7 +117,7 @@ wcvp_setup_info <- function(inform = TRUE) {
 
   if (isTRUE(status$wcvpdata_installed)) {
     return(c(
-      .wcvpmatch_inline("{.yellow !} {.pkg wcvpdata} is installed, but {.val wcvp_checklist_names} was not found."),
+      .wcvpmatch_inline("{.yellow !} {.pkg wcvpdata} is installed, but {.fn wcvp_matching_names}() was not found."),
       .wcvpmatch_inline(paste0("{.blue i} Reinstall {.pkg wcvpdata} from {.url ", status$repository, "}.")),
       .wcvpmatch_inline("{.blue i} Or pass a backbone explicitly with {.arg target_df}.")
     ))

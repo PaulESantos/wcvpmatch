@@ -25,11 +25,10 @@ Further, the additional column \code{fuzzy_genus_dist} returns the distance for 
 Tries to fuzzy match the genus name to the 'WCVP' table (using the optional \code{wcvpdata} checklist by default when available).
 }
 \examples{
-\dontshow{if (rlang::is_installed("wcvpdata")) withAutoprint(\{ # examplesIf}
 \donttest{
-library(wcvpmatch)
 df <- data.frame(Orig.Genus = "Opuntiaa", Orig.Species = "yanganucensis")
-wcvp_fuzzy_match_genus(df)
+target <- data.frame(genus = "Opuntia", species = "yanganucensis", plant_name_id = 1)
+wcvpmatch:::wcvp_fuzzy_match_genus(df, target_df = target)
 }
-\dontshow{\}) # examplesIf}
 }
+\keyword{internal}

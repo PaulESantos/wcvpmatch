@@ -10,14 +10,13 @@
 #'
 #' @return
 #' Returns a `tibble` with the additional logical column `suffix_match_species_within_genus`, indicating whether the specific epithet was successfully matched within the matched genus (`TRUE`) or not (`FALSE`).
-#' @examplesIf rlang::is_installed("wcvpdata")
+#' @examples
 #' \donttest{
-#' library(wcvpmatch)
 #' df <- data.frame(Orig.Genus = "Opuntia", Orig.Species = "yanganucensa", Matched.Genus = "Opuntia")
-#' wcvp_suffix_match_species_within_genus(df)
+#' target <- data.frame(genus = "Opuntia", species = "yanganucensis", plant_name_id = 1)
+#' wcvpmatch:::wcvp_suffix_match_species_within_genus(df, target_df = target)
 #' }
-#' @export
-#'
+#' @keywords internal
 wcvp_suffix_match_species_within_genus <- function(df, target_df = NULL){
   df <- check_df_format(df)
   assertthat::assert_that(all(c('Orig.Genus', 'Orig.Species', 'Matched.Genus') %in% colnames(df)))

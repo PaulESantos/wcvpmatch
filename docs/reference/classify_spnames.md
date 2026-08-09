@@ -111,22 +111,22 @@ library(wcvpmatch)
 classify_spnames(c("Opuntia sp.", "Rosa canina subsp. coriifolia (Fr.) Leffler"))
 #> Warning: Undetermined species indicator detected ('sp.'/'spp.'). Classified at genus
 #> level only; Orig.Species set to NA for
-#> • Opuntia sp.
-#> # A tibble: 2 × 18
+#> * Opuntia sp.
+#> # A tibble: 2 x 18
 #>   sorter Input.Name   Orig.Name Orig.Genus Orig.Species Author Orig.Infraspecies
 #>    <dbl> <chr>        <chr>     <chr>      <chr>        <chr>  <chr>            
 #> 1      1 Opuntia sp.  Opuntia   Opuntia    NA           ""     NA               
-#> 2      2 Rosa canina… Rosa can… Rosa       canina       "(Fr.… coriifolia       
-#> # ℹ 11 more variables: Infra.Rank <chr>, Rank <dbl>, has_cf <lgl>,
+#> 2      2 Rosa canina~ Rosa can~ Rosa       canina       "(Fr.~ coriifolia       
+#> # i 11 more variables: Infra.Rank <chr>, Rank <dbl>, has_cf <lgl>,
 #> #   has_aff <lgl>, is_sp <lgl>, is_spp <lgl>, had_hybrid <lgl>,
 #> #   rank_late <lgl>, rank_missing_infra <lgl>, had_na_author <lgl>,
 #> #   implied_infra <lgl>
 classify_spnames(c("Cydonia japonica tricolor")) # implied unranked infra epithet
-#> # A tibble: 1 × 18
+#> # A tibble: 1 x 18
 #>   sorter Input.Name   Orig.Name Orig.Genus Orig.Species Author Orig.Infraspecies
 #>    <dbl> <chr>        <chr>     <chr>      <chr>        <chr>  <chr>            
-#> 1      1 Cydonia jap… Cydonia … Cydonia    japonica     ""     tricolor         
-#> # ℹ 11 more variables: Infra.Rank <chr>, Rank <dbl>, has_cf <lgl>,
+#> 1      1 Cydonia jap~ Cydonia ~ Cydonia    japonica     ""     tricolor         
+#> # i 11 more variables: Infra.Rank <chr>, Rank <dbl>, has_cf <lgl>,
 #> #   has_aff <lgl>, is_sp <lgl>, is_spp <lgl>, had_hybrid <lgl>,
 #> #   rank_late <lgl>, rank_missing_infra <lgl>, had_na_author <lgl>,
 #> #   implied_infra <lgl>

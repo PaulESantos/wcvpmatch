@@ -9,7 +9,7 @@ make_prefilter_target <- function() {
 }
 
 test_that("build_genus_index returns one row per genus with list plant_name_id", {
-  idx <- build_genus_index(make_prefilter_target())
+  idx <- wcvpmatch:::build_genus_index(make_prefilter_target())
 
   expect_true(all(c("genus", "plant_name_id", "n_records") %in% names(idx)))
   expect_equal(nrow(idx), 3)
@@ -19,7 +19,7 @@ test_that("build_genus_index returns one row per genus with list plant_name_id",
 
 test_that("prefilter_target_by_genus exact filtering keeps only candidate genera", {
   input <- tibble::tibble(Genus = c("Acer", "Quercus"), Species = c("rubrum", "robur"))
-  out <- prefilter_target_by_genus(
+  out <- wcvpmatch:::prefilter_target_by_genus(
     df = input,
     target_df = make_prefilter_target(),
     include_fuzzy = FALSE
@@ -32,7 +32,7 @@ test_that("prefilter_target_by_genus exact filtering keeps only candidate genera
 
 test_that("prefilter_target_by_genus can include fuzzy genus candidates", {
   input <- tibble::tibble(Genus = c("Acr"), Species = c("rubrum"))
-  out <- prefilter_target_by_genus(
+  out <- wcvpmatch:::prefilter_target_by_genus(
     df = input,
     target_df = make_prefilter_target(),
     include_fuzzy = TRUE,

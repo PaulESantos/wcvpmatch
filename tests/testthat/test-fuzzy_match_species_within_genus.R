@@ -1,8 +1,8 @@
 test_that("correct one character fuzzy match", {
   skip_if_no_default_backbone()
   df <- get_testset(mutation = 1) |>
-    wcvp_genus_match() |>
-    wcvp_fuzzy_match_species_within_genus()
+    wcvpmatch:::wcvp_genus_match() |>
+    wcvpmatch:::wcvp_fuzzy_match_species_within_genus()
 
   expect_false(all(df$Matched.Species %in% get_testset(mutation = 0)$Orig.Species))
   expect_true(all(df$fuzzy_species_dist == 1, na.rm = TRUE))
@@ -36,8 +36,8 @@ test_that("transposition of adjacent characters: expect distance one based on op
     Orig.Genus = df$Orig.Genus,
     Orig.Species = transposed_species
   ) |>
-    wcvp_genus_match() |>
-    wcvp_fuzzy_match_species_within_genus()
+    wcvpmatch:::wcvp_genus_match() |>
+    wcvpmatch:::wcvp_fuzzy_match_species_within_genus()
 
   expect_true(all(transposed_df$Matched.Species %in% df$Orig.Species))
   expect_true(all(transposed_df$fuzzy_species_dist == 1))
@@ -62,8 +62,8 @@ test_that("correct two character fuzzy match", {
       Orig.Genus = df$Orig.Genus,
       Orig.Species = transposed_species
     ) |>
-      wcvp_genus_match() |>
-      wcvp_fuzzy_match_species_within_genus()
+      wcvpmatch:::wcvp_genus_match() |>
+      wcvpmatch:::wcvp_fuzzy_match_species_within_genus()
   )
 
   expect_false(all(transposed_df$Matched.Species %in% df$Orig.Species))
@@ -86,7 +86,7 @@ test_that("fuzzy species tie stores ambiguous candidates in attribute", {
   )
 
   expect_warning(
-    out <- wcvp_fuzzy_match_species_within_genus(input, target_df = target_df, max_dist = 1, method = "osa"),
+    out <- wcvpmatch:::wcvp_fuzzy_match_species_within_genus(input, target_df = target_df, max_dist = 1, method = "osa"),
     "Multiple fuzzy matches"
   )
 

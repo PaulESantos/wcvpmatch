@@ -27,9 +27,13 @@ library(dplyr)
 
 `wcvp_distribution()` retrieves geographic distribution from a pair of WCVP-like
 tables: one names table and one distribution table. In regular use those tables
-can come from `wcvpdata::wcvp_checklist_names` and
-`wcvpdata::wcvp_checklist_distribution`, but the function also works with
+can come from `wcvpdata::wcvp_matching_names()` and
+`wcvpdata::wcvp_distribution()`, but the function also works with
 user-supplied tables that follow the same schema.
+
+It always returns a plain tibble, never an `sf` object. The row-level result
+retains `area_code_l3`, the WGSrpd level-3 identifier to use when geometries are
+joined in a separate spatial workflow.
 
 This vignette uses a compact reproducible example so every code block runs
 without depending on external data packages.
@@ -144,6 +148,24 @@ This format is useful for reporting and export because `distribution`,
 `areas`, `regions`, and `continents` are returned as collapsed text values
 separated by `" - "`.
 
+## Compact table for a spatial join
+
+Use `output = "spatial"` to retain one row per taxon-area combination while
+removing repeated matching and geographic-label columns. The resulting
+`area_code_l3` remains ready to join to a level-3 polygon layer later.
+
+```{r}
+spatial_out <- wcvp_distribution(
+  "Nopalea cochenillifera",
+  taxon_rank = "species",
+  output = "spatial",
+  wcvp_names = distribution_names,
+  wcvp_distributions = distribution_records
+)
+
+spatial_out
+```
+
 ## Genus-level retrieval
 
 At genus level the function aggregates all accepted taxa in the genus and then
@@ -204,7 +226,15 @@ This fallback is marked with `distribution_status = "genus_distribution_fallback
 ## Practical notes
 
 - Use `summarise_by_input = TRUE` when you need one row per submitted name.
+- Prefer `output = "summary"` in new code; `summarise_by_input = TRUE` remains
+  available for compatibility.
+- Use `output = "spatial"` before joining to a spatial layer; use `output =
+  "full"` when matching diagnostics and complete geographic labels are needed.
 - Keep the default output when you need one row per taxon-area combination.
+- Join a level-3 spatial table later with `left_join(..., by = c("LEVEL3_COD" =
+  "area_code_l3"))`; this package intentionally does not create geometries.
+- `taxon_rank = "order"` and `taxon_rank = "higher"` are available when the
+  names table includes matching `order` and `higher` columns.
 - The columns `native`, `introduced`, `extinct`, and `location_doubtful` can be
   used as filters before the final summary is returned.
 - If `wcvpdata` is installed, you can omit `wcvp_names` and

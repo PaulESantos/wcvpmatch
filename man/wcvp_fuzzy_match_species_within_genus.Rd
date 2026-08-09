@@ -28,3 +28,4 @@ Returns a \code{tibble} with the additional logical column \code{fuzzy_match_spe
 
 Tries to fuzzy match the species epithet within a matched genus against 'WCVP' (using the optional \code{wcvpdata} checklist by default when available).
 }
+\keyword{internal}

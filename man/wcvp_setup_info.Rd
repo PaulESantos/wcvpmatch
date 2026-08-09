@@ -16,6 +16,9 @@ Invisibly returns a named list with setup status fields:
 \code{install_command}.
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#stable}{\figure{lifecycle-stable.svg}{options: alt='[Stable]'}}}{\strong{[Stable]}}
+}
+\details{
 Reports whether the optional companion package \code{wcvpdata} is available for
 use as the default WCVP backbone and, if not, explains how to install it
 from \code{r-universe}.

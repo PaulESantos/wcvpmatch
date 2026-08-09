@@ -21,11 +21,10 @@ Tries to match the specific epithet by exchanging common suffixes within an alre
 The following suffixes are captured: \code{c("a", "i", "is", "um", "us", "ae")}.
 }
 \examples{
-\dontshow{if (rlang::is_installed("wcvpdata")) withAutoprint(\{ # examplesIf}
 \donttest{
-library(wcvpmatch)
 df <- data.frame(Orig.Genus = "Opuntia", Orig.Species = "yanganucensa", Matched.Genus = "Opuntia")
-wcvp_suffix_match_species_within_genus(df)
+target <- data.frame(genus = "Opuntia", species = "yanganucensis", plant_name_id = 1)
+wcvpmatch:::wcvp_suffix_match_species_within_genus(df, target_df = target)
 }
-\dontshow{\}) # examplesIf}
 }
+\keyword{internal}

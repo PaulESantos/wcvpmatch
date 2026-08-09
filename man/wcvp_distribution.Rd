@@ -2,11 +2,11 @@
 % Please edit documentation in R/distribution.R
 \name{wcvp_distribution}
 \alias{wcvp_distribution}
-\title{Retrieve WCVP Distribution by Species, Genus, or Family}
+\title{Retrieve Tabular WCVP Distribution by Taxonomic Rank}
 \usage{
 wcvp_distribution(
   taxon,
-  taxon_rank = c("species", "genus", "family"),
+  taxon_rank = c("species", "genus", "family", "order", "higher"),
   native = TRUE,
   introduced = TRUE,
   extinct = TRUE,
@@ -17,14 +17,16 @@ wcvp_distribution(
   fallback_to_genus = TRUE,
   summarise_by_input = FALSE,
   max_dist = NULL,
-  method = "osa"
+  method = "osa",
+  output = c("standard", "full", "spatial", "summary")
 )
 }
 \arguments{
 \item{taxon}{Character vector of taxa to query.}
 
-\item{taxon_rank}{Character scalar. One of \code{"species"}, \code{"genus"}, or
-\code{"family"}.}
+\item{taxon_rank}{Character scalar. One of \code{"species"}, \code{"genus"},
+\code{"family"}, \code{"order"}, or \code{"higher"}. The last two require corresponding
+\code{order} or \code{higher} columns in \code{wcvp_names}.}
 
 \item{native}{Logical. Include native occurrences? Defaults to \code{TRUE}.}
 
@@ -37,13 +39,13 @@ wcvp_distribution(
 \code{TRUE}.}
 
 \item{wcvp_names}{Optional WCVP names table. If \code{NULL}, the function loads
-\code{wcvpdata::wcvp_checklist_names}.}
+\code{wcvpdata::wcvp_matching_names()}.}
 
 \item{wcvp_distributions}{Optional WCVP distribution table. If \code{NULL}, the
-function loads \code{wcvpdata::wcvp_checklist_distribution}.}
+function loads \code{wcvpdata::wcvp_distribution()}.}
 
 \item{prefilter_genus}{Logical. Forwarded to \code{wcvp_matching()} for
-species-level queries. Ignored for genus/family lookups.}
+species-level queries. Ignored for all other taxonomic ranks.}
 
 \item{fallback_to_genus}{Logical. If \code{TRUE} and \code{taxon_rank = "species"},
 inputs without species-level distribution are retried at genus level.}
@@ -57,12 +59,22 @@ strings separated by \code{" - "} rather than list-columns.}
 to \code{2} and genus/family queries to \code{0}.}
 
 \item{method}{String distance method passed to \code{fozziejoin}.}
+
+\item{output}{Output layout: \code{"standard"} (the default analytical
+taxon-area table), \code{"full"} (the complete audit table), \code{"spatial"}
+(the compact taxon-area table for a later spatial join), or \code{"summary"}
+(one row per submitted taxon). \code{summarise_by_input = TRUE} is retained as
+a backwards-compatible alias for \code{output = "summary"}.}
 }
 \value{
-By default, a tibble with one row per matched query-area combination.
-If \code{summarise_by_input = TRUE}, returns one row per input taxon with
-collapsed text fields such as \code{distribution}, \code{areas}, \code{area_codes},
-\code{regions}, \code{continents}, and \code{n_areas}.
+A non-spatial tibble. The default \code{output = "standard"} returns one
+row per matched query-area combination with the submitted and resolved
+taxa, geographic hierarchy, and four occurrence flags (12 columns).
+\code{output = "full"}
+additionally returns matching provenance and identifiers. \code{output = "spatial"} returns
+only the taxon-area fields needed for a later spatial join. \code{output = "summary"} returns one row per input taxon with collapsed text fields such
+as \code{distribution}, \code{areas}, \code{area_codes}, \code{regions}, \code{continents}, and
+\code{n_areas}.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#stable}{\figure{lifecycle-stable.svg}{options: alt='[Stable]'}}}{\strong{[Stable]}}
@@ -70,8 +82,8 @@ collapsed text fields such as \code{distribution}, \code{areas}, \code{area_code
 \details{
 Queries distribution records by matching a taxon name against the WCVP names
 table and then resolving the corresponding rows in the WCVP distribution
-table. The function is designed around \code{wcvpdata::wcvp_checklist_names} and
-\code{wcvpdata::wcvp_checklist_distribution}, but custom tables with the same
+table. The function is designed around \code{wcvpdata::wcvp_matching_names()} and
+\code{wcvpdata::wcvp_distribution()}, but custom tables with the same
 schema can also be supplied.
 
 Matching is performed with \code{fozziejoin}, using compact lookup tables and
@@ -81,8 +93,16 @@ names are searched only within those candidate genera.
 
 If species-level matches resolve to synonyms and the names table contains
 \code{accepted_plant_name_id}, distribution is recovered from the accepted taxon.
-For genus- and family-level queries, accepted names are preferred to avoid
-double counting synonym records.
+For queries above species, accepted names are preferred to avoid double
+counting synonym records.
+
+The result deliberately contains no geometry and does not require \code{sf}.
+\code{area_code_l3} is the stable WGSrpd level-3 key intended for a later join
+to a user-supplied spatial object.
+
+Default names and distribution tables are cached for the current R session.
+Exact species queries use a direct lookup; lowercase strings and species
+keys over the full backbone are only built when a fuzzy query needs them.
 }
 \examples{
 \dontshow{if (rlang::is_installed("wcvpdata")) withAutoprint(\{ # examplesIf}
@@ -92,6 +112,8 @@ library(wcvpmatch)
 wcvp_distribution("Opuntia ficus-indica", taxon_rank = "species")
 wcvp_distribution("Opuntia", taxon_rank = "genus")
 wcvp_distribution("Cactaceae", taxon_rank = "family")
+# When `order` is present in a custom names table:
+# \dontrun{wcvp_distribution("Caryophyllales", taxon_rank = "order", wcvp_names = custom_names)}
 }
 \dontshow{\}) # examplesIf}
 }

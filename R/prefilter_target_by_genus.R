@@ -19,12 +19,12 @@
 #'   \item{n_records}{Number of IDs per genus.}
 #'   \item{genus_nchar}{Number of characters in the genus name.}
 #' }
-#' @examplesIf rlang::is_installed("wcvpdata")
+#' @examples
 #' \donttest{
-#' library(wcvpmatch)
-#' build_genus_index()
+#' target <- data.frame(genus = "Opuntia", species = "ficus-indica", plant_name_id = 1)
+#' wcvpmatch:::build_genus_index(target)
 #' }
-#' @export
+#' @keywords internal
 build_genus_index <- function(target_df = NULL) {
   if (is.null(target_df)) {
     cached <- .wcvpmatch_cache[["default_genus_index"]]
@@ -59,6 +59,27 @@ build_genus_index <- function(target_df = NULL) {
   out
 }
 
+build_genus_lookup <- function(target_df = NULL) {
+  is_default <- is.null(target_df) ||
+    identical(attr(target_df, "wcvpmatch_source", exact = TRUE), "default")
+
+  if (is_default) {
+    cached <- .wcvpmatch_cache[["default_genus_lookup"]]
+    if (!is.null(cached)) return(cached)
+  }
+
+  target_norm <- if (is.null(target_df)) get_db() else get_db(target_df)
+  genera <- unique(as.character(target_norm$genus))
+  genera <- genera[!is.na(genera) & nzchar(genera)]
+  out <- tibble::tibble(
+    genus = genera,
+    genus_nchar = nchar(genera)
+  )
+
+  if (is_default) .wcvpmatch_cache[["default_genus_lookup"]] <- out
+  out
+}
+
 
 #' Prefilter Target Backbone by Input Genera (Exact + Fuzzy)
 #'
@@ -89,13 +110,13 @@ build_genus_index <- function(target_df = NULL) {
 #'   \item{exact_genera}{Character vector of exact matched genera.}
 #'   \item{fuzzy_genera}{Character vector of fuzzy matched genera.}
 #' }
-#' @examplesIf rlang::is_installed("wcvpdata")
+#' @examples
 #' \donttest{
-#' library(wcvpmatch)
 #' df <- data.frame(Genus = "Opuntia", Species = "yanganucensis")
-#' prefilter_target_by_genus(df)
+#' target <- data.frame(genus = "Opuntia", species = "yanganucensis", plant_name_id = 1)
+#' wcvpmatch:::prefilter_target_by_genus(df, target_df = target)
 #' }
-#' @export
+#' @keywords internal
 prefilter_target_by_genus <- function(df,
                                       target_df = NULL,
                                       genus_index = NULL,
@@ -105,13 +126,11 @@ prefilter_target_by_genus <- function(df,
   df <- check_df_format(df)
   target_norm <- if (is_normalized_target_df(target_df)) target_df else get_db(target_df = target_df)
 
-  if (is.null(genus_index)) {
-    genus_index <- build_genus_index(target_df = target_norm)
-  }
+  if (is.null(genus_index)) genus_index <- build_genus_lookup(target_df = target_norm)
 
   assertthat::assert_that(
-    all(c("genus", "plant_name_id") %in% names(genus_index)),
-    msg = "genus_index must contain columns: genus, plant_name_id."
+    "genus" %in% names(genus_index),
+    msg = "genus_index must contain a genus column."
   )
 
   input_genera <- df %>%
@@ -120,6 +139,8 @@ prefilter_target_by_genus <- function(df,
 
   if (nrow(input_genera) == 0) {
     out <- target_norm %>% dplyr::slice(0)
+    attr(out, "wcvpmatch_normalized") <- TRUE
+    attr(out, "wcvpmatch_prepared") <- TRUE
     attr(out, "candidate_genera") <- character(0)
     attr(out, "exact_genera") <- character(0)
     attr(out, "fuzzy_genera") <- character(0)
@@ -182,13 +203,21 @@ prefilter_target_by_genus <- function(df,
 
   if (length(candidate_genera) == 0) {
     out <- target_norm %>% dplyr::slice(0)
+    attr(out, "wcvpmatch_normalized") <- TRUE
+    attr(out, "wcvpmatch_prepared") <- TRUE
     attr(out, "candidate_genera") <- character(0)
     attr(out, "exact_genera") <- exact_genera
     attr(out, "fuzzy_genera") <- fuzzy_genera
     return(out)
   }
 
-  out <- target_norm %>% dplyr::filter(genus %in% candidate_genera)
+  # Base row subsetting is materially faster here than constructing a dplyr
+  # filtering pipeline over the 1.4M-row default backbone.
+  out <- target_norm[target_norm$genus %in% candidate_genera, , drop = FALSE]
+  attr(out, "wcvpmatch_normalized") <- TRUE
+  attr(out, "wcvpmatch_prepared") <- TRUE
+  source <- attr(target_norm, "wcvpmatch_source", exact = TRUE)
+  if (!is.null(source)) attr(out, "wcvpmatch_source") <- source
   attr(out, "candidate_genera") <- candidate_genera
   attr(out, "exact_genera") <- exact_genera
   attr(out, "fuzzy_genera") <- fuzzy_genera

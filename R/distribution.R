@@ -1,11 +1,11 @@
-#' Retrieve WCVP Distribution by Species, Genus, or Family
+#' Retrieve Tabular WCVP Distribution by Taxonomic Rank
 #'
 #' `r lifecycle::badge("stable")`
 #'
 #' Queries distribution records by matching a taxon name against the WCVP names
 #' table and then resolving the corresponding rows in the WCVP distribution
-#' table. The function is designed around `wcvpdata::wcvp_checklist_names` and
-#' `wcvpdata::wcvp_checklist_distribution`, but custom tables with the same
+#' table. The function is designed around `wcvpdata::wcvp_matching_names()` and
+#' `wcvpdata::wcvp_distribution()`, but custom tables with the same
 #' schema can also be supplied.
 #'
 #' Matching is performed with `fozziejoin`, using compact lookup tables and
@@ -15,12 +15,21 @@
 #'
 #' If species-level matches resolve to synonyms and the names table contains
 #' `accepted_plant_name_id`, distribution is recovered from the accepted taxon.
-#' For genus- and family-level queries, accepted names are preferred to avoid
-#' double counting synonym records.
+#' For queries above species, accepted names are preferred to avoid double
+#' counting synonym records.
+#'
+#' The result deliberately contains no geometry and does not require `sf`.
+#' `area_code_l3` is the stable WGSrpd level-3 key intended for a later join
+#' to a user-supplied spatial object.
+#'
+#' Default names and distribution tables are cached for the current R session.
+#' Exact species queries use a direct lookup; lowercase strings and species
+#' keys over the full backbone are only built when a fuzzy query needs them.
 #'
 #' @param taxon Character vector of taxa to query.
-#' @param taxon_rank Character scalar. One of `"species"`, `"genus"`, or
-#'   `"family"`.
+#' @param taxon_rank Character scalar. One of `"species"`, `"genus"`,
+#'   `"family"`, `"order"`, or `"higher"`. The last two require corresponding
+#'   `order` or `higher` columns in `wcvp_names`.
 #' @param native Logical. Include native occurrences? Defaults to `TRUE`.
 #' @param introduced Logical. Include introduced occurrences? Defaults to
 #'   `TRUE`.
@@ -28,25 +37,35 @@
 #' @param location_doubtful Logical. Include doubtful occurrences? Defaults to
 #'   `TRUE`.
 #' @param wcvp_names Optional WCVP names table. If `NULL`, the function loads
-#'   `wcvpdata::wcvp_checklist_names`.
+#'   `wcvpdata::wcvp_matching_names()`.
 #' @param wcvp_distributions Optional WCVP distribution table. If `NULL`, the
-#'   function loads `wcvpdata::wcvp_checklist_distribution`.
+#'   function loads `wcvpdata::wcvp_distribution()`.
 #' @param prefilter_genus Logical. Forwarded to `wcvp_matching()` for
-#'   species-level queries. Ignored for genus/family lookups.
+#'   species-level queries. Ignored for all other taxonomic ranks.
 #' @param fallback_to_genus Logical. If `TRUE` and `taxon_rank = "species"`,
 #'   inputs without species-level distribution are retried at genus level.
 #' @param summarise_by_input Logical. If `TRUE`, return one row per input taxon
 #'   with collapsed distribution fields. In this mode, `area_codes`, `areas`,
 #'   `regions`, `continents`, and `distribution` are returned as character
 #'   strings separated by `" - "` rather than list-columns.
+#' @param output Output layout: `"standard"` (the default analytical
+#'   taxon-area table), `"full"` (the complete audit table), `"spatial"`
+#'   (the compact taxon-area table for a later spatial join), or `"summary"`
+#'   (one row per submitted taxon). `summarise_by_input = TRUE` is retained as
+#'   a backwards-compatible alias for `output = "summary"`.
 #' @param max_dist Maximum string distance. If `NULL`, species queries default
 #'   to `2` and genus/family queries to `0`.
 #' @param method String distance method passed to `fozziejoin`.
 #'
-#' @return By default, a tibble with one row per matched query-area combination.
-#'   If `summarise_by_input = TRUE`, returns one row per input taxon with
-#'   collapsed text fields such as `distribution`, `areas`, `area_codes`,
-#'   `regions`, `continents`, and `n_areas`.
+#' @return A non-spatial tibble. The default `output = "standard"` returns one
+#'   row per matched query-area combination with the submitted and resolved
+#'   taxa, geographic hierarchy, and four occurrence flags (12 columns).
+#'   `output = "full"`
+#'   additionally returns matching provenance and identifiers. `output = "spatial"` returns
+#'   only the taxon-area fields needed for a later spatial join. `output =
+#'   "summary"` returns one row per input taxon with collapsed text fields such
+#'   as `distribution`, `areas`, `area_codes`, `regions`, `continents`, and
+#'   `n_areas`.
 #'
 #' @examplesIf rlang::is_installed("wcvpdata")
 #' \donttest{
@@ -55,10 +74,12 @@
 #' wcvp_distribution("Opuntia ficus-indica", taxon_rank = "species")
 #' wcvp_distribution("Opuntia", taxon_rank = "genus")
 #' wcvp_distribution("Cactaceae", taxon_rank = "family")
+#' # When `order` is present in a custom names table:
+#' # \dontrun{wcvp_distribution("Caryophyllales", taxon_rank = "order", wcvp_names = custom_names)}
 #' }
 #' @export
 wcvp_distribution <- function(taxon,
-                              taxon_rank = c("species", "genus", "family"),
+                              taxon_rank = c("species", "genus", "family", "order", "higher"),
                               native = TRUE,
                               introduced = TRUE,
                               extinct = TRUE,
@@ -69,8 +90,20 @@ wcvp_distribution <- function(taxon,
                               fallback_to_genus = TRUE,
                               summarise_by_input = FALSE,
                               max_dist = NULL,
-                              method = "osa") {
+                              method = "osa",
+                              output = c("standard", "full", "spatial", "summary")) {
+  output_was_missing <- missing(output)
   taxon_rank <- match.arg(taxon_rank)
+  output <- match.arg(output)
+
+  if (isTRUE(summarise_by_input)) {
+    if (!output_was_missing && !identical(output, "summary")) {
+      cli::cli_abort("Use either {.arg summarise_by_input = TRUE} or {.arg output = 'summary'}, not conflicting output options.")
+    }
+    output <- "summary"
+  }
+  summarise_by_input <- identical(output, "summary")
+
   max_dist <- resolve_distribution_max_dist(taxon_rank = taxon_rank, max_dist = max_dist)
 
   assertthat::assert_that(
@@ -93,11 +126,13 @@ wcvp_distribution <- function(taxon,
     normalize_distribution_records(wcvp_distributions)
   }
 
+  assert_distribution_rank_available(names_tbl, taxon_rank)
+
   query_tbl <- normalize_distribution_query(taxon, taxon_rank = taxon_rank)
 
   if (identical(taxon_rank, "species")) {
     name_hits <- match_species_distribution_with_backend(
-      taxon = taxon,
+      query_tbl = query_tbl,
       names_tbl = names_tbl,
       prefilter_genus = prefilter_genus,
       max_dist = max_dist,
@@ -150,7 +185,21 @@ wcvp_distribution <- function(taxon,
     )
   }
 
-  finalize_distribution_output(out)
+  out %>%
+    finalize_distribution_output() %>%
+    format_distribution_output(output = output)
+}
+
+assert_distribution_rank_available <- function(names_tbl, taxon_rank) {
+  if (taxon_rank %in% c("order", "higher") &&
+      (!taxon_rank %in% names(names_tbl) || all(is.na(names_tbl[[taxon_rank]])))) {
+    cli::cli_abort(c(
+      "x" = "The {.arg wcvp_names} table does not contain the {.field {taxon_rank}} column required for this query.",
+      "i" = "Supply a names table enriched with {.field {taxon_rank}} or query at species, genus, or family rank."
+    ))
+  }
+
+  invisible(TRUE)
 }
 
 resolve_distribution_max_dist <- function(taxon_rank, max_dist) {
@@ -175,20 +224,10 @@ default_distribution_names <- function() {
     return(cached)
   }
 
-  .require_wcvpdata()
-
-  env <- new.env(parent = emptyenv())
-  utils::data("wcvp_checklist_names", package = "wcvpdata", envir = env)
-
-  if (!exists("wcvp_checklist_names", envir = env, inherits = FALSE)) {
-    cli::cli_abort(c(
-      "x" = "Object {.val wcvp_checklist_names} was not found in package {.pkg wcvpdata}.",
-      "i" = "Reinstall or update {.pkg wcvpdata} from {.url https://paulesantos.r-universe.dev}.",
-      "i" = "Or pass the names table explicitly with {.arg wcvp_names}."
-    ))
-  }
-
-  out <- normalize_distribution_names(get("wcvp_checklist_names", envir = env, inherits = FALSE))
+  # Reuse the shared names backbone so matching, synonyms, and distribution do
+  # not deserialize and normalize independent copies of the same WCVP table.
+  out <- normalize_distribution_names(default_target_df(), assume_clean = TRUE)
+  attr(out, "wcvpmatch_source") <- "default"
   .wcvpmatch_cache[["default_distribution_names"]] <- out
   out
 }
@@ -200,24 +239,19 @@ default_distribution_records <- function() {
   }
 
   .require_wcvpdata()
-
-  env <- new.env(parent = emptyenv())
-  utils::data("wcvp_checklist_distribution", package = "wcvpdata", envir = env)
-
-  if (!exists("wcvp_checklist_distribution", envir = env, inherits = FALSE)) {
-    cli::cli_abort(c(
-      "x" = "Object {.val wcvp_checklist_distribution} was not found in package {.pkg wcvpdata}.",
-      "i" = "Reinstall or update {.pkg wcvpdata} from {.url https://paulesantos.r-universe.dev}.",
-      "i" = "Or pass the distribution table explicitly with {.arg wcvp_distributions}."
-    ))
-  }
-
-  out <- normalize_distribution_records(get("wcvp_checklist_distribution", envir = env, inherits = FALSE))
+  out <- normalize_distribution_records(.wcvpmatch_read_wcvpdata_table(
+    "wcvp_distribution",
+    columns = c(
+      "plant_name_id", "continent_code_l1", "continent", "region_code_l2",
+      "region", "area_code_l3", "area", "introduced", "extinct",
+      "location_doubtful"
+    )
+  ))
   .wcvpmatch_cache[["default_distribution_records"]] <- out
   out
 }
 
-normalize_distribution_names <- function(wcvp_names) {
+normalize_distribution_names <- function(wcvp_names, assume_clean = FALSE) {
   assertthat::assert_that(
     inherits(wcvp_names, "data.frame"),
     msg = "wcvp_names must be a data.frame/tibble."
@@ -234,6 +268,12 @@ normalize_distribution_names <- function(wcvp_names) {
   if (!("species" %in% names(x)) && "Species" %in% names(x)) {
     x <- dplyr::rename(x, species = Species)
   }
+  if (!("order" %in% names(x)) && "Order" %in% names(x)) {
+    x <- dplyr::rename(x, order = Order)
+  }
+  if (!("higher" %in% names(x)) && "Higher" %in% names(x)) {
+    x <- dplyr::rename(x, higher = Higher)
+  }
 
   required <- c("plant_name_id", "family", "genus", "species")
   assertthat::assert_that(
@@ -247,6 +287,8 @@ normalize_distribution_names <- function(wcvp_names) {
   if (!"accepted_plant_name_id" %in% names(x)) x$accepted_plant_name_id <- NA_real_
   if (!"taxon_status" %in% names(x)) x$taxon_status <- NA_character_
   if (!"taxon_rank" %in% names(x)) x$taxon_rank <- NA_character_
+  if (!"order" %in% names(x)) x$order <- NA_character_
+  if (!"higher" %in% names(x)) x$higher <- NA_character_
   if (!"taxon_name" %in% names(x)) {
     x <- x %>%
       dplyr::mutate(
@@ -258,16 +300,26 @@ normalize_distribution_names <- function(wcvp_names) {
       )
   }
 
+  if (isTRUE(assume_clean)) {
+    # The packaged WCVP backbone already has canonical column types and name
+    # whitespace. Derived lowercase/species keys are intentionally deferred
+    # until a fuzzy species query actually needs them.
+    return(x)
+  }
+
   x %>%
     dplyr::mutate(
       plant_name_id = as.numeric(plant_name_id),
       accepted_plant_name_id = as.numeric(accepted_plant_name_id),
       family = stringr::str_squish(as.character(.data$family)),
+      order = stringr::str_squish(as.character(.data$order)),
+      higher = stringr::str_squish(as.character(.data$higher)),
       genus = stringr::str_squish(as.character(.data$genus)),
       species = stringr::str_squish(as.character(.data$species)),
       taxon_rank = as.character(.data$taxon_rank),
       taxon_status = as.character(.data$taxon_status),
       taxon_name = stringr::str_squish(as.character(.data$taxon_name)),
+      .taxon_name_clean = tolower(stringr::str_squish(as.character(.data$taxon_name))),
       species_key = dplyr::if_else(
         !is.na(.data$genus) & nzchar(.data$genus) & !is.na(.data$species) & nzchar(.data$species),
         paste(.data$genus, .data$species),
@@ -378,29 +430,37 @@ normalize_distribution_query <- function(taxon, taxon_rank) {
 }
 
 build_distribution_lookup <- function(names_tbl, taxon_rank) {
+  cache_key <- paste0("default_distribution_lookup_", taxon_rank)
+  is_default <- identical(attr(names_tbl, "wcvpmatch_source", exact = TRUE), "default")
+  if (is_default) {
+    cached <- .wcvpmatch_cache[[cache_key]]
+    if (!is.null(cached)) return(cached)
+  }
+
   if (identical(taxon_rank, "genus")) {
-    return(
+    out <-
       names_tbl %>%
         dplyr::filter(!is.na(genus), nzchar(genus)) %>%
         dplyr::distinct(matched_taxon = genus) %>%
         dplyr::mutate(taxon_nchar = nchar(matched_taxon))
-    )
-  }
-
-  if (identical(taxon_rank, "family")) {
-    return(
+  } else if (taxon_rank %in% c("family", "order", "higher")) {
+    rank_col <- taxon_rank
+    out <-
       names_tbl %>%
-        dplyr::filter(!is.na(.data$family), nzchar(.data$family)) %>%
-        dplyr::distinct(matched_taxon = .data$family) %>%
+        dplyr::filter(!is.na(.data[[rank_col]]), nzchar(.data[[rank_col]])) %>%
+        dplyr::distinct(matched_taxon = .data[[rank_col]]) %>%
         dplyr::mutate(taxon_nchar = nchar(matched_taxon))
-    )
+  } else {
+    out <- names_tbl %>%
+      dplyr::filter(!is.na(genus), nzchar(genus), !is.na(species), nzchar(species)) %>%
+      dplyr::filter(is.na(.data$taxon_rank) | tolower(.data$taxon_rank) == "species") %>%
+      dplyr::transmute(matched_taxon = paste(genus, species), genus = genus) %>%
+      dplyr::distinct() %>%
+      dplyr::mutate(taxon_nchar = nchar(matched_taxon))
   }
 
-  names_tbl %>%
-    dplyr::filter(!is.na(species_key), nzchar(species_key)) %>%
-    dplyr::filter(is.na(.data$taxon_rank) | tolower(.data$taxon_rank) == "species") %>%
-    dplyr::distinct(matched_taxon = species_key, genus) %>%
-    dplyr::mutate(taxon_nchar = nchar(matched_taxon))
+  if (is_default) .wcvpmatch_cache[[cache_key]] <- out
+  out
 }
 
 match_distribution_queries <- function(query_tbl,
@@ -559,32 +619,104 @@ prefilter_distribution_lookup <- function(lookup_tbl,
     dplyr::filter(.data[[length_col]] %in% .env$allowed_lengths)
 }
 
-match_species_distribution_with_backend <- function(taxon,
+match_species_distribution_with_backend <- function(query_tbl,
                                                     names_tbl,
                                                     prefilter_genus,
                                                     max_dist,
                                                     method) {
-  matched <- classify_spnames(taxon) %>%
+  exact_hits <- match_exact_species_distribution_queries(query_tbl, names_tbl)
+  unresolved_queries <- query_tbl %>%
+    dplyr::anti_join(exact_hits %>% dplyr::distinct(input_index), by = "input_index")
+
+  if (nrow(unresolved_queries) == 0) {
+    return(exact_hits)
+  }
+
+  input_map <- unresolved_queries %>%
+    dplyr::transmute(backend_input_index = dplyr::row_number(), input_index, query)
+
+  matched <- classify_spnames(unresolved_queries$query) %>%
     wcvp_matching(
-      target_df = names_tbl,
+      target_df = if (identical(attr(names_tbl, "wcvpmatch_source", exact = TRUE), "default")) NULL else names_tbl,
       prefilter_genus = prefilter_genus,
       allow_duplicates = TRUE,
       max_dist = max_dist,
       method = method,
       add_name_distance = TRUE,
-      output_name_style = "snake_case"
+      output_name_style = "snake_case",
+      output = "full"
     )
 
-  matched %>%
+  fuzzy_hits <- matched %>%
     dplyr::transmute(
-      input_index = .data$input_index,
-      query = .data$input_name,
+      backend_input_index = .data$input_index,
       matched = dplyr::coalesce(.data$matched, FALSE),
       matched_taxon = dplyr::coalesce(.data$accepted_taxon_name, .data$matched_taxon_name),
       match_distance = .data$matched_dist,
       resolved_plant_name_id = dplyr::coalesce(.data$accepted_plant_name_id, .data$matched_plant_name_id),
       resolved_taxon_name = dplyr::coalesce(.data$accepted_taxon_name, .data$matched_taxon_name)
-    )
+    ) %>%
+    dplyr::left_join(input_map, by = "backend_input_index") %>%
+    dplyr::select(-backend_input_index)
+
+  dplyr::bind_rows(exact_hits, fuzzy_hits) %>%
+    dplyr::arrange(input_index)
+}
+
+match_exact_species_distribution_queries <- function(query_tbl, names_tbl) {
+  # normalize_distribution_query() already canonicalizes genus/species case.
+  # A direct vector match avoids allocating a lowercase copy of all 1.45M
+  # backbone names. Non-exact inputs continue through the fuzzy backend.
+  query_key <- as.character(query_tbl$query_value)
+  matched_idx <- match(query_key, as.character(names_tbl$taxon_name))
+  has_hit <- !is.na(matched_idx)
+
+  if (!any(has_hit)) {
+    return(empty_species_distribution_hits())
+  }
+
+  hits <- query_tbl[has_hit, c("input_index", "query"), drop = FALSE]
+  matched_rows <- names_tbl[matched_idx[has_hit], , drop = FALSE]
+  is_species <- is.na(matched_rows$taxon_rank) |
+    tolower(as.character(matched_rows$taxon_rank)) == "species"
+
+  hits <- hits[is_species, , drop = FALSE]
+  matched_rows <- matched_rows[is_species, , drop = FALSE]
+
+  if (nrow(hits) == 0) {
+    return(empty_species_distribution_hits())
+  }
+
+  resolved_id <- dplyr::coalesce(
+    matched_rows$accepted_plant_name_id,
+    matched_rows$plant_name_id
+  )
+  accepted_idx <- match(resolved_id, names_tbl$plant_name_id)
+  resolved_name <- matched_rows$taxon_name
+  has_accepted_name <- !is.na(accepted_idx)
+  resolved_name[has_accepted_name] <- names_tbl$taxon_name[accepted_idx[has_accepted_name]]
+
+  tibble::tibble(
+    input_index = hits$input_index,
+    query = hits$query,
+    matched = TRUE,
+    matched_taxon = resolved_name,
+    match_distance = 0,
+    resolved_plant_name_id = resolved_id,
+    resolved_taxon_name = resolved_name
+  )
+}
+
+empty_species_distribution_hits <- function() {
+  tibble::tibble(
+    input_index = integer(),
+    query = character(),
+    matched = logical(),
+    matched_taxon = character(),
+    match_distance = numeric(),
+    resolved_plant_name_id = numeric(),
+    resolved_taxon_name = character()
+  )
 }
 
 resolve_distribution_name_hits <- function(matches, names_tbl, taxon_rank) {
@@ -592,20 +724,20 @@ resolve_distribution_name_hits <- function(matches, names_tbl, taxon_rank) {
     return(tibble::tibble())
   }
 
-  accepted_lookup <- names_tbl %>%
-    dplyr::select(
-      accepted_lookup_id = .data$plant_name_id,
-      accepted_taxon_name = .data$taxon_name,
-      accepted_family = .data$family,
-      accepted_genus = .data$genus,
-      accepted_species = .data$species
-    ) %>%
-    dplyr::distinct()
-
   if (identical(taxon_rank, "species")) {
+    accepted_lookup <- names_tbl %>%
+      dplyr::select(
+        accepted_lookup_id = plant_name_id,
+        accepted_taxon_name = taxon_name,
+        accepted_family = family,
+        accepted_genus = genus,
+        accepted_species = species
+      ) %>%
+      dplyr::distinct()
     species_rows <- names_tbl %>%
-      dplyr::filter(!is.na(species_key), nzchar(species_key)) %>%
-      dplyr::filter(is.na(.data$taxon_rank) | tolower(.data$taxon_rank) == "species")
+      dplyr::filter(!is.na(genus), nzchar(genus), !is.na(species), nzchar(species)) %>%
+      dplyr::filter(is.na(.data$taxon_rank) | tolower(.data$taxon_rank) == "species") %>%
+      dplyr::mutate(species_key = paste(genus, species))
 
     out <- matches %>%
       dplyr::inner_join(
@@ -635,7 +767,7 @@ resolve_distribution_name_hits <- function(matches, names_tbl, taxon_rank) {
     return(out)
   }
 
-  join_col <- if (identical(taxon_rank, "genus")) "genus" else "family"
+  join_col <- taxon_rank
   base <- names_tbl
 
   if ("taxon_status" %in% names(base)) {
@@ -972,6 +1104,49 @@ finalize_distribution_output <- function(df) {
     dplyr::rename(
       submited_name = query,
       accepted_taxon_name = resolved_taxon_name
+    )
+}
+
+format_distribution_output <- function(df, output) {
+  if (identical(output, "full") || identical(output, "summary")) {
+    return(df)
+  }
+
+  if (identical(output, "standard")) {
+    return(
+      df %>%
+        dplyr::select(
+          submited_name,
+          taxon_rank,
+          matched_taxon,
+          match_distance,
+          continent,
+          region,
+          area_code_l3,
+          area,
+          accepted_taxon_name,
+          occurrence_type,
+          native,
+          introduced,
+          extinct,
+          location_doubtful,
+          distribution_status
+        )
+    )
+  }
+
+  df %>%
+    dplyr::transmute(
+      input_index = input_index,
+      submited_name = submited_name,
+      taxon_name = dplyr::coalesce(accepted_taxon_name, matched_taxon),
+      area_code_l3 = area_code_l3,
+      occurrence_type = occurrence_type,
+      native = native,
+      introduced = introduced,
+      extinct = extinct,
+      location_doubtful = location_doubtful,
+      distribution_status = distribution_status
     )
 }
 

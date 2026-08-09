@@ -11,8 +11,7 @@
 #' @return
 #' Returns a `tibble` with the additional logical column `direct_match_species_within_genus`, indicating whether the specific epithet was successfully matched within the matched genus (`TRUE`) or not (`FALSE`).
 #'
-#' @export
-#'
+#' @keywords internal
 wcvp_direct_match_species_within_genus <- function(df, target_df = NULL){
   df <- check_df_format(df)
 

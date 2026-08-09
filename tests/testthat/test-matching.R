@@ -1,12 +1,12 @@
 test_that("correct matches for test6 dataset", {
   skip_if_no_default_backbone()
   df <- get_testset(mutation = 0) |>
-    wcvp_matching(prefilter_genus = TRUE)
+    wcvp_matching(prefilter_genus = TRUE, output = "full")
 
   expect_false(all(df$direct_match))
 
   df <- get_testset(mutation = 1) |>
-    wcvp_matching(prefilter_genus = TRUE)
+    wcvp_matching(prefilter_genus = TRUE, output = "full")
   expect_false(any(df$direct_match))
   expect_true(all(df$genus_match))
   expect_false(all(df$suffix_match_species_within_genus | df$fuzzy_match_species_within_genus))

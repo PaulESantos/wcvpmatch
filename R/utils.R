@@ -119,6 +119,8 @@ check_df_format <- function(df) {
 # ---------------------------------------------------------------
 
 .rank_to_upper <- function(x) {
+  x <- as.character(x)
+  if (length(x) == 0L) return(character())
   ifelse(
     is.na(x),
     NA_character_,
@@ -134,6 +136,8 @@ check_df_format <- function(df) {
 }
 
 .rank_to_lower <- function(x) {
+  x <- as.character(x)
+  if (length(x) == 0L) return(character())
   ifelse(
     is.na(x),
     NA_character_,
@@ -202,6 +206,7 @@ normalize_target_df <- function(target_df) {
       Species = species
     )
 
+  attr(x, "wcvpmatch_normalized") <- TRUE
   x
 }
 
@@ -211,21 +216,25 @@ is_normalized_target_df <- function(x) {
 }
 
 prepare_target_db <- function(target_df) {
-  target_df %>%
+  if (isTRUE(attr(target_df, "wcvpmatch_prepared", exact = TRUE))) {
+    return(target_df)
+  }
+
+  source <- attr(target_df, "wcvpmatch_source", exact = TRUE)
+  out <- target_df %>%
     dplyr::mutate(
       Genus = if ("Genus" %in% names(.)) as.character(Genus) else as.character(genus),
       Species = if ("Species" %in% names(.)) as.character(Species) else as.character(species)
     ) %>%
-    tidyr::drop_na(genus, species) %>%
-    dplyr::distinct() %>%
-    dplyr::mutate(
-      .taxon_key = .make_taxon_key(
-        genus,
-        species,
-        infraspecific_rank,
-        infraspecies
-      )
-    )
+    tidyr::drop_na(genus, species)
+
+  # Matching nodes deduplicate only the small key tables they actually use.
+  # A global distinct() and a 4-column string key over the complete WCVP
+  # backbone are both expensive and unnecessary here.
+  attr(out, "wcvpmatch_normalized") <- TRUE
+  attr(out, "wcvpmatch_prepared") <- TRUE
+  if (!is.null(source)) attr(out, "wcvpmatch_source") <- source
+  out
 }
 
 .make_taxon_key <- function(genus, species, infraspecific_rank, infraspecies) {
@@ -254,24 +263,17 @@ prepare_taxonomic_context_data <- function(target_tbl, matched_df = NULL) {
 
   context_tbl <- target_tbl
   if (!is.null(matched_df) && all(c("Matched.Genus", "Matched.Species") %in% names(matched_df))) {
-    query_keys <- matched_df %>%
+    query_components <- matched_df %>%
       dplyr::transmute(
         Matched.Genus = as.character(Matched.Genus),
         Matched.Species = as.character(Matched.Species),
         .matched_rank_upper = .rank_to_upper(Matched.Infra.Rank),
-        Matched.Infraspecies = as.character(Matched.Infraspecies),
-        .taxon_key = .make_taxon_key(
-          Matched.Genus,
-          Matched.Species,
-          .matched_rank_upper,
-          Matched.Infraspecies
-        )
+        Matched.Infraspecies = as.character(Matched.Infraspecies)
       ) %>%
       dplyr::filter(!is.na(Matched.Genus), !is.na(Matched.Species)) %>%
-      dplyr::pull(.taxon_key) %>%
-      unique()
+      dplyr::distinct()
 
-    if (length(query_keys) == 0) {
+    if (nrow(query_components) == 0) {
       return(list(
         has_taxon_context = FALSE,
         db_meta = NULL,
@@ -281,8 +283,44 @@ prepare_taxonomic_context_data <- function(target_tbl, matched_df = NULL) {
       ))
     }
 
+    # First reduce by inexpensive vector comparisons. Taxon keys are then
+    # created only for the handful of candidate genera/species instead of for
+    # every row in the full WCVP backbone.
+    context_tbl <- context_tbl %>%
+      dplyr::filter(
+        genus %in% unique(query_components$Matched.Genus),
+        species %in% unique(query_components$Matched.Species)
+      ) %>%
+      dplyr::mutate(
+        .taxon_key = .make_taxon_key(
+          genus,
+          species,
+          .rank_to_upper(infraspecific_rank),
+          infraspecies
+        )
+      )
+
+    query_keys <- query_components %>%
+      dplyr::transmute(
+        .taxon_key = .make_taxon_key(
+          Matched.Genus,
+          Matched.Species,
+          .matched_rank_upper,
+          Matched.Infraspecies
+        )
+      ) %>%
+      dplyr::pull(.taxon_key) %>%
+      unique()
+
     context_tbl <- context_tbl %>%
       dplyr::filter(.taxon_key %in% query_keys)
+  } else if (!".taxon_key" %in% names(context_tbl)) {
+    context_tbl <- context_tbl %>%
+      dplyr::mutate(
+        .taxon_key = .make_taxon_key(
+          genus, species, .rank_to_upper(infraspecific_rank), infraspecies
+        )
+      )
   }
 
   db_meta <- context_tbl %>%
@@ -359,22 +397,52 @@ default_target_df <- function() {
 
   .require_wcvpdata()
 
-  # Read dataset directly, fail with clear message if object is unavailable.
-  wcvp_data <- tryCatch({
-    getExportedValue("wcvpdata", "wcvp_checklist_names")
-  }, error = function(e) NULL)
+  wcvp_data <- .wcvpmatch_read_wcvpdata_table(
+    "wcvp_matching_names",
+    columns = c(
+      "plant_name_id", "taxon_rank", "taxon_status", "family", "genus",
+      "species", "infraspecific_rank", "infraspecies", "taxon_name",
+      "taxon_authors", "accepted_plant_name_id", "parent_plant_name_id"
+    )
+  )
 
-  if (is.null(wcvp_data)) {
+  normalized <- normalize_target_df(wcvp_data)
+  attr(normalized, "wcvpmatch_source") <- "default"
+  .wcvpmatch_cache[["default_target_df"]] <- normalized
+  normalized
+}
+
+# Read a materialized table through the wcvpdata >= 0.7 Parquet accessors.
+# Keeping Arrow behind wcvpdata avoids making it a direct dependency here.
+.wcvpmatch_read_wcvpdata_table <- function(accessor, columns = NULL) {
+  fun <- tryCatch(
+    getExportedValue("wcvpdata", accessor),
+    error = function(e) NULL
+  )
+
+  if (is.null(fun) || !is.function(fun)) {
     cli::cli_abort(c(
-      "x" = "Object {.val wcvp_checklist_names} was not found in package {.pkg wcvpdata}.",
-      "i" = "Reinstall or update {.pkg wcvpdata} from {.url https://paulesantos.r-universe.dev}.",
-      "i" = "Or pass a backbone explicitly with {.arg target_df}."
+      "x" = "Accessor {.fn {accessor}} was not found in package {.pkg wcvpdata}.",
+      "i" = "Install {.pkg wcvpdata} (>= 0.7.0) from {.url https://paulesantos.r-universe.dev}.",
+      "i" = "Or supply a backbone explicitly."
     ))
   }
 
-  normalized <- normalize_target_df(wcvp_data)
-  .wcvpmatch_cache[["default_target_df"]] <- normalized
-  normalized
+  out <- tryCatch(
+    fun(as_data_frame = TRUE, columns = columns),
+    error = function(e) {
+      cli::cli_abort(c(
+        "x" = "Could not load WCVP data with {.fn {accessor}}().",
+        "i" = conditionMessage(e)
+      ))
+    }
+  )
+
+  assertthat::assert_that(
+    inherits(out, "data.frame"),
+    msg = paste0("wcvpdata::", accessor, "() did not return a data frame.")
+  )
+  out
 }
 
 get_db <- function(target_df = NULL) {
@@ -385,6 +453,7 @@ get_db <- function(target_df = NULL) {
     }
 
     out <- prepare_target_db(default_target_df())
+    attr(out, "wcvpmatch_source") <- "default"
     .wcvpmatch_cache[["default_target_db"]] <- out
     return(out)
   }

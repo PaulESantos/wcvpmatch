@@ -19,3 +19,4 @@ Returns a \code{tibble} with the additional logical column \code{direct_match_sp
 
 Tries to directly match the specific epithet within an already matched genus in 'WCVP'.
 }
+\keyword{internal}

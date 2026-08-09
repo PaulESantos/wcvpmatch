@@ -25,7 +25,7 @@ test_that("matching supports infraspecific rank + fuzzy epithet (WCVP schema)", 
   )
 
 
-  out <- wcvp_matching(df, target_df = target_df)
+  out <- wcvp_matching(df, target_df = target_df, output = "full")
 
   expect_true(all(out$matched))
   expect_true(all(out$direct_match_infra_rank))
@@ -46,7 +46,7 @@ test_that("matching leaves unmatched when infraspecific rank does not exist", {
 
   )
 
-  out <- wcvp_matching(df, target_df = target_df)
+  out <- wcvp_matching(df, target_df = target_df, output = "full")
 
   expect_false(out$matched)
   expect_false(out$direct_match_infra_rank)

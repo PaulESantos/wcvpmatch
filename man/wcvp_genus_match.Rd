@@ -19,3 +19,4 @@ Returns a \code{tibble} with the additional logical column \code{genus_match}, i
 
 Tries to match the genus name to the 'WCVP' table (using the optional \code{wcvpdata} checklist by default when available).
 }
+\keyword{internal}

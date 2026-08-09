@@ -5,6 +5,11 @@
 #' Runs a matching pipeline with exact and partial matching for binomial and
 #' trinomial names, including infraspecific rank validation.
 #'
+#' When the default WCVP backbone is used, its normalized representation and
+#' compact genus lookup are cached for the current R session. Prepared custom
+#' backbones are also recognized inside the pipeline so internal matching nodes
+#' do not normalize or deduplicate the same table repeatedly.
+#'
 #' @param df Input tibble/data.frame with either `Genus`/`Species` or
 #'   `Orig.Genus`/`Orig.Species`. For trinomials, include `Infra.Rank` and
 #'   `Infraspecies` (or `Orig.Infra.Rank`/`Orig.Infraspecies`).
@@ -39,10 +44,15 @@
 #' @param output_name_style Naming style for output columns:
 #'   - `"snake_case"` returns standardized lower snake_case names.
 #'   - `"legacy"` keeps the historical mixed naming convention.
+#' @param output Output layout. `"standard"` (the default) returns the parsed,
+#'   matched, and accepted-name fields needed for routine reconciliation.
+#'   `"full"` additionally returns internal matching-stage flags, fuzzy
+#'   distances, and parsing diagnostics.
 #'
-#' @return Tibble with matched names, process flags, and taxonomic context
-#'   columns: `matched_plant_name_id`, `matched_taxon_name`, `taxon_status`,
-#'   `accepted_plant_name_id`, `accepted_taxon_name`, `is_accepted_name`.
+#' @return A tibble with parsed input fields and matched/accepted taxonomic
+#'   context. The standard output contains `input_index`, input and matched
+#'   name components, authorship, matched and accepted IDs/names, status, and
+#'   `matched`. Use `output = "full"` for matching diagnostics.
 #' @examplesIf rlang::is_installed("wcvpdata")
 #' \donttest{
 #' library(wcvpmatch)
@@ -68,8 +78,10 @@ wcvp_matching <- function(df,
                      add_name_distance = FALSE,
                      name_distance_method = "osa",
                      profile = FALSE,
-                     output_name_style = c("snake_case", "legacy")) {
+                     output_name_style = c("snake_case", "legacy"),
+                     output = c("standard", "full")) {
   output_name_style <- match.arg(output_name_style)
+  output <- match.arg(output)
 
   timings <- list()
   profile_stage <- function(stage, expr, rows = NA_integer_) {
@@ -325,6 +337,7 @@ wcvp_matching <- function(df,
       prefilter_target_by_genus(
         df = df_work,
         target_df = target_df_match,
+        genus_index = build_genus_lookup(target_df_full),
         include_fuzzy = TRUE,
         max_dist = max_dist,
         method = method
@@ -606,6 +619,32 @@ wcvp_matching <- function(df,
 
   if (identical(output_name_style, "snake_case")) {
     res <- profile_stage("standardize_output_names", standardize_output_names(res), rows = nrow(res))
+  }
+
+  if (identical(output, "standard")) {
+    standard_cols <- if (identical(output_name_style, "snake_case")) {
+      c(
+        "input_index", "input_name", "orig_name", "orig_genus", "orig_species",
+        "infra_rank", "orig_infraspecies", "matched_genus", "matched_species",
+        "matched_infra_rank", "matched_infraspecies", "author",
+        "matched_plant_name_id", "matched_taxon_name", "matched_taxon_authors",
+        "taxon_status", "accepted_plant_name_id", "accepted_taxon_name",
+        "accepted_taxon_authors", "is_accepted_name", "matched"
+      )
+    } else {
+      c(
+        "input_index", "Input.Name", "Orig.Name", "Orig.Genus", "Orig.Species",
+        "Infra.Rank", "Orig.Infraspecies", "Matched.Genus", "Matched.Species",
+        "Matched.Infra.Rank", "Matched.Infraspecies", "Author",
+        "matched_plant_name_id", "matched_taxon_name", "matched_taxon_authors",
+        "taxon_status", "accepted_plant_name_id", "accepted_taxon_name",
+        "accepted_taxon_authors", "is_accepted_name", "matched"
+      )
+    }
+    if (isTRUE(add_name_distance) || "matched_dist" %in% names(res)) {
+      standard_cols <- c(standard_cols, "matched_dist")
+    }
+    res <- dplyr::select(res, dplyr::any_of(standard_cols))
   }
 
   if (isTRUE(profile)) {

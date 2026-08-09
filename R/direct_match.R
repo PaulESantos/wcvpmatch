@@ -10,14 +10,13 @@
 #' @return
 #' Returns a `tibble` with the additional logical column `direct_match`, indicating whether the binomial was successfully matched (`TRUE`) or not (`FALSE`).
 #' Returns original columns plus `Matched.Genus`, `Matched.Species`, `Matched.Infra.Rank`, and `Matched.Infraspecies`.
-#' @examplesIf rlang::is_installed("wcvpdata")
+#' @examples
 #' \donttest{
-#' library(wcvpmatch)
-#' # Simple binomial match
 #' df_parsed <- classify_spnames("Opuntia yanganucensis")
-#' wcvp_direct_match(df_parsed)
+#' target <- data.frame(genus = "Opuntia", species = "yanganucensis", plant_name_id = 1)
+#' wcvpmatch:::wcvp_direct_match(df_parsed, target_df = target)
 #' }
-#' @export
+#' @keywords internal
 wcvp_direct_match <- function(df, target_df = NULL) {
   df <- check_df_format(df)
   target_df <- get_db(target_df = target_df)
@@ -164,4 +163,3 @@ wcvp_direct_match <- function(df, target_df = NULL) {
   dplyr::bind_rows(df_r1_out, df_r2_out, df_r3_ranked_out, df_r3_implied_out, df_other) |>
     dplyr::arrange(sorter)
 }
-

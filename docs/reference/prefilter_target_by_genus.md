@@ -83,30 +83,14 @@ A prefiltered `target_df` tibble compatible with
 
 ``` r
 # \donttest{
-library(wcvpmatch)
 df <- data.frame(Genus = "Opuntia", Species = "yanganucensis")
-prefilter_target_by_genus(df)
-#> ℹ Input was converted from <data.frame> to a <tibble>.
+target <- data.frame(genus = "Opuntia", species = "yanganucensis", plant_name_id = 1)
+wcvpmatch:::prefilter_target_by_genus(df, target_df = target)
+#> i Input was converted from <data.frame> to a <tibble>.
 #>   See <https://tibble.tidyverse.org/> for more details.
-#> # A tibble: 1,509 × 34
-#>    plant_name_id ipni_id    taxon_rank taxon_status family    genus_hybrid genus
-#>            <dbl> <chr>      <chr>      <chr>        <chr>     <chr>        <chr>
-#>  1       2401900 175654-2   Variety    Synonym      Cactaceae NA           Opun…
-#>  2       3294155 77302436-1 Subspecies Synonym      Cactaceae NA           Opun…
-#>  3       2877217 175097-2   Variety    Accepted     Cactaceae NA           Opun…
-#>  4       3294157 77302438-1 Subspecies Synonym      Cactaceae NA           Opun…
-#>  5       2877218 175098-2   Variety    Accepted     Cactaceae NA           Opun…
-#>  6       3245753 77212806-1 Subspecies Synonym      Cactaceae NA           Opun…
-#>  7       2877219 175099-2   Variety    Accepted     Cactaceae NA           Opun…
-#>  8       2877222 175102-2   Variety    Accepted     Cactaceae NA           Opun…
-#>  9       2877259 175376-2   Variety    Synonym      Cactaceae NA           Opun…
-#> 10       2400776 175023-2   Variety    Synonym      Cactaceae NA           Opun…
-#> # ℹ 1,499 more rows
-#> # ℹ 27 more variables: species_hybrid <chr>, species <chr>,
-#> #   infraspecific_rank <chr>, infraspecies <chr>, parenthetical_author <chr>,
-#> #   primary_author <chr>, publication_author <chr>, place_of_publication <chr>,
-#> #   volume_and_page <chr>, first_published <chr>, nomenclatural_remarks <chr>,
-#> #   geographic_area <chr>, lifeform_description <chr>,
-#> #   climate_description <chr>, taxon_name <chr>, taxon_authors <chr>, …
+#> # A tibble: 1 x 7
+#>   genus   species    plant_name_id infraspecific_rank infraspecies Genus Species
+#>   <chr>   <chr>              <dbl> <chr>              <chr>        <chr> <chr>  
+#> 1 Opuntia yanganuce~             1 NA                 NA           Opun~ yangan~
 # }
 ```

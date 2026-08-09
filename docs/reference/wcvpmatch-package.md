@@ -25,3 +25,7 @@ Useful links:
 
 **Maintainer**: Paul Efren Santos Andrade <paulefrens@gmail.com>
 \[copyright holder\]
+
+Authors:
+
+- Paul Efren Santos Andrade <paulefrens@gmail.com> \[copyright holder\]

@@ -21,12 +21,10 @@ Returns original columns plus \code{Matched.Genus}, \code{Matched.Species}, \cod
 Tries to directly match Genus + Species | Genus + Species + Rank + Infraspecies to \verb{WCVP data}.
 }
 \examples{
-\dontshow{if (rlang::is_installed("wcvpdata")) withAutoprint(\{ # examplesIf}
 \donttest{
-library(wcvpmatch)
-# Simple binomial match
 df_parsed <- classify_spnames("Opuntia yanganucensis")
-wcvp_direct_match(df_parsed)
+target <- data.frame(genus = "Opuntia", species = "yanganucensis", plant_name_id = 1)
+wcvpmatch:::wcvp_direct_match(df_parsed, target_df = target)
 }
-\dontshow{\}) # examplesIf}
 }
+\keyword{internal}

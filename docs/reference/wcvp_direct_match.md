@@ -35,15 +35,14 @@ indicating whether the binomial was successfully matched (`TRUE`) or not
 
 ``` r
 # \donttest{
-library(wcvpmatch)
-# Simple binomial match
 df_parsed <- classify_spnames("Opuntia yanganucensis")
-wcvp_direct_match(df_parsed)
-#> # A tibble: 1 × 23
+target <- data.frame(genus = "Opuntia", species = "yanganucensis", plant_name_id = 1)
+wcvpmatch:::wcvp_direct_match(df_parsed, target_df = target)
+#> # A tibble: 1 x 23
 #>   sorter Input.Name   Orig.Name Orig.Genus Orig.Species Author Orig.Infraspecies
 #>    <dbl> <chr>        <chr>     <chr>      <chr>        <chr>  <chr>            
-#> 1      1 Opuntia yan… Opuntia … Opuntia    yanganucens… ""     NA               
-#> # ℹ 16 more variables: Infra.Rank <chr>, Rank <dbl>, has_cf <lgl>,
+#> 1      1 Opuntia yan~ Opuntia ~ Opuntia    yanganucens~ ""     NA               
+#> # i 16 more variables: Infra.Rank <chr>, Rank <dbl>, has_cf <lgl>,
 #> #   has_aff <lgl>, is_sp <lgl>, is_spp <lgl>, had_hybrid <lgl>,
 #> #   rank_late <lgl>, rank_missing_infra <lgl>, had_na_author <lgl>,
 #> #   implied_infra <lgl>, direct_match <lgl>, Matched.Genus <chr>,

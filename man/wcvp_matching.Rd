@@ -14,7 +14,8 @@ wcvp_matching(
   add_name_distance = FALSE,
   name_distance_method = "osa",
   profile = FALSE,
-  output_name_style = c("snake_case", "legacy")
+  output_name_style = c("snake_case", "legacy"),
+  output = c("standard", "full")
 )
 }
 \arguments{
@@ -65,17 +66,28 @@ pipeline stage.}
 \item \code{"snake_case"} returns standardized lower snake_case names.
 \item \code{"legacy"} keeps the historical mixed naming convention.
 }}
+
+\item{output}{Output layout. \code{"standard"} (the default) returns the parsed,
+matched, and accepted-name fields needed for routine reconciliation.
+\code{"full"} additionally returns internal matching-stage flags, fuzzy
+distances, and parsing diagnostics.}
 }
 \value{
-Tibble with matched names, process flags, and taxonomic context
-columns: \code{matched_plant_name_id}, \code{matched_taxon_name}, \code{taxon_status},
-\code{accepted_plant_name_id}, \code{accepted_taxon_name}, \code{is_accepted_name}.
+A tibble with parsed input fields and matched/accepted taxonomic
+context. The standard output contains \code{input_index}, input and matched
+name components, authorship, matched and accepted IDs/names, status, and
+\code{matched}. Use \code{output = "full"} for matching diagnostics.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#stable}{\figure{lifecycle-stable.svg}{options: alt='[Stable]'}}}{\strong{[Stable]}}
 
 Runs a matching pipeline with exact and partial matching for binomial and
 trinomial names, including infraspecific rank validation.
+
+When the default WCVP backbone is used, its normalized representation and
+compact genus lookup are cached for the current R session. Prepared custom
+backbones are also recognized inside the pipeline so internal matching nodes
+do not normalize or deduplicate the same table repeatedly.
 }
 \examples{
 \dontshow{if (rlang::is_installed("wcvpdata")) withAutoprint(\{ # examplesIf}
