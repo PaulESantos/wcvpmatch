@@ -167,20 +167,20 @@ attr(out, "timings")
 #> # A tibble: 15 × 3
 #>    stage                                  elapsed_seconds  rows
 #>    <chr>                                            <dbl> <int>
-#>  1 check_df_format                                0.00500     2
-#>  2 deduplicate_input                              0           2
-#>  3 check_df_consistency                           0.00400     2
-#>  4 get_db                                         0          NA
-#>  5 prefilter_target_by_genus                      0.0640      2
-#>  6 wcvp_direct_match                              0.0540      2
-#>  7 wcvp_genus_match                               0.00700     0
-#>  8 wcvp_fuzzy_match_genus                         0.00600     0
-#>  9 wcvp_direct_match_species_within_genus         0.00500     0
-#> 10 wcvp_suffix_match_species_within_genus         0.00500     0
-#> 11 wcvp_fuzzy_match_species_within_genus          0.00500     0
-#> 12 prepare_taxonomic_context_data                 0.133       2
-#> 13 add_taxonomic_context                          0           2
-#> 14 standardize_output_names                       0           2
-#> 15 total                                          0.679       2
+#>  1 check_df_format                               0.00600      2
+#>  2 deduplicate_input                             0            2
+#>  3 check_df_consistency                          0.00300      2
+#>  4 get_db                                        0           NA
+#>  5 prefilter_target_by_genus                     0.0140       2
+#>  6 wcvp_direct_match                             0.00300      2
+#>  7 wcvp_genus_match                              0.00100      0
+#>  8 wcvp_fuzzy_match_genus                        0.00100      0
+#>  9 wcvp_direct_match_species_within_genus        0.001000     0
+#> 10 wcvp_suffix_match_species_within_genus        0.001000     0
+#> 11 wcvp_fuzzy_match_species_within_genus         0.001000     0
+#> 12 prepare_taxonomic_context_data                0.0370       2
+#> 13 add_taxonomic_context                         0.01000      2
+#> 14 standardize_output_names                      0            2
+#> 15 total                                         0.132        2
 # }
 ```
