@@ -44,35 +44,21 @@ wcvp_fuzzy_match_species_within_genus <- function(df, target_df = NULL, max_dist
     dplyr::select(Genus, Species) %>%
     dplyr::distinct()
 
-  if (.is_edit_distance_method(method)) {
-    input_lengths <- nchar(df_work$Orig.Species)
-    allowed_lengths <- if (tolower(method) == "hamming") {
-      unique(input_lengths)
-    } else {
-      unique(unlist(lapply(
-        input_lengths,
-        function(x) seq.int(max(0L, x - max_dist), x + max_dist)
-      )))
-    }
-
-    db_subset <- db_subset %>%
-      dplyr::mutate(.species_nchar = nchar(Species)) %>%
-      dplyr::filter(.species_nchar %in% allowed_lengths) %>%
-      dplyr::select(-.species_nchar)
-  }
-
+  # Generate candidates by exact genus first, then compute pairwise distances.
+  # This changes the comparison space from every input x every candidate genus
+  # to only the species that actually belong to each row's matched genus.
   matched_temp <- df_work %>%
-    fozziejoin::fozzie_string_left_join(
+    dplyr::inner_join(
       db_subset,
-      by = c("Orig.Species" = "Species"),
-      distance_col = "fuzzy_species_dist",
-      method = method,
-      max_distance = max_dist
+      by = c("Matched.Genus" = "Genus"),
+      relationship = "many-to-many"
     ) %>%
-    dplyr::filter(Matched.Genus == Genus) %>%
     dplyr::mutate(
       .orig_len = nchar(Orig.Species),
-      .cand_len = nchar(Species)
+      .cand_len = nchar(Species),
+      fuzzy_species_dist = .pairwise_string_distance(
+        Orig.Species, Species, method = method
+      )
     ) %>%
     dplyr::filter(
       !is.na(fuzzy_species_dist),
@@ -82,7 +68,7 @@ wcvp_fuzzy_match_species_within_genus <- function(df, target_df = NULL, max_dist
       !(.orig_len <= 7 & .orig_len != .cand_len)
     ) %>%
     dplyr::mutate(Matched.Species = Species) %>%
-    dplyr::select(-c(Species, Genus, .orig_len, .cand_len)) %>%
+    dplyr::select(-dplyr::any_of(c("Species", "Genus", ".orig_len", ".cand_len"))) %>%
     dplyr::group_by(.row_id) %>%
     dplyr::slice_min(order_by = fuzzy_species_dist, n = 1, with_ties = TRUE) %>%
     dplyr::ungroup()

@@ -52,14 +52,30 @@ wcvp_suffix_match_species_within_genus <- function(df, target_df = NULL){
       Root = stringr::str_match(Species, catch_suffixes)[, 2]
     )
 
-  matched <- df_work %>%
+  candidate_matches <- df_work %>%
     dplyr::inner_join(
       database_subset,
       by = c("Matched.Genus" = "Genus", "Root" = "Root"),
       na_matches = "never"
     ) %>%
     dplyr::mutate(Matched.Species = Species) %>%
-    dplyr::select(-c(Species, Root)) %>%
+    dplyr::select(-c(Species, Root))
+
+  # A suffix root is only decisive when it identifies one species inside the
+  # matched genus. Ambiguous roots continue to the fuzzy stage rather than
+  # selecting a result based on backbone row order.
+  candidate_counts <- candidate_matches %>%
+    dplyr::count(.row_id, name = ".candidate_n")
+  ambiguous_suffix <- candidate_counts %>%
+    dplyr::filter(.data$.candidate_n > 1) %>%
+    dplyr::select(.row_id)
+
+  matched <- candidate_matches %>%
+    dplyr::inner_join(
+      candidate_counts %>% dplyr::filter(.data$.candidate_n == 1),
+      by = ".row_id"
+    ) %>%
+    dplyr::select(-dplyr::any_of(".candidate_n")) %>%
     dplyr::group_by(.row_id) %>%
     dplyr::slice_head(n = 1) %>%
     dplyr::ungroup()
@@ -77,6 +93,12 @@ wcvp_suffix_match_species_within_genus <- function(df, target_df = NULL){
     dplyr::mutate(suffix_match_species_within_genus = (suffix_match_species_within_genus == 1)) %>%
     dplyr::select(-dplyr::any_of(".row_id")) %>%
     dplyr::relocate(c('Orig.Genus', 'Orig.Species'))
+
+  if (nrow(ambiguous_suffix) > 0) {
+    attr(res, "ambiguous_suffix") <- candidate_matches %>%
+      dplyr::semi_join(ambiguous_suffix, by = ".row_id") %>%
+      dplyr::arrange(.row_id, Matched.Species)
+  }
 
   return(res)
 }

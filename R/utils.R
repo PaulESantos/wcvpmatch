@@ -1,4 +1,8 @@
 check_df_format <- function(df) {
+  if (isTRUE(attr(df, "wcvpmatch_input_prepared", exact = TRUE)) &&
+      all(c("Orig.Genus", "Orig.Species", "Rank", "sorter") %in% names(df))) {
+    return(df)
+  }
   if (!tibble::is_tibble(df) && inherits(df, "data.frame")) {
     df <- tibble::as_tibble(df)
     cli::cli_inform(c(
@@ -68,8 +72,23 @@ check_df_format <- function(df) {
     Orig.Genus = stringr::str_trim(Orig.Genus),
     Orig.Species = stringr::str_trim(Orig.Species),
     Orig.Infraspecies = stringr::str_trim(Orig.Infraspecies),
-    Infra.Rank = stringr::str_trim(Infra.Rank)
+    Infra.Rank = stringr::str_trim(Infra.Rank),
+    Orig.Genus = dplyr::na_if(Orig.Genus, ""),
+    Orig.Species = dplyr::na_if(Orig.Species, ""),
+    Orig.Infraspecies = dplyr::na_if(Orig.Infraspecies, ""),
+    Infra.Rank = dplyr::na_if(Infra.Rank, "")
   )
+
+  # Minimal Genus/Species inputs do not carry an explicit Rank. Infer it once
+  # here so exact binomials can take the direct-match fast path instead of
+  # traversing the genus and species fallback nodes.
+  inferred_rank <- dplyr::case_when(
+    !is.na(df$Orig.Infraspecies) ~ 3,
+    !is.na(df$Orig.Species) ~ 2,
+    TRUE ~ NA_real_
+  )
+  rank_numeric <- suppressWarnings(as.numeric(as.character(df$Rank)))
+  df$Rank <- dplyr::coalesce(rank_numeric, inferred_rank)
 
   # Build Input.Name when not provided, preserving existing non-empty values.
   build_input_name <- function(genus, species, infra_rank, infraspecies) {
@@ -113,6 +132,7 @@ check_df_format <- function(df) {
   if (!"sorter" %in% names(df)) df$sorter <- seq_len(n)
   df$sorter <- as.numeric(df$sorter)
 
+  attr(df, "wcvpmatch_input_prepared") <- TRUE
   df
 }
 
@@ -164,6 +184,31 @@ check_df_format <- function(df) {
   )
 }
 
+.pairwise_string_distance <- function(a, b, method = "osa") {
+  method_lower <- tolower(method)
+  stringdist_method <- switch(
+    method_lower,
+    "levenshtein" = "lv",
+    "lv" = "lv",
+    "damerau_levensthein" = "dl",
+    "damerau_levenshtein" = "dl",
+    "dl" = "dl",
+    "jaro" = "jw",
+    "jaro_winkler" = "jw",
+    "jw" = "jw",
+    method_lower
+  )
+
+  if (identical(method_lower, "jaro")) {
+    return(stringdist::stringdist(a, b, method = "jw", p = 0, useBytes = TRUE))
+  }
+  if (method_lower %in% c("jaro_winkler", "jw")) {
+    return(stringdist::stringdist(a, b, method = "jw", p = 0.1, useBytes = TRUE))
+  }
+
+  stringdist::stringdist(a, b, method = stringdist_method, useBytes = TRUE)
+}
+
 normalize_target_df <- function(target_df) {
   assertthat::assert_that(
     inherits(target_df, "data.frame"),
@@ -194,12 +239,17 @@ normalize_target_df <- function(target_df) {
   if (!("infraspecific_rank" %in% names(x))) x$infraspecific_rank <- NA_character_
   if (!("infraspecies" %in% names(x))) x$infraspecies <- NA_character_
 
+  clean_component <- function(value) {
+    value <- stringr::str_squish(as.character(value))
+    dplyr::na_if(value, "")
+  }
+
   x <- x %>%
     dplyr::mutate(
-      genus = as.character(genus),
-      species = as.character(species),
-      infraspecific_rank = .rank_to_upper(as.character(infraspecific_rank)),
-      infraspecies = as.character(infraspecies)
+      genus = clean_component(genus),
+      species = clean_component(species),
+      infraspecific_rank = .rank_to_upper(clean_component(infraspecific_rank)),
+      infraspecies = clean_component(infraspecies)
     ) %>%
     dplyr::mutate(
       Genus = genus,
@@ -248,7 +298,9 @@ prepare_target_db <- function(target_df) {
   )
 }
 
-prepare_taxonomic_context_data <- function(target_tbl, matched_df = NULL) {
+prepare_taxonomic_context_data <- function(target_tbl,
+                                           matched_df = NULL,
+                                           accepted_source_tbl = target_tbl) {
   meta_needed <- c("plant_name_id", "taxon_name", "taxon_status", "accepted_plant_name_id")
   has_taxon_authors <- "taxon_authors" %in% names(target_tbl)
 
@@ -349,8 +401,12 @@ prepare_taxonomic_context_data <- function(target_tbl, matched_df = NULL) {
   }
 
   accepted_ids <- unique(stats::na.omit(db_meta$accepted_plant_name_id))
-  accepted_lookup <- target_tbl %>%
-    dplyr::filter(plant_name_id %in% accepted_ids) %>%
+  # Candidate metadata can come from the genus-prefiltered table, while
+  # accepted names may live under a different genus and therefore use the
+  # complete source table. This avoids scanning the full backbone twice.
+  accepted_positions <- match(accepted_ids, accepted_source_tbl$plant_name_id)
+  accepted_positions <- accepted_positions[!is.na(accepted_positions)]
+  accepted_lookup <- accepted_source_tbl[accepted_positions, , drop = FALSE] %>%
     dplyr::select(
       plant_name_id,
       accepted_taxon_name = taxon_name,

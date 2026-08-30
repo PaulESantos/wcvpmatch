@@ -1,10 +1,13 @@
 test_that("all species within genus names matched in test", {
   skip_if_no_default_backbone()
-  df <- get_testset(mutation = 2) %>%
-    wcvpmatch:::wcvp_direct_match() %>%
-    wcvpmatch:::wcvp_genus_match() %>%
-    wcvpmatch:::wcvp_fuzzy_match_genus() %>%
-    wcvpmatch:::wcvp_direct_match_species_within_genus()
+  expect_warning(
+    df <- get_testset(mutation = 2) %>%
+      wcvpmatch:::wcvp_direct_match() %>%
+      wcvpmatch:::wcvp_genus_match() %>%
+      wcvpmatch:::wcvp_fuzzy_match_genus() %>%
+      wcvpmatch:::wcvp_direct_match_species_within_genus(),
+    "Multiple fuzzy matches"
+  )
 
   matched_spp <- stats::na.omit(df$Matched.Species)
   expect_true(all(matched_spp %in% df$Orig.Species))

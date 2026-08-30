@@ -261,14 +261,15 @@ test_that("wcvp_distribution can fall back to genus distribution without breakin
 })
 
 test_that("wcvp_distribution does not abort on incomplete species inputs", {
-  expect_no_error(
+  expect_warning(
     out <- wcvp_distribution(
       c("Opuntia", "Taxon inexistente"),
       taxon_rank = "species",
       summarise_by_input = TRUE,
       wcvp_names = make_distribution_names(),
       wcvp_distributions = make_distribution_records()
-    )
+    ),
+    "genus-only row"
   )
 
   expect_equal(nrow(out), 2)

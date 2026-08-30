@@ -25,6 +25,7 @@ wcvp_fuzzy_match_genus <- function(df, target_df = NULL, max_dist = 1, method = 
   df <- check_df_format(df)
   assertthat::assert_that(all(c('Orig.Genus', 'Orig.Species') %in% colnames(df)))
   target_df <- get_db(target_df = target_df)
+  prefetched_fuzzy <- attr(target_df, "fuzzy_genus_map", exact = TRUE)
   ambiguous_genus <- NULL
 
   ## handle empty input tibble while preserving expected output schema
@@ -46,18 +47,30 @@ wcvp_fuzzy_match_genus <- function(df, target_df = NULL, max_dist = 1, method = 
   df_work <- df %>%
     dplyr::mutate(.row_id = dplyr::row_number())
 
-  Tree.Genera <- target_df |>
-    dplyr::distinct(genus)
+  # Reuse the fuzzy candidates already computed by the genus prefilter. When
+  # this function is called independently, retain the original join fallback.
+  if (!is.null(prefetched_fuzzy)) {
+    matched_temp <- df_work %>%
+      dplyr::inner_join(
+        prefetched_fuzzy %>%
+          dplyr::select(Orig.Genus, genus, fuzzy_genus_dist),
+        by = "Orig.Genus"
+      )
+  } else {
+    Tree.Genera <- target_df |>
+      dplyr::distinct(genus)
 
-  # fuzzy match
-  matched_temp <- df_work %>%
-    fozziejoin::fozzie_string_left_join(
-      Tree.Genera,
-      by = c('Orig.Genus' = 'genus'),
-      max_distance = max_dist,
-      distance_col = 'fuzzy_genus_dist',
-      method = method
-    ) %>%
+    matched_temp <- df_work %>%
+      fozziejoin::fozzie_string_left_join(
+        Tree.Genera,
+        by = c('Orig.Genus' = 'genus'),
+        max_distance = max_dist,
+        distance_col = 'fuzzy_genus_dist',
+        method = method
+      )
+  }
+
+  matched_temp <- matched_temp %>%
     # save matched Genus name to Matched.Genus
     dplyr::mutate(Matched.Genus = genus) %>%
     dplyr::select(-c('genus')) %>%

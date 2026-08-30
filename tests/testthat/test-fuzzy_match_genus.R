@@ -1,9 +1,15 @@
 test_that("all fuzzy matches", {
   skip_if_no_default_backbone()
-  df1 <- get_testset(mutation = 2) |>
-    wcvpmatch:::wcvp_fuzzy_match_genus()
-  df2 <- get_testset(mutation = 3) |>
-    wcvpmatch:::wcvp_fuzzy_match_genus()
+  expect_warning(
+    df1 <- get_testset(mutation = 2) |>
+      wcvpmatch:::wcvp_fuzzy_match_genus(),
+    "Multiple fuzzy matches"
+  )
+  expect_warning(
+    df2 <- get_testset(mutation = 3) |>
+      wcvpmatch:::wcvp_fuzzy_match_genus(),
+    "Multiple fuzzy matches"
+  )
   dfs <- list(df1, df2)
   for(df in dfs){
     expect_true("Matched.Genus" %in% colnames(df1))

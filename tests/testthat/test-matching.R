@@ -3,7 +3,7 @@ test_that("correct matches for test6 dataset", {
   df <- get_testset(mutation = 0) |>
     wcvp_matching(prefilter_genus = TRUE, output = "full")
 
-  expect_false(all(df$direct_match))
+  expect_true(all(df$direct_match))
 
   df <- get_testset(mutation = 1) |>
     wcvp_matching(prefilter_genus = TRUE, output = "full")
@@ -146,6 +146,37 @@ test_that("matching output always includes Input.Name", {
   )
   out_keep <- wcvp_matching(input_keep, target_df = target_df)
   expect_equal(out_keep$input_name[1], "Fagus sylvatica L.")
+})
+
+test_that("minimal exact binomials use the direct-match path", {
+  target_df <- tibble::tibble(
+    genus = "Fagus",
+    species = "sylvatica",
+    infraspecific_rank = "",
+    infraspecies = ""
+  )
+
+  out <- wcvp_matching(
+    tibble::tibble(Genus = "Fagus", Species = "sylvatica"),
+    target_df = target_df,
+    output = "full"
+  )
+
+  expect_equal(out$rank, 2)
+  expect_true(out$direct_match)
+  expect_true(out$matched)
+})
+
+test_that("default backbone exact binomial returns taxonomic context", {
+  skip_if_no_default_backbone()
+
+  out <- wcvp_matching(
+    tibble::tibble(Genus = "Opuntia", Species = "yanganucensis"),
+    output = "full"
+  )
+
+  expect_true(out$matched)
+  expect_false(is.na(out$matched_taxon_name))
 })
 
 test_that("matching with prefilter_genus keeps same result on small custom target", {

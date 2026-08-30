@@ -19,6 +19,20 @@ test_that("prepared target databases are reused without global taxon keys", {
   expect_identical(wcvpmatch:::get_db(prepared), prepared)
 })
 
+test_that("target normalization canonicalizes empty taxonomic components", {
+  target <- tibble::tibble(
+    genus = "Fagus",
+    species = "sylvatica",
+    infraspecific_rank = " ",
+    infraspecies = ""
+  )
+
+  normalized <- wcvpmatch:::normalize_target_df(target)
+
+  expect_true(is.na(normalized$infraspecific_rank))
+  expect_true(is.na(normalized$infraspecies))
+})
+
 test_that("compact genus lookup is sufficient for prefiltering", {
   target <- wcvpmatch:::get_db(make_performance_target())
   lookup <- wcvpmatch:::build_genus_lookup(target)

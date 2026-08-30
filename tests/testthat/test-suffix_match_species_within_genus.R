@@ -30,3 +30,22 @@ test_that("suffix matching is constrained to matched genus candidates", {
 
   expect_false(out$suffix_match_species_within_genus[1])
 })
+
+test_that("ambiguous suffix roots continue to fuzzy matching", {
+  target <- tibble::tibble(
+    genus = c("Abies", "Abies"),
+    species = c("alba", "album"),
+    infraspecific_rank = NA_character_,
+    infraspecies = NA_character_
+  )
+  input <- tibble::tibble(
+    Orig.Genus = "Abies",
+    Orig.Species = "albus",
+    Matched.Genus = "Abies"
+  )
+
+  out <- wcvpmatch:::wcvp_suffix_match_species_within_genus(input, target)
+
+  expect_false(out$suffix_match_species_within_genus)
+  expect_equal(nrow(attr(out, "ambiguous_suffix")), 2)
+})

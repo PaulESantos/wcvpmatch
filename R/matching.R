@@ -396,6 +396,7 @@ wcvp_matching <- function(df,
     ),
     rows = nrow(n4_false)
   )
+  ambiguous_suffix <- attr(node_5a, "ambiguous_suffix")
   n5a_true <- dplyr::filter(node_5a, suffix_match_species_within_genus)
   n5a_false <- dplyr::filter(node_5a, !suffix_match_species_within_genus)
 
@@ -525,7 +526,11 @@ wcvp_matching <- function(df,
   res <- dplyr::select(res, -dplyr::any_of(".dedup_key"))
   context_data <- profile_stage(
     "prepare_taxonomic_context_data",
-    prepare_taxonomic_context_data(target_df_full, matched_df = res),
+    prepare_taxonomic_context_data(
+      target_df_match,
+      matched_df = res,
+      accepted_source_tbl = target_df_full
+    ),
     rows = nrow(res)
   )
   res <- profile_stage(
@@ -615,6 +620,9 @@ wcvp_matching <- function(df,
   }
   if (!is.null(ambiguous_species) && nrow(ambiguous_species) > 0) {
     attr(res, "ambiguous_species") <- ambiguous_species
+  }
+  if (!is.null(ambiguous_suffix) && nrow(ambiguous_suffix) > 0) {
+    attr(res, "ambiguous_suffix") <- ambiguous_suffix
   }
 
   if (identical(output_name_style, "snake_case")) {

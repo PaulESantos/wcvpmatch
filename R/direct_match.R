@@ -43,123 +43,65 @@ wcvp_direct_match <- function(df, target_df = NULL) {
     msg = "Backbone (target_df) must contain columns: genus, species, infraspecific_rank, infraspecies."
   )
 
-  df <- df %>%
-    dplyr::mutate(.Infra.Rank.upper = .rank_to_upper(Infra.Rank))
+  infra_rank_upper <- .rank_to_upper(df$Infra.Rank)
+  target_rank_upper <- .rank_to_upper(target_df$infraspecific_rank)
+  matched <- rep(FALSE, nrow(df))
 
-  target_keys <- target_df |>
-    dplyr::select(genus, species, infraspecific_rank, infraspecies) |>
-    dplyr::mutate(infraspecific_rank = .rank_to_upper(infraspecific_rank)) |>
-    dplyr::distinct()
-
-  # Helper: given a data frame with a logical `.matched`, add standard outputs
-  finalize_block <- function(x) {
-    x |>
-      dplyr::mutate(
-        direct_match = .matched,
-        Matched.Genus = dplyr::if_else(.matched, Orig.Genus, NA_character_),
-        Matched.Species = dplyr::if_else(.matched, Orig.Species, NA_character_),
-        Matched.Infraspecies = dplyr::if_else(.matched, Orig.Infraspecies, NA_character_),
-        Matched.Infra.Rank = dplyr::if_else(.matched, Infra.Rank, NA_character_)
-      ) |>
-      dplyr::select(-dplyr::any_of(c(".matched", ".Infra.Rank.upper")))
+  rank1 <- df$Rank == 1 | df$is_sp | df$is_spp
+  rank1[is.na(rank1)] <- FALSE
+  if (any(rank1)) {
+    target_genera <- unique(target_df$genus[!is.na(target_df$genus)])
+    matched[rank1] <- df$Orig.Genus[rank1] %in% target_genera
   }
 
-  # -----------------------
-  # Rank 1: genus-only (includes sp./spp.)
-  df_r1 <- df |>
-    dplyr::filter(Rank == 1 | is_sp | is_spp)
+  rank2 <- df$Rank == 2 & !is.na(df$Orig.Species)
+  rank2[is.na(rank2)] <- FALSE
+  if (any(rank2)) {
+    target_ok <- !is.na(target_df$genus) & !is.na(target_df$species)
+    target_key <- paste(target_df$genus[target_ok], target_df$species[target_ok], sep = "\r")
+    input_key <- paste(df$Orig.Genus[rank2], df$Orig.Species[rank2], sep = "\r")
+    matched[rank2] <- input_key %in% target_key
+  }
 
-  key_r1 <- target_keys |>
-    dplyr::filter(!is.na(genus)) |>
-    dplyr::distinct(genus)
+  rank3 <- df$Rank == 3 & !is.na(df$Orig.Species) & !is.na(df$Orig.Infraspecies)
+  rank3[is.na(rank3)] <- FALSE
+  ranked <- rank3 & !df$implied_infra
+  implied <- rank3 & df$implied_infra
 
-  df_r1_out <- df_r1 |>
-    dplyr::mutate(.key = TRUE) |>
-    dplyr::left_join(key_r1 |> dplyr::mutate(.matched = TRUE),
-                     by = c("Orig.Genus" = "genus")) |>
-    dplyr::mutate(.matched = dplyr::coalesce(.matched, FALSE)) |>
-    dplyr::select(-.key) |>
-    finalize_block()
+  if (any(ranked)) {
+    target_ok <- !is.na(target_df$genus) & !is.na(target_df$species) &
+      !is.na(target_rank_upper) & !is.na(target_df$infraspecies)
+    target_key <- .make_taxon_key(
+      target_df$genus[target_ok], target_df$species[target_ok],
+      target_rank_upper[target_ok], target_df$infraspecies[target_ok]
+    )
+    input_key <- .make_taxon_key(
+      df$Orig.Genus[ranked], df$Orig.Species[ranked],
+      infra_rank_upper[ranked], df$Orig.Infraspecies[ranked]
+    )
+    matched[ranked] <- input_key %in% target_key
+  }
 
-  # -----------------------
-  # Rank 2: genus + species
-  df_r2 <- df |>
-    dplyr::filter(Rank == 2 & !is.na(Orig.Species))
+  if (any(implied)) {
+    target_ok <- !is.na(target_df$genus) & !is.na(target_df$species) &
+      is.na(target_rank_upper) & !is.na(target_df$infraspecies)
+    target_key <- .make_taxon_key(
+      target_df$genus[target_ok], target_df$species[target_ok],
+      NA_character_, target_df$infraspecies[target_ok]
+    )
+    input_key <- .make_taxon_key(
+      df$Orig.Genus[implied], df$Orig.Species[implied],
+      NA_character_, df$Orig.Infraspecies[implied]
+    )
+    matched[implied] <- input_key %in% target_key
+  }
 
-  key_r2 <- target_keys |>
-    dplyr::filter(!is.na(genus), !is.na(species)) |>
-    dplyr::distinct(genus, species) |>
-    dplyr::mutate(.matched = TRUE)
-
-  df_r2_out <- df_r2 |>
-    dplyr::left_join(key_r2,
-                     by = c("Orig.Genus" = "genus", "Orig.Species" = "species")) |>
-    dplyr::mutate(.matched = dplyr::coalesce(.matched, FALSE)) |>
-    finalize_block()
-
-  # -----------------------
-  # Rank 3: infra present
-  df_r3 <- df |>
-    dplyr::filter(Rank == 3 & !is.na(Orig.Species) & !is.na(Orig.Infraspecies))
-
-  # A) ranked infra (implied_infra == FALSE): rank must match too
-  df_r3_ranked <- df_r3 |>
-    dplyr::filter(!implied_infra)
-
-  key_r3_ranked <- target_keys |>
-    dplyr::filter(!is.na(genus), !is.na(species), !is.na(infraspecific_rank), !is.na(infraspecies)) |>
-    dplyr::distinct(genus, species, infraspecific_rank, infraspecies) |>
-    dplyr::mutate(.matched = TRUE)
-
-  df_r3_ranked_out <- df_r3_ranked |>
-    dplyr::left_join(
-      key_r3_ranked,
-      by = c(
-        "Orig.Genus" = "genus",
-        "Orig.Species" = "species",
-        ".Infra.Rank.upper" = "infraspecific_rank",
-        "Orig.Infraspecies" = "infraspecies"
-      )
-    ) |>
-    dplyr::mutate(.matched = dplyr::coalesce(.matched, FALSE)) |>
-    finalize_block()
-
-  # B) implied infra (implied_infra == TRUE): ignore rank, expect backbone rank NA
-  df_r3_implied <- df_r3 |>
-    dplyr::filter(implied_infra)
-
-  key_r3_implied <- target_keys |>
-    dplyr::filter(!is.na(genus), !is.na(species), is.na(infraspecific_rank), !is.na(infraspecies)) |>
-    dplyr::distinct(genus, species, infraspecies) |>
-    dplyr::mutate(.matched = TRUE)
-
-  df_r3_implied_out <- df_r3_implied |>
-    dplyr::left_join(
-      key_r3_implied,
-      by = c(
-        "Orig.Genus" = "genus",
-        "Orig.Species" = "species",
-        "Orig.Infraspecies" = "infraspecies"
-      )
-    ) |>
-    dplyr::mutate(.matched = dplyr::coalesce(.matched, FALSE)) |>
-    finalize_block()
-
-  # -----------------------
-  # Other rows: default no match
-  used_sorter <- dplyr::bind_rows(
-    df_r1 |> dplyr::select(sorter),
-    df_r2 |> dplyr::select(sorter),
-    df_r3 |> dplyr::select(sorter)
-  ) |>
-    dplyr::distinct()
-
-  df_other <- df |>
-    dplyr::anti_join(used_sorter, by = "sorter") |>
-    dplyr::mutate(.matched = FALSE) |>
-    finalize_block()
-
-  # Combine and restore original order
-  dplyr::bind_rows(df_r1_out, df_r2_out, df_r3_ranked_out, df_r3_implied_out, df_other) |>
-    dplyr::arrange(sorter)
+  dplyr::mutate(
+    df,
+    direct_match = matched,
+    Matched.Genus = dplyr::if_else(matched, Orig.Genus, NA_character_),
+    Matched.Species = dplyr::if_else(matched, Orig.Species, NA_character_),
+    Matched.Infraspecies = dplyr::if_else(matched, Orig.Infraspecies, NA_character_),
+    Matched.Infra.Rank = dplyr::if_else(matched, Infra.Rank, NA_character_)
+  )
 }

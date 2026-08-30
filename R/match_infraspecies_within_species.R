@@ -98,17 +98,23 @@ fuzzy_match_infraspecies_within_species <- function(df,
     )
 
   matched_temp <- df_std %>%
-    fozziejoin::fozzie_string_left_join(
+    dplyr::inner_join(
       db_subset,
-      by = c("Orig.Infraspecies" = "infraspecies"),
-      distance_col = "fuzzy_infraspecies_dist",
-      max_distance = max_dist,
-      method = method
+      by = c(
+        "Matched.Genus" = "genus",
+        "Matched.Species" = "species",
+        ".rank_key" = ".db_rank_key"
+      ),
+      relationship = "many-to-many"
+    ) %>%
+    dplyr::mutate(
+      fuzzy_infraspecies_dist = .pairwise_string_distance(
+        Orig.Infraspecies, infraspecies, method = method
+      )
     ) %>%
     dplyr::filter(
-      Matched.Genus == genus,
-      Matched.Species == species,
-      .rank_key == .db_rank_key
+      !is.na(fuzzy_infraspecies_dist),
+      fuzzy_infraspecies_dist <= max_dist
     ) %>%
     dplyr::mutate(Matched.Infraspecies = infraspecies) %>%
     dplyr::select(-dplyr::any_of(c("genus", "species", "infraspecies", "db_rank", ".db_rank_key"))) %>%

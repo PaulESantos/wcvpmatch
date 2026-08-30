@@ -75,6 +75,9 @@ build_genus_lookup <- function(target_df = NULL) {
     genus = genera,
     genus_nchar = nchar(genera)
   )
+  genus_values <- as.character(target_norm$genus)
+  valid_rows <- which(!is.na(genus_values) & nzchar(genus_values))
+  attr(out, "row_index") <- split(valid_rows, genus_values[valid_rows])
 
   if (is_default) .wcvpmatch_cache[["default_genus_lookup"]] <- out
   out
@@ -144,6 +147,9 @@ prefilter_target_by_genus <- function(df,
     attr(out, "candidate_genera") <- character(0)
     attr(out, "exact_genera") <- character(0)
     attr(out, "fuzzy_genera") <- character(0)
+    attr(out, "fuzzy_genus_map") <- tibble::tibble(
+      Orig.Genus = character(), genus = character(), fuzzy_genus_dist = numeric()
+    )
     return(out)
   }
 
@@ -165,6 +171,9 @@ prefilter_target_by_genus <- function(df,
     )
 
   fuzzy_genera <- character(0)
+  fuzzy_tbl <- tibble::tibble(
+    Orig.Genus = character(), genus = character(), fuzzy_genus_dist = numeric()
+  )
   if (isTRUE(include_fuzzy) && nrow(unresolved_genera) > 0) {
     available_genera_fuzzy <- available_genera
 
@@ -208,12 +217,23 @@ prefilter_target_by_genus <- function(df,
     attr(out, "candidate_genera") <- character(0)
     attr(out, "exact_genera") <- exact_genera
     attr(out, "fuzzy_genera") <- fuzzy_genera
+    attr(out, "fuzzy_genus_map") <- fuzzy_tbl
     return(out)
   }
 
-  # Base row subsetting is materially faster here than constructing a dplyr
-  # filtering pipeline over the 1.4M-row default backbone.
-  out <- target_norm[target_norm$genus %in% candidate_genera, , drop = FALSE]
+  # Reuse cached row positions when available. This avoids rescanning every row
+  # of the default backbone on repeated matching calls.
+  row_index <- attr(genus_index, "row_index", exact = TRUE)
+  candidate_rows <- if (!is.null(row_index)) {
+    unlist(row_index[candidate_genera], use.names = FALSE)
+  } else {
+    integer()
+  }
+  if (length(candidate_rows) > 0) {
+    out <- target_norm[sort(unique(candidate_rows)), , drop = FALSE]
+  } else {
+    out <- target_norm[target_norm$genus %in% candidate_genera, , drop = FALSE]
+  }
   attr(out, "wcvpmatch_normalized") <- TRUE
   attr(out, "wcvpmatch_prepared") <- TRUE
   source <- attr(target_norm, "wcvpmatch_source", exact = TRUE)
@@ -221,5 +241,6 @@ prefilter_target_by_genus <- function(df,
   attr(out, "candidate_genera") <- candidate_genera
   attr(out, "exact_genera") <- exact_genera
   attr(out, "fuzzy_genera") <- fuzzy_genera
+  attr(out, "fuzzy_genus_map") <- fuzzy_tbl
   out
 }

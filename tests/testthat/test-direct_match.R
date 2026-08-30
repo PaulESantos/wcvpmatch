@@ -1,6 +1,6 @@
 test_that("all direct matches", {
   skip_if_no_default_backbone()
-  expect_false(all(wcvpmatch:::wcvp_direct_match(get_testset(mutation = 0))$direct_match))
+  expect_true(all(wcvpmatch:::wcvp_direct_match(get_testset(mutation = 0))$direct_match))
 })
 
 test_that("no direct matches", {
