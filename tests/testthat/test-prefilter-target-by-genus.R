@@ -43,3 +43,57 @@ test_that("prefilter_target_by_genus can include fuzzy genus candidates", {
   expect_true("Acer" %in% attr(out, "candidate_genera"))
   expect_true("Acer" %in% out$genus)
 })
+
+test_that("prefilter rejects row positions from another backbone", {
+  target_a <- tibble::tibble(
+    genus = c("Acer", "Quercus"), species = c("rubrum", "robur"),
+    infraspecific_rank = NA_character_, infraspecies = NA_character_
+  )
+  target_b <- target_a[c(2, 1), ]
+  index_a <- wcvpmatch:::build_genus_lookup(target_a)
+
+  expect_error(
+    wcvpmatch:::prefilter_target_by_genus(
+      tibble::tibble(Genus = "Acer", Species = "rubrum"),
+      target_df = target_b,
+      genus_index = index_a,
+      include_fuzzy = FALSE
+    ),
+    "row positions"
+  )
+})
+
+test_that("prefilter accepts an index rebuilt from equivalent raw data", {
+  target <- make_prefilter_target()
+  index <- wcvpmatch:::build_genus_lookup(target)
+
+  expect_no_error(
+    out <- wcvpmatch:::prefilter_target_by_genus(
+      tibble::tibble(Genus = "Acer", Species = "rubrum"),
+      target_df = target,
+      genus_index = index,
+      include_fuzzy = FALSE
+    )
+  )
+  expect_true(all(out$genus == "Acer"))
+})
+
+test_that("prefiltered fuzzy candidates reject changed parameters", {
+  target <- make_prefilter_target()
+  filtered <- wcvpmatch:::prefilter_target_by_genus(
+    tibble::tibble(Genus = "Acr", Species = "rubrum"),
+    target_df = target,
+    max_dist = 1,
+    method = "osa"
+  )
+
+  expect_error(
+    wcvpmatch:::wcvp_fuzzy_match_genus(
+      tibble::tibble(Genus = "Acr", Species = "rubrum"),
+      target_df = filtered,
+      max_dist = 2,
+      method = "osa"
+    ),
+    "different matching parameters"
+  )
+})

@@ -1,8 +1,4 @@
 check_df_format <- function(df) {
-  if (isTRUE(attr(df, "wcvpmatch_input_prepared", exact = TRUE)) &&
-      all(c("Orig.Genus", "Orig.Species", "Rank", "sorter") %in% names(df))) {
-    return(df)
-  }
   if (!tibble::is_tibble(df) && inherits(df, "data.frame")) {
     df <- tibble::as_tibble(df)
     cli::cli_inform(c(
@@ -87,7 +83,21 @@ check_df_format <- function(df) {
     !is.na(df$Orig.Species) ~ 2,
     TRUE ~ NA_real_
   )
-  rank_numeric <- suppressWarnings(as.numeric(as.character(df$Rank)))
+  rank_raw <- as.character(df$Rank)
+  rank_missing <- is.na(rank_raw) | !nzchar(stringr::str_trim(rank_raw))
+  rank_numeric <- suppressWarnings(as.numeric(rank_raw))
+  invalid_rank <- !rank_missing & (
+    is.na(rank_numeric) | !rank_numeric %in% c(1, 2, 3)
+  )
+  if (any(invalid_rank)) {
+    bad_rows <- which(invalid_rank)
+    cli::cli_abort(c(
+      "x" = "{sum(invalid_rank)} invalid {.field Rank} value{?s} detected.",
+      "i" = "Rank must be one of 1, 2, or 3; missing values are inferred from the taxonomic components.",
+      "i" = "Invalid row{?s}: {paste(utils::head(bad_rows, 10), collapse = ', ')}."
+    ))
+  }
+  rank_numeric[rank_missing] <- NA_real_
   df$Rank <- dplyr::coalesce(rank_numeric, inferred_rank)
 
   # Build Input.Name when not provided, preserving existing non-empty values.
@@ -132,7 +142,6 @@ check_df_format <- function(df) {
   if (!"sorter" %in% names(df)) df$sorter <- seq_len(n)
   df$sorter <- as.numeric(df$sorter)
 
-  attr(df, "wcvpmatch_input_prepared") <- TRUE
   df
 }
 
@@ -262,11 +271,75 @@ normalize_target_df <- function(target_df) {
 
 is_normalized_target_df <- function(x) {
   inherits(x, "data.frame") &&
+    isTRUE(attr(x, "wcvpmatch_normalized", exact = TRUE)) &&
     all(c("genus", "species", "infraspecific_rank", "infraspecies") %in% names(x))
+}
+
+.new_target_id <- function() {
+  counter <- .wcvpmatch_cache[["target_id_counter"]]
+  if (is.null(counter)) counter <- 0L
+  counter <- counter + 1L
+  .wcvpmatch_cache[["target_id_counter"]] <- counter
+  paste0("wcvpmatch-target-", counter)
+}
+
+.target_id <- function(x) {
+  attr(x, "wcvpmatch_target_id", exact = TRUE)
+}
+
+.is_species_record <- function(target_df) {
+  if (".wcvpmatch_species_record" %in% names(target_df)) {
+    return(as.logical(target_df$.wcvpmatch_species_record))
+  }
+  no_infra <- is.na(target_df$infraspecific_rank) & is.na(target_df$infraspecies)
+  if (!"taxon_rank" %in% names(target_df)) return(no_infra)
+
+  rank_value <- tolower(trimws(as.character(target_df$taxon_rank)))
+  rank_missing <- is.na(rank_value) | !nzchar(rank_value)
+  (!rank_missing & rank_value == "species") | (rank_missing & no_infra)
+}
+
+.species_candidate_keys <- function(target_df,
+                                    match_scopes = c("species", "infra_parent")) {
+  match_scopes <- sort(unique(match_scopes))
+  is_full_default <- identical(
+    attr(target_df, "wcvpmatch_source", exact = TRUE), "default"
+  ) && is.null(attr(target_df, "candidate_genera", exact = TRUE))
+  cache_key <- paste0(
+    "default_species_candidate_keys_",
+    paste(match_scopes, collapse = "_")
+  )
+  if (is_full_default) {
+    cached <- .wcvpmatch_cache[[cache_key]]
+    if (!is.null(cached)) return(cached)
+  }
+
+  base <- target_df %>%
+    dplyr::select(genus, species) %>%
+    dplyr::filter(!is.na(genus), !is.na(species))
+  parts <- list()
+  if ("species" %in% match_scopes) {
+    parts[["species"]] <- target_df[.is_species_record(target_df), , drop = FALSE] %>%
+      dplyr::select(genus, species) %>%
+      dplyr::filter(!is.na(genus), !is.na(species)) %>%
+      dplyr::mutate(.match_scope = "species")
+  }
+  if ("infra_parent" %in% match_scopes) {
+    parts[["infra_parent"]] <- base %>%
+      dplyr::mutate(.match_scope = "infra_parent")
+  }
+
+  out <- dplyr::bind_rows(parts) %>%
+    dplyr::distinct()
+  if (is_full_default) .wcvpmatch_cache[[cache_key]] <- out
+  out
 }
 
 prepare_target_db <- function(target_df) {
   if (isTRUE(attr(target_df, "wcvpmatch_prepared", exact = TRUE))) {
+    if (is.null(.target_id(target_df))) {
+      attr(target_df, "wcvpmatch_target_id") <- .new_target_id()
+    }
     return(target_df)
   }
 
@@ -277,12 +350,15 @@ prepare_target_db <- function(target_df) {
       Species = if ("Species" %in% names(.)) as.character(Species) else as.character(species)
     ) %>%
     tidyr::drop_na(genus, species)
+  out$.wcvpmatch_species_record <- NULL
+  out$.wcvpmatch_species_record <- .is_species_record(out)
 
   # Matching nodes deduplicate only the small key tables they actually use.
   # A global distinct() and a 4-column string key over the complete WCVP
   # backbone are both expensive and unnecessary here.
   attr(out, "wcvpmatch_normalized") <- TRUE
   attr(out, "wcvpmatch_prepared") <- TRUE
+  attr(out, "wcvpmatch_target_id") <- .new_target_id()
   if (!is.null(source)) attr(out, "wcvpmatch_source") <- source
   out
 }

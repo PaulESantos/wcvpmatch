@@ -57,7 +57,8 @@ wcvp_direct_match <- function(df, target_df = NULL) {
   rank2 <- df$Rank == 2 & !is.na(df$Orig.Species)
   rank2[is.na(rank2)] <- FALSE
   if (any(rank2)) {
-    target_ok <- !is.na(target_df$genus) & !is.na(target_df$species)
+    target_ok <- !is.na(target_df$genus) & !is.na(target_df$species) &
+      .is_species_record(target_df)
     target_key <- paste(target_df$genus[target_ok], target_df$species[target_ok], sep = "\r")
     input_key <- paste(df$Orig.Genus[rank2], df$Orig.Species[rank2], sep = "\r")
     matched[rank2] <- input_key %in% target_key

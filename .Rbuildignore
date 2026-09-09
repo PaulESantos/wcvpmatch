@@ -16,6 +16,8 @@
 ^r\\rust_helper\\.R
 ^_pkgdown\\.yml$
 ^docs$
+^paper-study$
+^output$
 ^_pkgdown\.yml$
 ^pkgdown$
 ^\.github$

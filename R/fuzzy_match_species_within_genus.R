@@ -35,14 +35,18 @@ wcvp_fuzzy_match_species_within_genus <- function(df, target_df = NULL, max_dist
   }
 
   df_work <- df %>%
-    dplyr::mutate(.row_id = dplyr::row_number())
+    dplyr::mutate(
+      .row_id = dplyr::row_number(),
+      .match_scope = dplyr::if_else(
+        is.na(Orig.Infraspecies), "species", "infra_parent"
+      )
+    )
 
   # Vectorized candidate generation in a single fuzzy join over candidate genera.
   # This avoids group_split() + map_dfr() overhead for many genera.
-  db_subset <- target_df %>%
-    dplyr::semi_join(df_work %>% dplyr::distinct(Matched.Genus), by = c("Genus" = "Matched.Genus")) %>%
-    dplyr::select(Genus, Species) %>%
-    dplyr::distinct()
+  db_subset <- .species_candidate_keys(target_df, unique(df_work$.match_scope)) %>%
+    dplyr::semi_join(df_work %>% dplyr::distinct(Matched.Genus), by = c("genus" = "Matched.Genus")) %>%
+    dplyr::rename(Genus = genus, Species = species)
 
   # Generate candidates by exact genus first, then compute pairwise distances.
   # This changes the comparison space from every input x every candidate genus
@@ -50,7 +54,7 @@ wcvp_fuzzy_match_species_within_genus <- function(df, target_df = NULL, max_dist
   matched_temp <- df_work %>%
     dplyr::inner_join(
       db_subset,
-      by = c("Matched.Genus" = "Genus"),
+      by = c("Matched.Genus" = "Genus", ".match_scope" = ".match_scope"),
       relationship = "many-to-many"
     ) %>%
     dplyr::mutate(
@@ -68,7 +72,7 @@ wcvp_fuzzy_match_species_within_genus <- function(df, target_df = NULL, max_dist
       !(.orig_len <= 7 & .orig_len != .cand_len)
     ) %>%
     dplyr::mutate(Matched.Species = Species) %>%
-    dplyr::select(-dplyr::any_of(c("Species", "Genus", ".orig_len", ".cand_len"))) %>%
+    dplyr::select(-dplyr::any_of(c("Species", "Genus", ".orig_len", ".cand_len", ".match_scope"))) %>%
     dplyr::group_by(.row_id) %>%
     dplyr::slice_min(order_by = fuzzy_species_dist, n = 1, with_ties = TRUE) %>%
     dplyr::ungroup()
@@ -96,7 +100,8 @@ wcvp_fuzzy_match_species_within_genus <- function(df, target_df = NULL, max_dist
     dplyr::anti_join(
       matched %>% dplyr::select(.row_id),
       by = ".row_id"
-    )
+    ) %>%
+    dplyr::select(-dplyr::any_of(".match_scope"))
 
   assertthat::assert_that(nrow(df_work) == (nrow(matched) + nrow(unmatched)))
 

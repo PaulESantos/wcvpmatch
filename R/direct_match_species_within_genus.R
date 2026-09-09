@@ -31,21 +31,33 @@ wcvp_direct_match_species_within_genus <- function(df, target_df = NULL){
   # Match must be constrained by both Matched.Genus and Orig.Species.
   # Using species-only joins can produce false positives when the same epithet
   # exists in other genera.
-  db_subset <- target_df %>%
-    dplyr::select(genus, species) %>%
-    dplyr::distinct()
+  df <- df %>%
+    dplyr::mutate(
+      .match_scope = dplyr::if_else(
+        is.na(Orig.Infraspecies), "species", "infra_parent"
+      )
+    )
+  db_subset <- .species_candidate_keys(target_df, unique(df$.match_scope))
 
   matched <- df %>%
     dplyr::semi_join(
       db_subset,
-      by = c("Matched.Genus" = "genus", "Orig.Species" = "species")
+      by = c(
+        "Matched.Genus" = "genus",
+        "Orig.Species" = "species",
+        ".match_scope" = ".match_scope"
+      )
     ) %>%
     dplyr::mutate(Matched.Species = Orig.Species)
 
   unmatched <- df %>%
     dplyr::anti_join(
       db_subset,
-      by = c("Matched.Genus" = "genus", "Orig.Species" = "species")
+      by = c(
+        "Matched.Genus" = "genus",
+        "Orig.Species" = "species",
+        ".match_scope" = ".match_scope"
+      )
     )
 
   assertthat::assert_that(nrow(df) == (nrow(matched) + nrow(unmatched)))
@@ -53,6 +65,7 @@ wcvp_direct_match_species_within_genus <- function(df, target_df = NULL){
   # combine matched and unmatched and add Boolean indicator: TRUE = matched, FALSE = unmatched
   combined <- dplyr::bind_rows(matched, unmatched, .id = 'direct_match_species_within_genus') %>%
     dplyr::mutate(direct_match_species_within_genus = (direct_match_species_within_genus == 1)) %>% ## convert to Boolean
+    dplyr::select(-dplyr::any_of(".match_scope")) %>%
     dplyr::relocate(c('Orig.Genus', 'Orig.Species')) ## Genus & Species column at the beginning of tibble
 
   return(combined)

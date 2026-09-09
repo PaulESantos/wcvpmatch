@@ -48,4 +48,4 @@ Config/Needs/website: pkgdown
 URL: https://paulesantos.github.io/wcvpmatch/,
     https://github.com/PaulESantos/wcvpmatch
 BugReports: https://github.com/PaulESantos/wcvpmatch/issues
-Config/roxygen2/version: 8.0.0
+Config/roxygen2/version: 8.1.0

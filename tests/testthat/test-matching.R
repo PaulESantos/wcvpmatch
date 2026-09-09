@@ -167,6 +167,68 @@ test_that("minimal exact binomials use the direct-match path", {
   expect_true(out$matched)
 })
 
+test_that("custom lowercase backbones are normalized before matching", {
+  target_df <- tibble::tibble(
+    genus = "Fagus", species = "sylvatica",
+    infraspecific_rank = "", infraspecies = " ",
+    plant_name_id = 1, taxon_name = "Fagus sylvatica",
+    taxon_status = "Accepted", accepted_plant_name_id = 1
+  )
+
+  out <- wcvp_matching(
+    tibble::tibble(Genus = "Fagus", Species = "sylvatica"),
+    target_df = target_df,
+    output = "full"
+  )
+
+  expect_true(out$direct_match)
+  expect_true(out$matched)
+  expect_equal(out$matched_taxon_name, "Fagus sylvatica")
+})
+
+test_that("invalid explicit ranks are rejected instead of inferred", {
+  expect_error(
+    wcvpmatch:::check_df_format(
+      tibble::tibble(Genus = "Fagus", Species = "sylvatica", Rank = "nonsense")
+    ),
+    "invalid.*Rank"
+  )
+  expect_error(
+    wcvpmatch:::check_df_format(
+      tibble::tibble(Genus = "Fagus", Species = "sylvatica", Rank = 2.5)
+    ),
+    "invalid.*Rank"
+  )
+})
+
+test_that("binomials do not match an infra-only backbone", {
+  target_df <- tibble::tibble(
+    genus = "Fagus", species = "sylvatica",
+    infraspecific_rank = "VAR.", infraspecies = "minor"
+  )
+
+  out <- wcvp_matching(
+    tibble::tibble(Genus = "Fagus", Species = "sylvatica"),
+    target_df = target_df,
+    output = "full"
+  )
+
+  expect_false(out$direct_match)
+  expect_false(out$direct_match_species_within_genus)
+  expect_false(out$matched)
+})
+
+test_that("prepared marker does not bypass input normalization", {
+  input <- tibble::tibble(
+    Orig.Genus = "Fagus", Orig.Species = " sylvatica ",
+    Rank = 2, sorter = 1
+  )
+  attr(input, "wcvpmatch_input_prepared") <- TRUE
+
+  expect_warning(out <- wcvpmatch:::check_df_format(input), "space")
+  expect_equal(out$Orig.Species, "sylvatica")
+})
+
 test_that("default backbone exact binomial returns taxonomic context", {
   skip_if_no_default_backbone()
 

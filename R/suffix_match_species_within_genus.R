@@ -38,16 +38,18 @@ wcvp_suffix_match_species_within_genus <- function(df, target_df = NULL){
   df_work <- df %>%
     dplyr::mutate(
       .row_id = dplyr::row_number(),
+      .match_scope = dplyr::if_else(
+        is.na(Orig.Infraspecies), "species", "infra_parent"
+      ),
       Root = stringr::str_match(Orig.Species, catch_suffixes)[, 2]
     )
 
-  database_subset <- target_df %>%
+  database_subset <- .species_candidate_keys(target_df, unique(df_work$.match_scope)) %>%
     dplyr::semi_join(
       df_work %>% dplyr::distinct(Matched.Genus),
-      by = c("Genus" = "Matched.Genus")
+      by = c("genus" = "Matched.Genus")
     ) %>%
-    dplyr::select(Genus, Species) %>%
-    dplyr::distinct() %>%
+    dplyr::rename(Genus = genus, Species = species) %>%
     dplyr::mutate(
       Root = stringr::str_match(Species, catch_suffixes)[, 2]
     )
@@ -55,7 +57,10 @@ wcvp_suffix_match_species_within_genus <- function(df, target_df = NULL){
   candidate_matches <- df_work %>%
     dplyr::inner_join(
       database_subset,
-      by = c("Matched.Genus" = "Genus", "Root" = "Root"),
+      by = c(
+        "Matched.Genus" = "Genus", "Root" = "Root",
+        ".match_scope" = ".match_scope"
+      ),
       na_matches = "never"
     ) %>%
     dplyr::mutate(Matched.Species = Species) %>%
@@ -91,7 +96,7 @@ wcvp_suffix_match_species_within_genus <- function(df, target_df = NULL){
 
   res <- dplyr::bind_rows(matched, unmatched, .id = 'suffix_match_species_within_genus') %>%
     dplyr::mutate(suffix_match_species_within_genus = (suffix_match_species_within_genus == 1)) %>%
-    dplyr::select(-dplyr::any_of(".row_id")) %>%
+    dplyr::select(-dplyr::any_of(c(".row_id", ".match_scope"))) %>%
     dplyr::relocate(c('Orig.Genus', 'Orig.Species'))
 
   if (nrow(ambiguous_suffix) > 0) {

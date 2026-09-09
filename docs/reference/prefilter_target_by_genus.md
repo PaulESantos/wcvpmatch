@@ -88,9 +88,10 @@ target <- data.frame(genus = "Opuntia", species = "yanganucensis", plant_name_id
 wcvpmatch:::prefilter_target_by_genus(df, target_df = target)
 #> ℹ Input was converted from <data.frame> to a <tibble>.
 #>   See <https://tibble.tidyverse.org/> for more details.
-#> # A tibble: 1 × 7
+#> # A tibble: 1 × 8
 #>   genus   species    plant_name_id infraspecific_rank infraspecies Genus Species
 #>   <chr>   <chr>              <dbl> <chr>              <chr>        <chr> <chr>  
 #> 1 Opuntia yanganuce…             1 NA                 NA           Opun… yangan…
+#> # ℹ 1 more variable: .wcvpmatch_species_record <lgl>
 # }
 ```

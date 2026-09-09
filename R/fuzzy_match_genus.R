@@ -26,6 +26,20 @@ wcvp_fuzzy_match_genus <- function(df, target_df = NULL, max_dist = 1, method = 
   assertthat::assert_that(all(c('Orig.Genus', 'Orig.Species') %in% colnames(df)))
   target_df <- get_db(target_df = target_df)
   prefetched_fuzzy <- attr(target_df, "fuzzy_genus_map", exact = TRUE)
+  if (!is.null(prefetched_fuzzy)) {
+    prefetched_method <- attr(target_df, "fuzzy_genus_method", exact = TRUE)
+    prefetched_max_dist <- attr(target_df, "fuzzy_genus_max_dist", exact = TRUE)
+    prefetched_target_id <- attr(target_df, "fuzzy_genus_target_id", exact = TRUE)
+    metadata_matches <- identical(tolower(as.character(prefetched_method)), tolower(as.character(method))) &&
+      isTRUE(all.equal(as.numeric(prefetched_max_dist), as.numeric(max_dist))) &&
+      identical(prefetched_target_id, .target_id(target_df))
+    if (!metadata_matches) {
+      cli::cli_abort(c(
+        "x" = "Prefiltered fuzzy genus candidates were built with different matching parameters.",
+        "i" = "Run {.fn prefilter_target_by_genus} again with the requested {.arg method} and {.arg max_dist}."
+      ))
+    }
+  }
   ambiguous_genus <- NULL
 
   ## handle empty input tibble while preserving expected output schema

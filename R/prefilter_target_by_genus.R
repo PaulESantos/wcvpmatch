@@ -78,6 +78,7 @@ build_genus_lookup <- function(target_df = NULL) {
   genus_values <- as.character(target_norm$genus)
   valid_rows <- which(!is.na(genus_values) & nzchar(genus_values))
   attr(out, "row_index") <- split(valid_rows, genus_values[valid_rows])
+  attr(out, "wcvpmatch_target_id") <- .target_id(target_norm)
 
   if (is_default) .wcvpmatch_cache[["default_genus_lookup"]] <- out
   out
@@ -127,7 +128,7 @@ prefilter_target_by_genus <- function(df,
                                       max_dist = 1,
                                       method = "osa") {
   df <- check_df_format(df)
-  target_norm <- if (is_normalized_target_df(target_df)) target_df else get_db(target_df = target_df)
+  target_norm <- get_db(target_df = target_df)
 
   if (is.null(genus_index)) genus_index <- build_genus_lookup(target_df = target_norm)
 
@@ -135,6 +136,18 @@ prefilter_target_by_genus <- function(df,
     "genus" %in% names(genus_index),
     msg = "genus_index must contain a genus column."
   )
+  index_target_id <- attr(genus_index, "wcvpmatch_target_id", exact = TRUE)
+  target_id <- .target_id(target_norm)
+  if (!is.null(index_target_id) && !identical(index_target_id, target_id)) {
+    target_genera <- unique(as.character(target_norm$genus))
+    target_genera <- target_genera[!is.na(target_genera) & nzchar(target_genera)]
+    if (!setequal(as.character(genus_index$genus), target_genera)) {
+      cli::cli_abort(c(
+        "x" = "{.arg genus_index} was built from a different target backbone.",
+        "i" = "Rebuild it with {.fn build_genus_lookup} using the same {.arg target_df}."
+      ))
+    }
+  }
 
   input_genera <- df %>%
     dplyr::distinct(Orig.Genus) %>%
@@ -150,6 +163,10 @@ prefilter_target_by_genus <- function(df,
     attr(out, "fuzzy_genus_map") <- tibble::tibble(
       Orig.Genus = character(), genus = character(), fuzzy_genus_dist = numeric()
     )
+    attr(out, "fuzzy_genus_method") <- method
+    attr(out, "fuzzy_genus_max_dist") <- max_dist
+    attr(out, "fuzzy_genus_target_id") <- target_id
+    attr(out, "wcvpmatch_target_id") <- target_id
     return(out)
   }
 
@@ -218,12 +235,34 @@ prefilter_target_by_genus <- function(df,
     attr(out, "exact_genera") <- exact_genera
     attr(out, "fuzzy_genera") <- fuzzy_genera
     attr(out, "fuzzy_genus_map") <- fuzzy_tbl
+    attr(out, "fuzzy_genus_method") <- method
+    attr(out, "fuzzy_genus_max_dist") <- max_dist
+    attr(out, "fuzzy_genus_target_id") <- target_id
+    attr(out, "wcvpmatch_target_id") <- target_id
     return(out)
   }
 
   # Reuse cached row positions when available. This avoids rescanning every row
   # of the default backbone on repeated matching calls.
-  row_index <- attr(genus_index, "row_index", exact = TRUE)
+  row_index <- if (!is.null(index_target_id)) {
+    attr(genus_index, "row_index", exact = TRUE)
+  } else {
+    NULL
+  }
+  if (!is.null(row_index) && length(candidate_genera) > 0) {
+    positions_valid <- vapply(candidate_genera, function(candidate_genus) {
+      positions <- row_index[[candidate_genus]]
+      !is.null(positions) &&
+        all(positions >= 1L & positions <= nrow(target_norm)) &&
+        all(as.character(target_norm$genus[positions]) == candidate_genus)
+    }, logical(1))
+    if (!all(positions_valid)) {
+      cli::cli_abort(c(
+        "x" = "{.arg genus_index} row positions do not match {.arg target_df}.",
+        "i" = "Rebuild the index from the same target backbone and row order."
+      ))
+    }
+  }
   candidate_rows <- if (!is.null(row_index)) {
     unlist(row_index[candidate_genera], use.names = FALSE)
   } else {
@@ -242,5 +281,9 @@ prefilter_target_by_genus <- function(df,
   attr(out, "exact_genera") <- exact_genera
   attr(out, "fuzzy_genera") <- fuzzy_genera
   attr(out, "fuzzy_genus_map") <- fuzzy_tbl
+  attr(out, "fuzzy_genus_method") <- method
+  attr(out, "fuzzy_genus_max_dist") <- max_dist
+  attr(out, "fuzzy_genus_target_id") <- target_id
+  attr(out, "wcvpmatch_target_id") <- target_id
   out
 }

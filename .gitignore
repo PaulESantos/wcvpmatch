@@ -15,3 +15,5 @@ paper_wcvpmatch.qmd
 .agent
 ^r\\rust_helper\\.R
 docs
+/paper-study/
+/output/
