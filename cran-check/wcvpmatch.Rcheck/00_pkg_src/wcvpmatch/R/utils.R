@@ -1,0 +1,881 @@
+check_df_format <- function(df) {
+  if (!tibble::is_tibble(df) && inherits(df, "data.frame")) {
+    df <- tibble::as_tibble(df)
+    cli::cli_inform(c(
+      "i" = "Input was converted from {.cls data.frame} to a {.cls tibble}.",
+      " " = "See {.url https://tibble.tidyverse.org/} for more details."
+    ))
+  }
+  assertthat::assert_that(tibble::is_tibble(df))
+
+  has_classify <- all(c("Orig.Genus", "Orig.Species") %in% names(df))
+  has_minimal  <- all(c("Genus", "Species") %in% names(df))
+
+  assertthat::assert_that(
+    has_classify || has_minimal,
+    msg = "Input must contain either {Orig.Genus, Orig.Species} or {Genus, Species}."
+  )
+
+  if (!has_classify && has_minimal) {
+    df <- dplyr::rename(df, Orig.Genus = Genus, Orig.Species = Species)
+  }
+
+  if ("Orig.Infra.Rank" %in% names(df) && !"Infra.Rank" %in% names(df)) {
+    df <- dplyr::rename(df, Infra.Rank = Orig.Infra.Rank)
+  }
+  if ("Infraspecies" %in% names(df) && !"Orig.Infraspecies" %in% names(df)) {
+    df <- dplyr::rename(df, Orig.Infraspecies = Infraspecies)
+  }
+
+  n <- nrow(df)
+  if (!"Input.Name" %in% names(df)) df$Input.Name <- rep(NA_character_, n)
+  if (!"Orig.Name" %in% names(df)) df$Orig.Name <- rep(NA_character_, n)
+  if (!"Author" %in% names(df)) df$Author <- rep("", n)
+
+  if (!"Orig.Infraspecies" %in% names(df)) df$Orig.Infraspecies <- rep(NA_character_, n)
+  if (!"Infra.Rank" %in% names(df)) df$Infra.Rank <- rep(NA_character_, n)
+  if (!"Rank" %in% names(df)) df$Rank <- rep(NA_real_, n)
+  df$Infra.Rank <- .rank_to_lower(df$Infra.Rank)
+
+  # Early whitespace hygiene for taxonomic fields
+  if (any(stringr::str_detect(df$Orig.Genus, "^\\s|\\s$"), na.rm = TRUE)) {
+    ng <- sum(stringr::str_detect(df$Orig.Genus, "^\\s|\\s$"), na.rm = TRUE)
+    cli::cli_warn("{ng} leading/trailing space{?s} detected in {.field Orig.Genus}. Consider {.fn stringr::str_trim}.")
+  }
+  if (any(!is.na(df$Orig.Species) & stringr::str_detect(df$Orig.Species, "^\\s|\\s$"), na.rm = TRUE)) {
+    nsp <- sum(!is.na(df$Orig.Species) & stringr::str_detect(df$Orig.Species, "^\\s|\\s$"), na.rm = TRUE)
+    cli::cli_warn("{nsp} leading/trailing space{?s} detected in {.field Orig.Species}. Consider {.fn stringr::str_trim}.")
+  }
+  if (any(!is.na(df$Orig.Infraspecies) & stringr::str_detect(df$Orig.Infraspecies, "^\\s|\\s$"), na.rm = TRUE)) {
+    ninf <- sum(!is.na(df$Orig.Infraspecies) & stringr::str_detect(df$Orig.Infraspecies, "^\\s|\\s$"), na.rm = TRUE)
+    cli::cli_warn("{ninf} leading/trailing space{?s} detected in {.field Orig.Infraspecies}. Consider {.fn stringr::str_trim}.")
+  }
+  if (any(!is.na(df$Infra.Rank) & stringr::str_detect(df$Infra.Rank, "^\\s|\\s$"), na.rm = TRUE)) {
+    nrk <- sum(!is.na(df$Infra.Rank) & stringr::str_detect(df$Infra.Rank, "^\\s|\\s$"), na.rm = TRUE)
+    cli::cli_warn("{nrk} leading/trailing space{?s} detected in {.field Infra.Rank}. Consider {.fn stringr::str_trim}.")
+  }
+
+  df <- dplyr::mutate(
+    df,
+    Orig.Genus = as.character(Orig.Genus),
+    Orig.Species = as.character(Orig.Species),
+    Orig.Infraspecies = as.character(Orig.Infraspecies),
+    Infra.Rank = as.character(Infra.Rank)
+  )
+
+  df <- dplyr::mutate(
+    df,
+    Orig.Genus = stringr::str_trim(Orig.Genus),
+    Orig.Species = stringr::str_trim(Orig.Species),
+    Orig.Infraspecies = stringr::str_trim(Orig.Infraspecies),
+    Infra.Rank = stringr::str_trim(Infra.Rank),
+    Orig.Genus = dplyr::na_if(Orig.Genus, ""),
+    Orig.Species = dplyr::na_if(Orig.Species, ""),
+    Orig.Infraspecies = dplyr::na_if(Orig.Infraspecies, ""),
+    Infra.Rank = dplyr::na_if(Infra.Rank, "")
+  )
+
+  # Minimal Genus/Species inputs do not carry an explicit Rank. Infer it once
+  # here so exact binomials can take the direct-match fast path instead of
+  # traversing the genus and species fallback nodes.
+  inferred_rank <- dplyr::case_when(
+    !is.na(df$Orig.Infraspecies) ~ 3,
+    !is.na(df$Orig.Species) ~ 2,
+    TRUE ~ NA_real_
+  )
+  rank_raw <- as.character(df$Rank)
+  rank_missing <- is.na(rank_raw) | !nzchar(stringr::str_trim(rank_raw))
+  rank_numeric <- suppressWarnings(as.numeric(rank_raw))
+  invalid_rank <- !rank_missing & (
+    is.na(rank_numeric) | !rank_numeric %in% c(1, 2, 3)
+  )
+  if (any(invalid_rank)) {
+    bad_rows <- which(invalid_rank)
+    cli::cli_abort(c(
+      "x" = "{sum(invalid_rank)} invalid {.field Rank} value{?s} detected.",
+      "i" = "Rank must be one of 1, 2, or 3; missing values are inferred from the taxonomic components.",
+      "i" = "Invalid row{?s}: {paste(utils::head(bad_rows, 10), collapse = ', ')}."
+    ))
+  }
+  rank_numeric[rank_missing] <- NA_real_
+  df$Rank <- dplyr::coalesce(rank_numeric, inferred_rank)
+
+  # Build Input.Name when not provided, preserving existing non-empty values.
+  build_input_name <- function(genus, species, infra_rank, infraspecies) {
+    parts <- c(genus, species, infra_rank, infraspecies)
+    parts <- parts[!is.na(parts) & nzchar(parts)]
+    if (length(parts) == 0) return(NA_character_)
+    paste(parts, collapse = " ")
+  }
+  generated_input_name <- vapply(
+    seq_len(nrow(df)),
+    function(i) {
+      build_input_name(
+        df$Orig.Genus[i],
+        df$Orig.Species[i],
+        df$Infra.Rank[i],
+        df$Orig.Infraspecies[i]
+      )
+    },
+    FUN.VALUE = character(1)
+  )
+  df <- dplyr::mutate(
+    df,
+    Input.Name = as.character(Input.Name),
+    Input.Name = dplyr::if_else(
+      !is.na(Input.Name) & nzchar(stringr::str_trim(Input.Name)),
+      stringr::str_trim(Input.Name),
+      generated_input_name
+    )
+  )
+
+  # Flags (if absent, add FALSE)
+  flag_cols <- c(
+    "has_cf","has_aff","is_sp","is_spp","had_hybrid",
+    "rank_late","rank_missing_infra","had_na_author","implied_infra"
+  )
+  for (nm in flag_cols) {
+    if (!nm %in% names(df)) df[[nm]] <- rep(FALSE, n)
+    df[[nm]] <- as.logical(df[[nm]])
+  }
+
+  if (!"sorter" %in% names(df)) df$sorter <- seq_len(n)
+  df$sorter <- as.numeric(df$sorter)
+
+  df
+}
+
+# ---------------------------------------------------------------
+
+.rank_to_upper <- function(x) {
+  x <- as.character(x)
+  if (length(x) == 0L) return(character())
+  ifelse(
+    is.na(x),
+    NA_character_,
+    dplyr::case_when(
+      toupper(x) %in% c("SUBSP", "SUBSP.", "SSP", "SSP.") ~ "SUBSP.",
+      toupper(x) %in% c("VAR", "VAR.") ~ "VAR.",
+      toupper(x) %in% c("SUBVAR", "SUBVAR.") ~ "SUBVAR.",
+      toupper(x) %in% c("F", "F.", "FO", "FO.", "FORM", "FORMA") ~ "F.",
+      toupper(x) %in% c("SUBF", "SUBF.") ~ "SUBF.",
+      TRUE ~ toupper(x)
+    )
+  )
+}
+
+.rank_to_lower <- function(x) {
+  x <- as.character(x)
+  if (length(x) == 0L) return(character())
+  ifelse(
+    is.na(x),
+    NA_character_,
+    dplyr::case_when(
+      toupper(x) %in% c("SUBSP", "SUBSP.", "SSP", "SSP.") ~ "subsp.",
+      toupper(x) %in% c("VAR", "VAR.") ~ "var.",
+      toupper(x) %in% c("SUBVAR", "SUBVAR.") ~ "subvar.",
+      toupper(x) %in% c("F", "F.", "FO", "FO.", "FORM", "FORMA") ~ "f.",
+      toupper(x) %in% c("SUBF", "SUBF.") ~ "subf.",
+      TRUE ~ tolower(x)
+    )
+  )
+}
+
+.is_edit_distance_method <- function(method) {
+  tolower(method) %in% c(
+    "osa",
+    "levenshtein",
+    "lv",
+    "dl",
+    "damerau_levensthein",
+    "damerau_levenshtein",
+    "hamming"
+  )
+}
+
+.pairwise_string_distance <- function(a, b, method = "osa") {
+  method_lower <- tolower(method)
+  stringdist_method <- switch(
+    method_lower,
+    "levenshtein" = "lv",
+    "lv" = "lv",
+    "damerau_levensthein" = "dl",
+    "damerau_levenshtein" = "dl",
+    "dl" = "dl",
+    "jaro" = "jw",
+    "jaro_winkler" = "jw",
+    "jw" = "jw",
+    method_lower
+  )
+
+  if (identical(method_lower, "jaro")) {
+    return(stringdist::stringdist(a, b, method = "jw", p = 0, useBytes = TRUE))
+  }
+  if (method_lower %in% c("jaro_winkler", "jw")) {
+    return(stringdist::stringdist(a, b, method = "jw", p = 0.1, useBytes = TRUE))
+  }
+
+  stringdist::stringdist(a, b, method = stringdist_method, useBytes = TRUE)
+}
+
+normalize_target_df <- function(target_df) {
+  assertthat::assert_that(
+    inherits(target_df, "data.frame"),
+    msg = "target_df must be a data.frame/tibble."
+  )
+
+  x <- tibble::as_tibble(target_df)
+
+  if (!("genus" %in% names(x))) {
+    if ("Genus" %in% names(x)) x <- dplyr::rename(x, genus = Genus)
+  }
+  if (!("species" %in% names(x))) {
+    if ("Species" %in% names(x)) x <- dplyr::rename(x, species = Species)
+  }
+  if (!("infraspecies" %in% names(x))) {
+    if ("Orig.Infraspecies" %in% names(x)) x <- dplyr::rename(x, infraspecies = Orig.Infraspecies)
+    if ("Infraspecies" %in% names(x)) x <- dplyr::rename(x, infraspecies = Infraspecies)
+  }
+  if (!("infraspecific_rank" %in% names(x))) {
+    if ("Infra.Rank" %in% names(x)) x <- dplyr::rename(x, infraspecific_rank = Infra.Rank)
+  }
+
+  assertthat::assert_that(
+    all(c("genus", "species") %in% names(x)),
+    msg = "target_df must contain genus/species (or Genus/Species)."
+  )
+
+  if (!("infraspecific_rank" %in% names(x))) x$infraspecific_rank <- NA_character_
+  if (!("infraspecies" %in% names(x))) x$infraspecies <- NA_character_
+
+  clean_component <- function(value) {
+    value <- stringr::str_squish(as.character(value))
+    dplyr::na_if(value, "")
+  }
+
+  x <- x %>%
+    dplyr::mutate(
+      genus = clean_component(genus),
+      species = clean_component(species),
+      infraspecific_rank = .rank_to_upper(clean_component(infraspecific_rank)),
+      infraspecies = clean_component(infraspecies)
+    ) %>%
+    dplyr::mutate(
+      Genus = genus,
+      Species = species
+    )
+
+  attr(x, "wcvpmatch_normalized") <- TRUE
+  x
+}
+
+is_normalized_target_df <- function(x) {
+  inherits(x, "data.frame") &&
+    isTRUE(attr(x, "wcvpmatch_normalized", exact = TRUE)) &&
+    all(c("genus", "species", "infraspecific_rank", "infraspecies") %in% names(x))
+}
+
+.new_target_id <- function() {
+  counter <- .wcvpmatch_cache[["target_id_counter"]]
+  if (is.null(counter)) counter <- 0L
+  counter <- counter + 1L
+  .wcvpmatch_cache[["target_id_counter"]] <- counter
+  paste0("wcvpmatch-target-", counter)
+}
+
+.target_id <- function(x) {
+  attr(x, "wcvpmatch_target_id", exact = TRUE)
+}
+
+.is_species_record <- function(target_df) {
+  if (".wcvpmatch_species_record" %in% names(target_df)) {
+    return(as.logical(target_df$.wcvpmatch_species_record))
+  }
+  no_infra <- is.na(target_df$infraspecific_rank) & is.na(target_df$infraspecies)
+  if (!"taxon_rank" %in% names(target_df)) return(no_infra)
+
+  rank_value <- tolower(trimws(as.character(target_df$taxon_rank)))
+  rank_missing <- is.na(rank_value) | !nzchar(rank_value)
+  (!rank_missing & rank_value == "species") | (rank_missing & no_infra)
+}
+
+.species_candidate_keys <- function(target_df,
+                                    match_scopes = c("species", "infra_parent")) {
+  match_scopes <- sort(unique(match_scopes))
+  is_full_default <- identical(
+    attr(target_df, "wcvpmatch_source", exact = TRUE), "default"
+  ) && is.null(attr(target_df, "candidate_genera", exact = TRUE))
+  cache_key <- paste0(
+    "default_species_candidate_keys_",
+    paste(match_scopes, collapse = "_")
+  )
+  if (is_full_default) {
+    cached <- .wcvpmatch_cache[[cache_key]]
+    if (!is.null(cached)) return(cached)
+  }
+
+  base <- target_df %>%
+    dplyr::select(genus, species) %>%
+    dplyr::filter(!is.na(genus), !is.na(species))
+  parts <- list()
+  if ("species" %in% match_scopes) {
+    parts[["species"]] <- target_df[.is_species_record(target_df), , drop = FALSE] %>%
+      dplyr::select(genus, species) %>%
+      dplyr::filter(!is.na(genus), !is.na(species)) %>%
+      dplyr::mutate(.match_scope = "species")
+  }
+  if ("infra_parent" %in% match_scopes) {
+    parts[["infra_parent"]] <- base %>%
+      dplyr::mutate(.match_scope = "infra_parent")
+  }
+
+  out <- dplyr::bind_rows(parts) %>%
+    dplyr::distinct()
+  if (is_full_default) .wcvpmatch_cache[[cache_key]] <- out
+  out
+}
+
+prepare_target_db <- function(target_df) {
+  if (isTRUE(attr(target_df, "wcvpmatch_prepared", exact = TRUE))) {
+    if (is.null(.target_id(target_df))) {
+      attr(target_df, "wcvpmatch_target_id") <- .new_target_id()
+    }
+    return(target_df)
+  }
+
+  source <- attr(target_df, "wcvpmatch_source", exact = TRUE)
+  out <- target_df %>%
+    dplyr::mutate(
+      Genus = if ("Genus" %in% names(.)) as.character(Genus) else as.character(genus),
+      Species = if ("Species" %in% names(.)) as.character(Species) else as.character(species)
+    ) %>%
+    tidyr::drop_na(genus, species)
+  out$.wcvpmatch_species_record <- NULL
+  out$.wcvpmatch_species_record <- .is_species_record(out)
+
+  # Matching nodes deduplicate only the small key tables they actually use.
+  # A global distinct() and a 4-column string key over the complete WCVP
+  # backbone are both expensive and unnecessary here.
+  attr(out, "wcvpmatch_normalized") <- TRUE
+  attr(out, "wcvpmatch_prepared") <- TRUE
+  attr(out, "wcvpmatch_target_id") <- .new_target_id()
+  if (!is.null(source)) attr(out, "wcvpmatch_source") <- source
+  out
+}
+
+.make_taxon_key <- function(genus, species, infraspecific_rank, infraspecies) {
+  sep <- "\r"
+  paste(
+    dplyr::coalesce(as.character(genus), "__NA__"),
+    dplyr::coalesce(as.character(species), "__NA__"),
+    dplyr::coalesce(as.character(infraspecific_rank), "__NA__"),
+    dplyr::coalesce(as.character(infraspecies), "__NA__"),
+    sep = sep
+  )
+}
+
+prepare_taxonomic_context_data <- function(target_tbl,
+                                           matched_df = NULL,
+                                           accepted_source_tbl = target_tbl) {
+  meta_needed <- c("plant_name_id", "taxon_name", "taxon_status", "accepted_plant_name_id")
+  has_taxon_authors <- "taxon_authors" %in% names(target_tbl)
+
+  if (!all(meta_needed %in% names(target_tbl))) {
+    return(list(
+      has_taxon_context = FALSE,
+      db_meta = NULL,
+      accepted_name_map = NULL,
+      accepted_authors_map = NULL
+    ))
+  }
+
+  context_tbl <- target_tbl
+  if (!is.null(matched_df) && all(c("Matched.Genus", "Matched.Species") %in% names(matched_df))) {
+    query_components <- matched_df %>%
+      dplyr::transmute(
+        Matched.Genus = as.character(Matched.Genus),
+        Matched.Species = as.character(Matched.Species),
+        .matched_rank_upper = .rank_to_upper(Matched.Infra.Rank),
+        Matched.Infraspecies = as.character(Matched.Infraspecies)
+      ) %>%
+      dplyr::filter(!is.na(Matched.Genus), !is.na(Matched.Species)) %>%
+      dplyr::distinct()
+
+    if (nrow(query_components) == 0) {
+      return(list(
+        has_taxon_context = FALSE,
+        db_meta = NULL,
+        key_index = NULL,
+        accepted_name_map = NULL,
+        accepted_authors_map = NULL
+      ))
+    }
+
+    # First reduce by inexpensive vector comparisons. Taxon keys are then
+    # created only for the handful of candidate genera/species instead of for
+    # every row in the full WCVP backbone.
+    context_tbl <- context_tbl %>%
+      dplyr::filter(
+        genus %in% unique(query_components$Matched.Genus),
+        species %in% unique(query_components$Matched.Species)
+      ) %>%
+      dplyr::mutate(
+        .taxon_key = .make_taxon_key(
+          genus,
+          species,
+          .rank_to_upper(infraspecific_rank),
+          infraspecies
+        )
+      )
+
+    query_keys <- query_components %>%
+      dplyr::transmute(
+        .taxon_key = .make_taxon_key(
+          Matched.Genus,
+          Matched.Species,
+          .matched_rank_upper,
+          Matched.Infraspecies
+        )
+      ) %>%
+      dplyr::pull(.taxon_key) %>%
+      unique()
+
+    context_tbl <- context_tbl %>%
+      dplyr::filter(.taxon_key %in% query_keys)
+  } else if (!".taxon_key" %in% names(context_tbl)) {
+    context_tbl <- context_tbl %>%
+      dplyr::mutate(
+        .taxon_key = .make_taxon_key(
+          genus, species, .rank_to_upper(infraspecific_rank), infraspecies
+        )
+      )
+  }
+
+  db_meta <- context_tbl %>%
+    dplyr::select(
+      genus, species, infraspecific_rank, infraspecies, .taxon_key,
+      plant_name_id, taxon_name, taxon_status, accepted_plant_name_id,
+      dplyr::any_of("taxon_authors")
+    ) %>%
+    dplyr::mutate(
+      taxon_authors = if (has_taxon_authors) as.character(taxon_authors) else NA_character_
+    ) %>%
+    dplyr::mutate(
+      infraspecific_rank = .rank_to_upper(infraspecific_rank),
+      .taxon_name_clean = tolower(stringr::str_squish(as.character(taxon_name)))
+    ) %>%
+    dplyr::distinct()
+
+  if (nrow(db_meta) == 0) {
+    return(list(
+      has_taxon_context = FALSE,
+      db_meta = NULL,
+      key_index = NULL,
+      accepted_name_map = NULL,
+      accepted_authors_map = NULL
+    ))
+  }
+
+  accepted_ids <- unique(stats::na.omit(db_meta$accepted_plant_name_id))
+  # Candidate metadata can come from the genus-prefiltered table, while
+  # accepted names may live under a different genus and therefore use the
+  # complete source table. This avoids scanning the full backbone twice.
+  accepted_positions <- match(accepted_ids, accepted_source_tbl$plant_name_id)
+  accepted_positions <- accepted_positions[!is.na(accepted_positions)]
+  accepted_lookup <- accepted_source_tbl[accepted_positions, , drop = FALSE] %>%
+    dplyr::select(
+      plant_name_id,
+      accepted_taxon_name = taxon_name,
+      dplyr::any_of("taxon_authors")
+    ) %>%
+    dplyr::mutate(
+      accepted_taxon_authors = if ("taxon_authors" %in% names(.)) {
+        as.character(taxon_authors)
+      } else {
+        NA_character_
+      }
+    ) %>%
+    dplyr::select(plant_name_id, accepted_taxon_name, accepted_taxon_authors) %>%
+    dplyr::distinct()
+
+  key_levels <- unique(db_meta$.taxon_key)
+  group_id <- match(db_meta$.taxon_key, key_levels)
+  key_index <- split(seq_len(nrow(db_meta)), group_id)
+  names(key_index) <- key_levels
+
+  accepted_name_map <- setNames(
+    accepted_lookup$accepted_taxon_name,
+    as.character(accepted_lookup$plant_name_id)
+  )
+  accepted_authors_map <- setNames(
+    accepted_lookup$accepted_taxon_authors,
+    as.character(accepted_lookup$plant_name_id)
+  )
+
+  list(
+    has_taxon_context = TRUE,
+    db_meta = db_meta,
+    key_index = key_index,
+    accepted_name_map = accepted_name_map,
+    accepted_authors_map = accepted_authors_map
+  )
+}
+
+default_target_df <- function() {
+  cached <- .wcvpmatch_cache[["default_target_df"]]
+  if (!is.null(cached)) {
+    return(cached)
+  }
+
+  .require_wcvpdata()
+
+  wcvp_data <- .wcvpmatch_read_wcvpdata_table(
+    "wcvp_matching_names",
+    columns = c(
+      "plant_name_id", "taxon_rank", "taxon_status", "family", "genus",
+      "species", "infraspecific_rank", "infraspecies", "taxon_name",
+      "taxon_authors", "accepted_plant_name_id", "parent_plant_name_id"
+    )
+  )
+
+  normalized <- normalize_target_df(wcvp_data)
+  attr(normalized, "wcvpmatch_source") <- "default"
+  .wcvpmatch_cache[["default_target_df"]] <- normalized
+  normalized
+}
+
+# Read a materialized table through the wcvpdata >= 0.7 Parquet accessors.
+# Keeping Arrow behind wcvpdata avoids making it a direct dependency here.
+.wcvpmatch_read_wcvpdata_table <- function(accessor, columns = NULL) {
+  fun <- tryCatch(
+    getExportedValue("wcvpdata", accessor),
+    error = function(e) NULL
+  )
+
+  if (is.null(fun) || !is.function(fun)) {
+    cli::cli_abort(c(
+      "x" = "Accessor {.fn {accessor}} was not found in package {.pkg wcvpdata}.",
+      "i" = "Install {.pkg wcvpdata} (>= 0.7.0) from {.url https://paulesantos.r-universe.dev}.",
+      "i" = "Or supply a backbone explicitly."
+    ))
+  }
+
+  out <- tryCatch(
+    fun(as_data_frame = TRUE, columns = columns),
+    error = function(e) {
+      cli::cli_abort(c(
+        "x" = "Could not load WCVP data with {.fn {accessor}}().",
+        "i" = conditionMessage(e)
+      ))
+    }
+  )
+
+  assertthat::assert_that(
+    inherits(out, "data.frame"),
+    msg = paste0("wcvpdata::", accessor, "() did not return a data frame.")
+  )
+  out
+}
+
+get_db <- function(target_df = NULL) {
+  if (is.null(target_df)) {
+    cached <- .wcvpmatch_cache[["default_target_db"]]
+    if (!is.null(cached)) {
+      return(cached)
+    }
+
+    out <- prepare_target_db(default_target_df())
+    attr(out, "wcvpmatch_source") <- "default"
+    .wcvpmatch_cache[["default_target_db"]] <- out
+    return(out)
+  }
+
+  out <- if (is_normalized_target_df(target_df)) target_df else normalize_target_df(target_df)
+  prepare_target_db(out)
+}
+
+# ---------------------------------------------------------------
+
+check_df_consistency <- function(df) {
+  assertthat::assert_that(
+    all(c("Orig.Genus","Orig.Species","Rank","is_sp","is_spp","implied_infra") %in% names(df)),
+    msg = "Input must be normalized with check_df_format() first."
+  )
+
+  # ---- Errors ----
+
+  # 1) Genus mandatory and non-empty
+  assertthat::assert_that(
+    !any(is.na(df$Orig.Genus)),
+    msg = "Orig.Genus contains missing values. Please remove/fix conflicting rows."
+  )
+  assertthat::assert_that(
+    all(nzchar(trimws(df$Orig.Genus))),
+    msg = "Orig.Genus contains empty strings. Please remove/fix conflicting rows."
+  )
+
+  # 2) Species NA only for genus-only cases (Rank=1 or sp/spp)
+  species_na <- is.na(df$Orig.Species)
+  allowed_na <- (df$Rank == 1) | df$is_sp | df$is_spp
+  assertthat::assert_that(
+    all(!species_na | allowed_na),
+    msg = paste0(
+      "Orig.Species has missing values in rows that are not genus-only.\n",
+      "Allowed NA only when Rank == 1 or is_sp/is_spp == TRUE."
+    )
+  )
+
+  # 3) Rank coherence
+  bad_rank1 <- !is.na(df$Rank) & df$Rank == 1 & !is.na(df$Orig.Species)
+  assertthat::assert_that(
+    !any(bad_rank1),
+    msg = "Rank == 1 requires Orig.Species to be NA (genus-only)."
+  )
+
+  bad_rank2 <- !is.na(df$Rank) & df$Rank == 2 & is.na(df$Orig.Species)
+  assertthat::assert_that(
+    !any(bad_rank2),
+    msg = "Rank == 2 requires Orig.Species to be present."
+  )
+
+  # Rank == 3 rules updated:
+  # - must have species present
+  # - must have infraspecies present unless rank_missing_infra == TRUE
+  # - must have either:
+  #   a) ranked infra: Infra.Rank present
+  #   b) implied infra: implied_infra == TRUE and Infra.Rank is NA
+  if (all(c("Infra.Rank","Orig.Infraspecies","rank_missing_infra") %in% names(df))) {
+    is_rank3 <- !is.na(df$Rank) & df$Rank == 3
+
+    missing_species <- is_rank3 & is.na(df$Orig.Species)
+
+    missing_infra_ep <- is_rank3 & is.na(df$Orig.Infraspecies) & !df$rank_missing_infra
+
+    # invalid rank3 structure:
+    # if infra epithet exists:
+    #   - either Infra.Rank exists, OR implied_infra TRUE with Infra.Rank NA
+    # if infra epithet missing but rank_missing_infra TRUE => ok (rank present but infra missing)
+    has_infra_ep <- is_rank3 & !is.na(df$Orig.Infraspecies)
+
+    invalid_infra_form <- has_infra_ep & !(
+      (!is.na(df$Infra.Rank)) |
+        (df$implied_infra & is.na(df$Infra.Rank))
+    )
+
+    bad_rank3 <- missing_species | missing_infra_ep | invalid_infra_form
+
+    assertthat::assert_that(
+      !any(bad_rank3),
+      msg = paste0(
+        "Rank == 3 requires:\n",
+        "- Orig.Species present, AND\n",
+        "- Orig.Infraspecies present (unless rank_missing_infra == TRUE), AND\n",
+        "- either Infra.Rank present (ranked infra) OR implied_infra == TRUE with Infra.Rank == NA (unranked infra)."
+      )
+    )
+  }
+
+  # 4) Uniqueness:
+  # - binomials must be unique for rank <= 2
+  # - trinomials can share the same binomial, but full infra tuple must be unique
+  df_binom <- dplyr::filter(df, !is.na(Orig.Species), is.na(Rank) | Rank <= 2)
+  assertthat::assert_that(
+    nrow(df_binom) == nrow(dplyr::distinct(df_binom, Orig.Genus, Orig.Species)),
+    msg = paste(
+      "Species names are not unique for Rank <= 2.",
+      "Remove duplicates with dplyr::distinct(df, Orig.Genus, Orig.Species)."
+    )
+  )
+
+  if (all(c("Infra.Rank", "Orig.Infraspecies") %in% names(df))) {
+    df_trinom <- dplyr::filter(df, !is.na(Rank), Rank == 3)
+    assertthat::assert_that(
+      nrow(df_trinom) == nrow(dplyr::distinct(df_trinom, Orig.Genus, Orig.Species, Infra.Rank, Orig.Infraspecies)),
+      msg = paste(
+        "Trinomial names are not unique.",
+        "Use dplyr::distinct(df, Orig.Genus, Orig.Species, Infra.Rank, Orig.Infraspecies)."
+      )
+    )
+  }
+
+  # ---- Format checks (aligned to backbone) ----
+
+  assertthat::assert_that(
+    all(stringr::str_detect(df$Orig.Genus, "^[[:upper:]][[:lower:]]+$")),
+    msg = paste(
+      "Not all genera are in Title Case (e.g., 'Opuntia').",
+      "Fix with: dplyr::mutate(Orig.Genus = stringr::str_to_sentence(Orig.Genus))."
+    )
+  )
+
+  spp_present <- !is.na(df$Orig.Species)
+  assertthat::assert_that(
+    all(!spp_present | stringr::str_detect(df$Orig.Species, "^[[:lower:]-]+$")),
+    msg = paste(
+      "Some specific epithets contain uppercase letters or invalid characters.",
+      "Fix with: dplyr::mutate(Orig.Species = stringr::str_to_lower(Orig.Species))."
+    )
+  )
+
+  if ("Infra.Rank" %in% names(df)) {
+    valid_ranks <- c("subsp.", "var.", "subvar.", "f.", "subf.", "SUBSP.", "VAR.", "SUBVAR.", "F.", "SUBF.")
+    rk_present <- !is.na(df$Infra.Rank)
+    assertthat::assert_that(
+      all(!rk_present | df$Infra.Rank %in% valid_ranks),
+      msg = "Infra.Rank contains unexpected values. Expected one of: subsp., var., subvar., f., subf."
+    )
+  }
+
+  if ("Orig.Infraspecies" %in% names(df)) {
+    infra_present <- !is.na(df$Orig.Infraspecies)
+    assertthat::assert_that(
+      all(!infra_present | stringr::str_detect(df$Orig.Infraspecies, "^[[:lower:]-]+$")),
+      msg = "Some infraspecific epithets contain uppercase letters or invalid characters."
+    )
+  }
+
+  # ---- Warnings ----
+  old_options <- options(warn = 1)
+  on.exit(options(old_options), add = TRUE)
+
+  if (any(stringr::str_detect(df$Orig.Genus, "^\\s|\\s$"))) {
+    nsp <- sum(stringr::str_detect(df$Orig.Genus, "^\\s|\\s$"))
+    cli::cli_warn("{nsp} leading/trailing space{?s} detected in {.field Orig.Genus}. Consider {.fn stringr::str_trim}.")
+  }
+
+  if (any(!is.na(df$Orig.Species) & stringr::str_detect(df$Orig.Species, "^\\s|\\s$"))) {
+    nsp <- sum(!is.na(df$Orig.Species) & stringr::str_detect(df$Orig.Species, "^\\s|\\s$"))
+    cli::cli_warn("{nsp} leading/trailing space{?s} detected in {.field Orig.Species}. Consider {.fn stringr::str_trim}.")
+  }
+
+  if (any(df$Rank == 1 | df$is_sp | df$is_spp, na.rm = TRUE)) {
+    n_genus_only <- sum(df$Rank == 1 | df$is_sp | df$is_spp, na.rm = TRUE)
+    cli::cli_warn(c(
+      "!" = "{n_genus_only} genus-only row{?s} detected (Rank==1 / sp./spp.).",
+      "i" = "These will not participate in species-level strict matching."
+    ))
+  }
+
+  if ("implied_infra" %in% names(df) && any(df$implied_infra)) {
+    n_imp <- sum(df$implied_infra)
+    cli::cli_warn(c(
+      "!" = "{n_imp} unranked infraspecific epithet{?s} inferred (implied_infra == TRUE).",
+      "i" = "Matching will use Genus + Species + Infraspecies without an explicit rank."
+    ))
+  }
+
+  df
+}
+# ---------------------------------------------------------------
+## returns WCVP target rows filtered by a single genus
+get_trees_of_genus <- function(genus, target_df = NULL){
+  genus_values <- as.character(genus)
+  return(get_db(target_df = target_df) %>%
+           dplyr::filter(.data$Genus %in% .env$genus_values) %>%
+           dplyr::select(c('Genus', 'Species')))
+}
+## locally save output of get_trees_of_genus of called more than once for the same inputs. --> maybe we should get rid of this, as I suppose it's not effectively speading up things due to the increased memory usage.
+memoised_get_trees_of_genus <- memoise::memoise(get_trees_of_genus)
+
+
+
+
+## analog to map_dfr, which additionally prints progress bars using the package progress
+map_dfr_progress <- function(.x, .f, ..., .id = NULL) { ## credits to https://www.jamesatkins.net/posts/progress-bar-in-purrr-map-df/
+  function_name <- stringr::str_remove(toString(substitute(.f)), '_helper')
+  .f <- purrr::as_mapper(.f, ...)
+  cli::cli_progress_bar(
+    total = length(.x),
+    format = paste0(
+      "{? ", paste0(eval(...), collapse = ' '), ": }",
+      "{.fn ", function_name, "} ",
+      "[{cli::pb_bar}] {cli::pb_percent}"
+    )
+  )
+
+
+  f <- function(...) {
+    cli::cli_progress_update()
+    .f(...)
+  }
+
+  #future::plan(future::multicore, workers = 4)
+  purrr::map_dfr(.x, f, ..., .id = .id)
+}
+
+
+## analog to map_dfr, which additionally prints progress bars using the package progress
+map_progress <- function(.x, .f, ..., .id = NULL) { ## credits to https://www.jamesatkins.net/posts/progress-bar-in-purrr-map-df/
+  function_name <- stringr::str_remove(toString(substitute(.f)), '_helper')
+  .f <- purrr::as_mapper(.f, ...)
+  cli::cli_progress_bar(
+    total = length(.x),
+    format = "{?enforce_matching: }[{cli::pb_bar}] {cli::pb_percent}"
+  )
+
+  f <- function(...) {
+    cli::cli_progress_update()
+    .f(...)
+  }
+
+  #future::plan(future::multicore, workers = 4)
+  purrr::map(.x, f, ...)
+}
+
+
+### potential implementation of parallel purrr using furrr:
+# parallel + progress https://furrr.futureverse.org/articles/progress.html
+# parallel: https://byuistats.github.io/M335/parallel_furrr.html
+
+# map_dfr_progress_parallel <- function(.x, .f, ..., .id = NULL) { ## credits to https://www.jamesatkins.net/posts/progress-bar-in-purrr-map-df/
+#   function_name <- stringr::str_remove(substitute(.f), '_helper')
+#   .f <- purrr::as_mapper(.f, ...)
+#   pb <- progress::progress_bar$new(total = length(.x),
+#                                    force = TRUE,
+#                                    format = paste(paste0(eval(...), collapse = ' '), ": ", function_name, "[:bar] :percent", collapse = ''))
+#
+#   f <- function(...) {
+#     pb$tick()
+#     .f(...)
+#   }
+#
+#   #future::plan(future::multicore, workers = 4)
+#   purrr::map_dfr(.x, f, ..., .id = .id)
+# }
+
+#######
+###  Get a testset with specified characteristics of length n (default 10) from specified backbones (default all)
+#######
+# Possible permutations mutations:
+# 1: remove last character of specific epithet
+# 2: remove last character of genus
+# 3: remove last character of genus & specific epithet
+# 4:
+
+get_testset <- function(n = 10,
+                        mutation = 0,
+                        seed = 112){
+  set.seed(seed)
+  df <- dplyr::sample_n(get_db(), n) %>%
+    dplyr::select(c('Genus', 'Species')) %>%
+    dplyr::rename(Orig.Genus = Genus, Orig.Species = Species)
+  if(mutation == 0){
+    return(df)
+  }
+  else if(mutation == 1){
+    dplyr::mutate(df, Orig.Species = stringr::str_replace(Orig.Species, '.{1}$', '')) %>%
+      return()
+  }
+  else if(mutation == 2){
+    dplyr::mutate(df, Orig.Genus = stringr::str_replace(Orig.Genus, '.{1}$', '')) %>%
+      return()
+  }
+  else if(mutation == 3){
+    dplyr::mutate(df,
+                  Orig.Species = stringr::str_replace(Orig.Species, '.{1}$', ''),
+                  Orig.Genus = stringr::str_replace(Orig.Genus, '.{1}$', '')) %>%
+      return()
+  }
+}
+
+

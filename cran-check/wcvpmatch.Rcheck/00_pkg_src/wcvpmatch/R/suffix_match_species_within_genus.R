@@ -1,0 +1,147 @@
+#' Suffix Match Species within Genus
+#' @description
+#' `r lifecycle::badge("stable")`
+#'
+#' Tries to match the specific epithet by exchanging common suffixes within an already matched genus in 'WCVP'.
+#' The following suffixes are captured: `c("a", "i", "is", "um", "us", "ae")`.
+#'
+#' @param df `tibble` containing the species binomial split into the columns `Orig.Genus` and `Orig.Species`.
+#' @param target_df Optional custom target table. If `NULL`, the optional `wcvpdata` checklist is used when available; otherwise pass a backbone explicitly.
+#'
+#' @return
+#' Returns a `tibble` with the additional logical column `suffix_match_species_within_genus`, indicating whether the specific epithet was successfully matched within the matched genus (`TRUE`) or not (`FALSE`).
+#' @examples
+#' \donttest{
+#' df <- data.frame(Orig.Genus = "Opuntia", Orig.Species = "yanganucensa", Matched.Genus = "Opuntia")
+#' target <- data.frame(genus = "Opuntia", species = "yanganucensis", plant_name_id = 1)
+#' wcvpmatch:::wcvp_suffix_match_species_within_genus(df, target_df = target)
+#' }
+#' @keywords internal
+wcvp_suffix_match_species_within_genus <- function(df, target_df = NULL){
+  df <- check_df_format(df)
+  assertthat::assert_that(all(c('Orig.Genus', 'Orig.Species', 'Matched.Genus') %in% colnames(df)))
+  target_df <- get_db(target_df = target_df)
+
+  ## handle empty input tibble while preserving expected output schema
+  if(nrow(df) == 0){
+    if(!all(c('suffix_match_species_within_genus') %in% colnames(df))){
+      return(tibble::add_column(df, suffix_match_species_within_genus = NA))
+    }
+    else{
+      return(df)
+    }
+  }
+
+  common_suffixes <- rev(c("a", "i", "is", "um", "us", "ae"))
+  catch_suffixes <- paste0("(.*?)(", paste0(common_suffixes, collapse = "|"), ")$")
+
+  df_work <- df %>%
+    dplyr::mutate(
+      .row_id = dplyr::row_number(),
+      .match_scope = dplyr::if_else(
+        is.na(Orig.Infraspecies), "species", "infra_parent"
+      ),
+      Root = stringr::str_match(Orig.Species, catch_suffixes)[, 2]
+    )
+
+  database_subset <- .species_candidate_keys(target_df, unique(df_work$.match_scope)) %>%
+    dplyr::semi_join(
+      df_work %>% dplyr::distinct(Matched.Genus),
+      by = c("genus" = "Matched.Genus")
+    ) %>%
+    dplyr::rename(Genus = genus, Species = species) %>%
+    dplyr::mutate(
+      Root = stringr::str_match(Species, catch_suffixes)[, 2]
+    )
+
+  candidate_matches <- df_work %>%
+    dplyr::inner_join(
+      database_subset,
+      by = c(
+        "Matched.Genus" = "Genus", "Root" = "Root",
+        ".match_scope" = ".match_scope"
+      ),
+      na_matches = "never"
+    ) %>%
+    dplyr::mutate(Matched.Species = Species) %>%
+    dplyr::select(-c(Species, Root))
+
+  # A suffix root is only decisive when it identifies one species inside the
+  # matched genus. Ambiguous roots continue to the fuzzy stage rather than
+  # selecting a result based on backbone row order.
+  candidate_counts <- candidate_matches %>%
+    dplyr::count(.row_id, name = ".candidate_n")
+  ambiguous_suffix <- candidate_counts %>%
+    dplyr::filter(.data$.candidate_n > 1) %>%
+    dplyr::select(.row_id)
+
+  matched <- candidate_matches %>%
+    dplyr::inner_join(
+      candidate_counts %>% dplyr::filter(.data$.candidate_n == 1),
+      by = ".row_id"
+    ) %>%
+    dplyr::select(-dplyr::any_of(".candidate_n")) %>%
+    dplyr::group_by(.row_id) %>%
+    dplyr::slice_head(n = 1) %>%
+    dplyr::ungroup()
+
+  unmatched <- df_work %>%
+    dplyr::anti_join(
+      matched %>% dplyr::select(.row_id),
+      by = ".row_id"
+    ) %>%
+    dplyr::select(-Root)
+
+  assertthat::assert_that(nrow(df_work) == (nrow(matched) + nrow(unmatched)))
+
+  res <- dplyr::bind_rows(matched, unmatched, .id = 'suffix_match_species_within_genus') %>%
+    dplyr::mutate(suffix_match_species_within_genus = (suffix_match_species_within_genus == 1)) %>%
+    dplyr::select(-dplyr::any_of(c(".row_id", ".match_scope"))) %>%
+    dplyr::relocate(c('Orig.Genus', 'Orig.Species'))
+
+  if (nrow(ambiguous_suffix) > 0) {
+    attr(res, "ambiguous_suffix") <- candidate_matches %>%
+      dplyr::semi_join(ambiguous_suffix, by = ".row_id") %>%
+      dplyr::arrange(.row_id, Matched.Species)
+  }
+
+  return(res)
+}
+
+
+suffix_match_species_within_genus_helper <- function(df, target_df){
+  # subset database
+  genus <- df %>% dplyr::distinct(Matched.Genus) %>% unlist()
+  database_subset <- get_trees_of_genus(genus, target_df)
+
+  # ending match
+  ## create word root column in both the database subset and user input
+  #common_suffixes <- c("a", "i", "is", "um", "us", "ae", "oides", "escens")
+  common_suffixes <- rev(c("a", "i", "is", "um", "us", "ae"))
+  catch_suffixes <- paste0("(.*?)(", paste0(common_suffixes, collapse = "|"), ")$")
+  df <- df %>%
+    dplyr::mutate(Root = stringr::str_match(Orig.Species, catch_suffixes)[,2])
+  database_subset <- database_subset %>%
+    dplyr::mutate(Root = stringr::str_match(Species, catch_suffixes)[,2])
+
+  ## matching based on root column
+  matched <- df %>%
+    dplyr::inner_join(database_subset, by = 'Root', na_matches = 'never') %>%
+    dplyr::mutate(Matched.Species = Species) %>%
+    dplyr::select(-c('Species', 'Genus', 'Root')) %>%
+    dplyr::group_by(Orig.Genus, Orig.Species) %>%
+    dplyr::slice_head(n = 1) %>%
+    dplyr::ungroup()
+
+  unmatched <- df %>%
+    dplyr::anti_join(database_subset, by = c('Root'), na_matches = 'never') %>%
+    dplyr::select(-c('Root'))
+
+  assertthat::assert_that(nrow(df) == (nrow(matched) + nrow(unmatched)))
+
+  # combine matched and unmatched and add Boolean indicator: TRUE = matched, FALSE = unmatched
+  combined <-  dplyr::bind_rows(matched, unmatched, .id = 'suffix_match_species_within_genus') %>%
+    dplyr::mutate(suffix_match_species_within_genus = (suffix_match_species_within_genus == 1)) %>% ## convert to Boolean
+    dplyr::relocate(c('Orig.Genus', 'Orig.Species')) ## Genus & Species column at the beginning of tibble
+  return(combined)
+}

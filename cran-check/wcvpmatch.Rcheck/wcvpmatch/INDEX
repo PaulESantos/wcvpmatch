@@ -1,0 +1,9 @@
+classify_spnames        Classify Scientific Plant Names into Taxonomic
+                        Components
+fia                     Cleaned Master Tree Species List from FIA
+wcvp_distribution       Retrieve Tabular WCVP Distribution by Taxonomic
+                        Rank
+wcvp_matching           Match Scientific Names Against WCVP
+wcvp_setup_info         Check Default Backbone Setup
+wcvp_synonyms           Retrieve Synonyms Resolved Through the WCVP
+                        Backbone

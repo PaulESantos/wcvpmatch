@@ -1,0 +1,38 @@
+Package: wcvpmatch
+Title: Taxonomic Name Reconciliation Against the 'WCVP' Backbone
+Version: 0.0.3
+Authors@R: c(
+        person("Paul Efren", "Santos Andrade",
+        email = "paulefrens@gmail.com", role = c("aut", "cre", "cph")))
+Author: Paul Efren Santos Andrade [aut, cre, cph]
+Maintainer: Paul Efren Santos Andrade <paulefrens@gmail.com>
+Description: Standardizes and reconciles scientific plant names against
+    a World Checklist of Vascular Plants ('WCVP')-style taxonomic
+    backbone. The package parses names into taxonomic components and
+    applies staged exact and fuzzy matching for binomial and trinomial
+    inputs, including infraspecific rank-aware checks. It also returns
+    accepted-name context and row-level matching flags to support
+    reproducible, auditable preprocessing for downstream biodiversity,
+    spatial, and trait analyses. A user-supplied backbone can be passed
+    through 'target_df'; when the optional companion package 'wcvpdata'
+    is installed, its default checklist can also be used.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+Imports: assertthat, cli, dplyr, fozziejoin, lifecycle, magrittr,
+        memoise, purrr, stringdist, stringr, tibble, tidyr
+Depends: R (>= 4.1.0)
+LazyData: true
+LazyDataCompression: xz
+Suggests: knitr, pkgload, rlang (>= 1.0.0), rmarkdown, testthat (>=
+        3.0.0), wcvpdata (>= 0.7.0)
+VignetteBuilder: knitr
+Additional_repositories: https://paulesantos.r-universe.dev
+Config/testthat/edition: 3
+Config/Needs/website: pkgdown
+URL: https://paulesantos.github.io/wcvpmatch/,
+        https://github.com/PaulESantos/wcvpmatch
+BugReports: https://github.com/PaulESantos/wcvpmatch/issues
+Config/roxygen2/version: 8.1.0
+NeedsCompilation: no
+Packaged: 2026-09-26 04:19:34 UTC; CodexSandboxOffline

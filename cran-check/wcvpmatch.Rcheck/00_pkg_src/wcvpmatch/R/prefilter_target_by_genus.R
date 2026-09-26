@@ -1,0 +1,289 @@
+#' Build a Genus Index for Fast Prefiltering
+#'
+#' @description
+#' `r lifecycle::badge("stable")`
+#'
+#' Creates a compact genus-level index from the target backbone. The index stores
+#' one row per genus and a list-column with candidate `plant_name_id` values
+#' associated with each genus.
+#'
+#' If `plant_name_id` is not present in `target_df`, a surrogate integer ID is
+#' created to keep the index usable with custom backbones.
+#'
+#' @param target_df Optional custom target table. If `NULL`, the optional `wcvpdata` checklist is used when available; otherwise pass a backbone explicitly.
+#'
+#' @return A tibble with columns:
+#' \describe{
+#'   \item{genus}{Genus name (character).}
+#'   \item{plant_name_id}{List-column of unique IDs per genus.}
+#'   \item{n_records}{Number of IDs per genus.}
+#'   \item{genus_nchar}{Number of characters in the genus name.}
+#' }
+#' @examples
+#' \donttest{
+#' target <- data.frame(genus = "Opuntia", species = "ficus-indica", plant_name_id = 1)
+#' wcvpmatch:::build_genus_index(target)
+#' }
+#' @keywords internal
+build_genus_index <- function(target_df = NULL) {
+  if (is.null(target_df)) {
+    cached <- .wcvpmatch_cache[["default_genus_index"]]
+    if (!is.null(cached)) {
+      return(cached)
+    }
+    target_norm <- default_target_df()
+  } else {
+    target_norm <- if (is_normalized_target_df(target_df)) target_df else normalize_target_df(target_df)
+  }
+
+  if (!"plant_name_id" %in% names(target_norm)) {
+    target_norm <- dplyr::mutate(target_norm, plant_name_id = as.numeric(dplyr::row_number()))
+  }
+
+  out <- target_norm %>%
+    dplyr::filter(!is.na(genus), nzchar(genus)) %>%
+    dplyr::group_by(genus) %>%
+    dplyr::summarise(
+      n_records = dplyr::n_distinct(plant_name_id),
+      plant_name_id = list(unique(plant_name_id)),
+      .groups = "drop"
+    ) %>%
+    dplyr::mutate(
+      genus_nchar = nchar(genus)
+    )
+
+  if (is.null(target_df)) {
+    .wcvpmatch_cache[["default_genus_index"]] <- out
+  }
+
+  out
+}
+
+build_genus_lookup <- function(target_df = NULL) {
+  is_default <- is.null(target_df) ||
+    identical(attr(target_df, "wcvpmatch_source", exact = TRUE), "default")
+
+  if (is_default) {
+    cached <- .wcvpmatch_cache[["default_genus_lookup"]]
+    if (!is.null(cached)) return(cached)
+  }
+
+  target_norm <- if (is.null(target_df)) get_db() else get_db(target_df)
+  genera <- unique(as.character(target_norm$genus))
+  genera <- genera[!is.na(genera) & nzchar(genera)]
+  out <- tibble::tibble(
+    genus = genera,
+    genus_nchar = nchar(genera)
+  )
+  genus_values <- as.character(target_norm$genus)
+  valid_rows <- which(!is.na(genus_values) & nzchar(genus_values))
+  attr(out, "row_index") <- split(valid_rows, genus_values[valid_rows])
+  attr(out, "wcvpmatch_target_id") <- .target_id(target_norm)
+
+  if (is_default) .wcvpmatch_cache[["default_genus_lookup"]] <- out
+  out
+}
+
+
+#' Prefilter Target Backbone by Input Genera (Exact + Fuzzy)
+#'
+#' @description
+#' `r lifecycle::badge("stable")`
+#'
+#' Reduces the target backbone to genera relevant for the current input names.
+#' This is designed as a pre-step before `wcvp_matching()` to reduce search space.
+#'
+#' Strategy:
+#' \itemize{
+#'   \item Exact genus candidates are always included.
+#'   \item Optional fuzzy genus candidates are included when `include_fuzzy = TRUE`.
+#'   \item Returned object preserves the standard target schema used by the package.
+#' }
+#'
+#' @param df Input tibble/data.frame with either `Genus`/`Species` or `Orig.Genus`/`Orig.Species`.
+#' @param target_df Optional custom target table. If `NULL`, the optional `wcvpdata` checklist is used when available; otherwise pass a backbone explicitly.
+#' @param genus_index Optional pre-built index from `build_genus_index()`. If `NULL`, it is built on the fly.
+#' @param include_fuzzy Logical. If `TRUE`, include fuzzy-matched genera.
+#' @param max_dist Maximum fuzzy distance for genus matching (used when `include_fuzzy = TRUE`).
+#' @param method String distance method passed to `fozziejoin`.
+#'
+#' @return A prefiltered `target_df` tibble compatible with `wcvp_matching(target_df = ...)`.
+#' Attributes:
+#' \describe{
+#'   \item{candidate_genera}{Character vector of selected genera.}
+#'   \item{exact_genera}{Character vector of exact matched genera.}
+#'   \item{fuzzy_genera}{Character vector of fuzzy matched genera.}
+#' }
+#' @examples
+#' \donttest{
+#' df <- data.frame(Genus = "Opuntia", Species = "yanganucensis")
+#' target <- data.frame(genus = "Opuntia", species = "yanganucensis", plant_name_id = 1)
+#' wcvpmatch:::prefilter_target_by_genus(df, target_df = target)
+#' }
+#' @keywords internal
+prefilter_target_by_genus <- function(df,
+                                      target_df = NULL,
+                                      genus_index = NULL,
+                                      include_fuzzy = TRUE,
+                                      max_dist = 1,
+                                      method = "osa") {
+  df <- check_df_format(df)
+  target_norm <- get_db(target_df = target_df)
+
+  if (is.null(genus_index)) genus_index <- build_genus_lookup(target_df = target_norm)
+
+  assertthat::assert_that(
+    "genus" %in% names(genus_index),
+    msg = "genus_index must contain a genus column."
+  )
+  index_target_id <- attr(genus_index, "wcvpmatch_target_id", exact = TRUE)
+  target_id <- .target_id(target_norm)
+  if (!is.null(index_target_id) && !identical(index_target_id, target_id)) {
+    target_genera <- unique(as.character(target_norm$genus))
+    target_genera <- target_genera[!is.na(target_genera) & nzchar(target_genera)]
+    if (!setequal(as.character(genus_index$genus), target_genera)) {
+      cli::cli_abort(c(
+        "x" = "{.arg genus_index} was built from a different target backbone.",
+        "i" = "Rebuild it with {.fn build_genus_lookup} using the same {.arg target_df}."
+      ))
+    }
+  }
+
+  input_genera <- df %>%
+    dplyr::distinct(Orig.Genus) %>%
+    dplyr::filter(!is.na(Orig.Genus), nzchar(Orig.Genus))
+
+  if (nrow(input_genera) == 0) {
+    out <- target_norm %>% dplyr::slice(0)
+    attr(out, "wcvpmatch_normalized") <- TRUE
+    attr(out, "wcvpmatch_prepared") <- TRUE
+    attr(out, "candidate_genera") <- character(0)
+    attr(out, "exact_genera") <- character(0)
+    attr(out, "fuzzy_genera") <- character(0)
+    attr(out, "fuzzy_genus_map") <- tibble::tibble(
+      Orig.Genus = character(), genus = character(), fuzzy_genus_dist = numeric()
+    )
+    attr(out, "fuzzy_genus_method") <- method
+    attr(out, "fuzzy_genus_max_dist") <- max_dist
+    attr(out, "fuzzy_genus_target_id") <- target_id
+    attr(out, "wcvpmatch_target_id") <- target_id
+    return(out)
+  }
+
+  available_genera <- genus_index %>%
+    dplyr::distinct(genus, .keep_all = TRUE) %>%
+    dplyr::mutate(
+      genus_nchar = if ("genus_nchar" %in% names(.)) genus_nchar else nchar(genus)
+    )
+
+  exact_genera <- input_genera %>%
+    dplyr::semi_join(available_genera, by = c("Orig.Genus" = "genus")) %>%
+    dplyr::pull(Orig.Genus) %>%
+    unique()
+
+  unresolved_genera <- input_genera %>%
+    dplyr::anti_join(
+      tibble::tibble(genus = exact_genera),
+      by = c("Orig.Genus" = "genus")
+    )
+
+  fuzzy_genera <- character(0)
+  fuzzy_tbl <- tibble::tibble(
+    Orig.Genus = character(), genus = character(), fuzzy_genus_dist = numeric()
+  )
+  if (isTRUE(include_fuzzy) && nrow(unresolved_genera) > 0) {
+    available_genera_fuzzy <- available_genera
+
+    if (.is_edit_distance_method(method)) {
+      unresolved_lengths <- nchar(unresolved_genera$Orig.Genus)
+      allowed_lengths <- if (tolower(method) == "hamming") {
+        unique(unresolved_lengths)
+      } else {
+        unique(unlist(lapply(
+          unresolved_lengths,
+          function(x) seq.int(max(0L, x - max_dist), x + max_dist)
+        )))
+      }
+
+      available_genera_fuzzy <- available_genera_fuzzy %>%
+        dplyr::filter(genus_nchar %in% allowed_lengths)
+    }
+
+    fuzzy_tbl <- unresolved_genera %>%
+      fozziejoin::fozzie_string_left_join(
+        available_genera_fuzzy %>% dplyr::select(genus),
+        by = c("Orig.Genus" = "genus"),
+        max_distance = max_dist,
+        method = method,
+        distance_col = "fuzzy_genus_dist"
+      ) %>%
+      dplyr::filter(!is.na(genus), !is.na(fuzzy_genus_dist), fuzzy_genus_dist <= max_dist) %>%
+      dplyr::group_by(Orig.Genus) %>%
+      dplyr::slice_min(order_by = fuzzy_genus_dist, n = 1, with_ties = TRUE) %>%
+      dplyr::ungroup()
+
+    fuzzy_genera <- unique(fuzzy_tbl$genus)
+  }
+
+  candidate_genera <- unique(c(exact_genera, fuzzy_genera))
+
+  if (length(candidate_genera) == 0) {
+    out <- target_norm %>% dplyr::slice(0)
+    attr(out, "wcvpmatch_normalized") <- TRUE
+    attr(out, "wcvpmatch_prepared") <- TRUE
+    attr(out, "candidate_genera") <- character(0)
+    attr(out, "exact_genera") <- exact_genera
+    attr(out, "fuzzy_genera") <- fuzzy_genera
+    attr(out, "fuzzy_genus_map") <- fuzzy_tbl
+    attr(out, "fuzzy_genus_method") <- method
+    attr(out, "fuzzy_genus_max_dist") <- max_dist
+    attr(out, "fuzzy_genus_target_id") <- target_id
+    attr(out, "wcvpmatch_target_id") <- target_id
+    return(out)
+  }
+
+  # Reuse cached row positions when available. This avoids rescanning every row
+  # of the default backbone on repeated matching calls.
+  row_index <- if (!is.null(index_target_id)) {
+    attr(genus_index, "row_index", exact = TRUE)
+  } else {
+    NULL
+  }
+  if (!is.null(row_index) && length(candidate_genera) > 0) {
+    positions_valid <- vapply(candidate_genera, function(candidate_genus) {
+      positions <- row_index[[candidate_genus]]
+      !is.null(positions) &&
+        all(positions >= 1L & positions <= nrow(target_norm)) &&
+        all(as.character(target_norm$genus[positions]) == candidate_genus)
+    }, logical(1))
+    if (!all(positions_valid)) {
+      cli::cli_abort(c(
+        "x" = "{.arg genus_index} row positions do not match {.arg target_df}.",
+        "i" = "Rebuild the index from the same target backbone and row order."
+      ))
+    }
+  }
+  candidate_rows <- if (!is.null(row_index)) {
+    unlist(row_index[candidate_genera], use.names = FALSE)
+  } else {
+    integer()
+  }
+  if (length(candidate_rows) > 0) {
+    out <- target_norm[sort(unique(candidate_rows)), , drop = FALSE]
+  } else {
+    out <- target_norm[target_norm$genus %in% candidate_genera, , drop = FALSE]
+  }
+  attr(out, "wcvpmatch_normalized") <- TRUE
+  attr(out, "wcvpmatch_prepared") <- TRUE
+  source <- attr(target_norm, "wcvpmatch_source", exact = TRUE)
+  if (!is.null(source)) attr(out, "wcvpmatch_source") <- source
+  attr(out, "candidate_genera") <- candidate_genera
+  attr(out, "exact_genera") <- exact_genera
+  attr(out, "fuzzy_genera") <- fuzzy_genera
+  attr(out, "fuzzy_genus_map") <- fuzzy_tbl
+  attr(out, "fuzzy_genus_method") <- method
+  attr(out, "fuzzy_genus_max_dist") <- max_dist
+  attr(out, "fuzzy_genus_target_id") <- target_id
+  attr(out, "wcvpmatch_target_id") <- target_id
+  out
+}

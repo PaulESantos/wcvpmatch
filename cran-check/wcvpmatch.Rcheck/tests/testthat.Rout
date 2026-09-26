@@ -1,0 +1,32 @@
+
+R version 4.6.1 (2026-06-24 ucrt) -- "Happy Hop"
+Copyright (C) 2026 The R Foundation for Statistical Computing
+Platform: x86_64-w64-mingw32/x64
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(testthat)
+> library(wcvpmatch)
+> 
+> test_check("wcvpmatch")
+The tzdb package is not installed. Timezones will not be available to Arrow compute functions. If you get errors when using Arrow on datetimes, try running `install.packages('tzdb')` and trying again.
+1 input without species-level distribution were resolved with genus-level distribution.
+1 input did not contain a complete species binomial; matching will continue and may fall back to genus-level distribution.
+1 input without species-level distribution were resolved with genus-level distribution.
+i Input was converted from <data.frame> to a <tibble>.
+  See <https://tibble.tidyverse.org/> for more details.
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 340 ]
+> 
+> proc.time()
+   user  system elapsed 
+  42.12    3.96   46.67 

@@ -1,0 +1,903 @@
+\nonstopmode{}
+\documentclass[a4paper]{book}
+\usepackage[times,inconsolata,hyper]{Rd}
+\usepackage{makeidx}
+\makeatletter\@ifl@t@r\fmtversion{2018/04/01}{}{\usepackage[utf8]{inputenc}}\makeatother
+% \usepackage{graphicx} % @USE GRAPHICX@
+\makeindex{}
+\begin{document}
+\chapter*{}
+\begin{center}
+{\textbf{\huge Package `wcvpmatch'}}
+\par\bigskip{\large \today}
+\end{center}
+\ifthenelse{\boolean{Rd@use@hyper}}{\hypersetup{pdftitle = {wcvpmatch: Taxonomic Name Reconciliation Against the 'WCVP' Backbone}}}{}
+\ifthenelse{\boolean{Rd@use@hyper}}{\hypersetup{pdfauthor = {Paul Efren Santos Andrade}}}{}
+\begin{description}
+\raggedright{}
+\item[Title]\AsIs{Taxonomic Name Reconciliation Against the 'WCVP' Backbone}
+\item[Version]\AsIs{0.0.3}
+\item[Author]\AsIs{Paul Efren Santos Andrade [aut, cre, cph]}
+\item[Maintainer]\AsIs{Paul Efren Santos Andrade }\email{paulefrens@gmail.com}\AsIs{}
+\item[Description]\AsIs{Standardizes and reconciles scientific plant names against
+a World Checklist of Vascular Plants ('WCVP')-style taxonomic
+backbone. The package parses names into taxonomic components and
+applies staged exact and fuzzy matching for binomial and trinomial
+inputs, including infraspecific rank-aware checks. It also returns
+accepted-name context and row-level matching flags to support
+reproducible, auditable preprocessing for downstream biodiversity,
+spatial, and trait analyses. A user-supplied backbone can be passed
+through 'target_df'; when the optional companion package 'wcvpdata'
+is installed, its default checklist can also be used.}
+\item[License]\AsIs{MIT + file LICENSE}
+\item[Encoding]\AsIs{UTF-8}
+\item[Roxygen]\AsIs{list(markdown = TRUE)}
+\item[Imports]\AsIs{assertthat, cli, dplyr, fozziejoin, lifecycle, magrittr,
+memoise, purrr, stringdist, stringr, tibble, tidyr}
+\item[Depends]\AsIs{R (>= 4.1.0)}
+\item[LazyData]\AsIs{true}
+\item[LazyDataCompression]\AsIs{xz}
+\item[Suggests]\AsIs{knitr, pkgload, rlang (>= 1.0.0), rmarkdown, testthat (>=
+3.0.0), wcvpdata (>= 0.7.0)}
+\item[VignetteBuilder]\AsIs{knitr}
+\item[Additional\_repositories]\AsIs{}\url{https://paulesantos.r-universe.dev}\AsIs{}
+\item[Config/testthat/edition]\AsIs{3}
+\item[Config/Needs/website]\AsIs{pkgdown}
+\item[URL]\AsIs{}\url{https://paulesantos.github.io/wcvpmatch/}\AsIs{,
+}\url{https://github.com/PaulESantos/wcvpmatch}\AsIs{}
+\item[BugReports]\AsIs{}\url{https://github.com/PaulESantos/wcvpmatch/issues}\AsIs{}
+\item[Config/roxygen2/version]\AsIs{8.1.0}
+\item[NeedsCompilation]\AsIs{no}
+\end{description}
+\Rdcontents{Contents}
+\HeaderA{wcvpmatch-package}{wcvpmatch: Taxonomic Name Reconciliation Against the 'WCVP' Backbone}{wcvpmatch.Rdash.package}
+\aliasA{wcvpmatch}{wcvpmatch-package}{wcvpmatch}
+\keyword{internal}{wcvpmatch-package}
+%
+\begin{Description}
+Standardizes and reconciles scientific plant names against a World Checklist of Vascular Plants ('WCVP')-style taxonomic backbone. The package parses names into taxonomic components and applies staged exact and fuzzy matching for binomial and trinomial inputs, including infraspecific rank-aware checks. It also returns accepted-name context and row-level matching flags to support reproducible, auditable preprocessing for downstream biodiversity, spatial, and trait analyses. A user-supplied backbone can be passed through 'target\_df'; when the optional companion package 'wcvpdata' is installed, its default checklist can also be used.
+\end{Description}
+%
+\begin{Author}
+\strong{Maintainer}: Paul Efren Santos Andrade \email{paulefrens@gmail.com} [copyright holder]
+
+Authors:
+\begin{itemize}
+
+\item{} Paul Efren Santos Andrade \email{paulefrens@gmail.com} [copyright holder]
+
+\end{itemize}
+
+
+\end{Author}
+%
+\begin{SeeAlso}
+Useful links:
+\begin{itemize}
+
+\item{} \url{https://paulesantos.github.io/wcvpmatch/}
+\item{} \url{https://github.com/PaulESantos/wcvpmatch}
+\item{} Report bugs at \url{https://github.com/PaulESantos/wcvpmatch/issues}
+
+\end{itemize}
+
+
+\end{SeeAlso}
+\HeaderA{build\_genus\_index}{Build a Genus Index for Fast Prefiltering}{build.Rul.genus.Rul.index}
+\keyword{internal}{build\_genus\_index}
+%
+\begin{Description}
+\strong{[Stable]}
+
+Creates a compact genus-level index from the target backbone. The index stores
+one row per genus and a list-column with candidate \code{plant\_name\_id} values
+associated with each genus.
+
+If \code{plant\_name\_id} is not present in \code{target\_df}, a surrogate integer ID is
+created to keep the index usable with custom backbones.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+build_genus_index(target_df = NULL)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{target\_df}] Optional custom target table. If \code{NULL}, the optional \code{wcvpdata} checklist is used when available; otherwise pass a backbone explicitly.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+A tibble with columns:
+\begin{description}
+
+\item[genus] Genus name (character).
+\item[plant\_name\_id] List-column of unique IDs per genus.
+\item[n\_records] Number of IDs per genus.
+\item[genus\_nchar] Number of characters in the genus name.
+
+\end{description}
+
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+
+target <- data.frame(genus = "Opuntia", species = "ficus-indica", plant_name_id = 1)
+wcvpmatch:::build_genus_index(target)
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{classify\_spnames}{Classify Scientific Plant Names into Taxonomic Components}{classify.Rul.spnames}
+%
+\begin{Description}
+\strong{[Stable]}
+
+Parse and classify scientific plant names into taxonomic components:
+genus, specific epithet, infraspecific rank, infraspecific epithet, and author.
+
+Output is aligned to a backbone convention:
+\begin{itemize}
+
+\item{} \code{Orig.Genus} in Title Case (first letter uppercase, rest lowercase).
+\item{} \code{Orig.Species} and \code{Orig.Infraspecies} epithets in lowercase.
+\item{} \code{Infra.Rank} in lowercase (\code{subsp.}, \code{var.}, \code{subvar.}, \code{f.}, \code{subf.}).
+\item{} \code{Author} is recovered from the input and preserved in its original
+casing/punctuation (no forced uppercasing).
+\item{} \code{Orig.Name} is reconstructed as: genus + species + (rank + infra) + author.
+
+\end{itemize}
+
+
+Robustness rules:
+\begin{itemize}
+
+\item{} \code{cf.} / \code{aff.} are removed from parsing but preserved as flags (\code{has\_cf}, \code{has\_aff}).
+\item{} Hybrid markers (\code{x}/\AsIs{\texttt{\bsl{}u00D7}}) as standalone tokens are removed with \code{had\_hybrid = TRUE}.
+\item{} \code{sp.} / \code{spp.} triggers genus-only classification (\code{Rank = 1}, \code{Orig.Species = NA})
+and sets \code{is\_sp}/\code{is\_spp}.
+\item{} If an infraspecific rank is present but the infraspecific epithet is missing,
+sets \code{rank\_missing\_infra = TRUE} and keeps \code{Infra.Rank} while \code{Orig.Infraspecies = NA}.
+\item{} If rank appears "late" (after author-like tokens), parsing is best-effort and
+\code{rank\_late = TRUE}.
+\item{} If there is no explicit rank and a third token exists, the function can infer an
+unranked infraspecific epithet when the third token looks epithet-like (all lowercase),
+and does not look like the start of an author. In that case \code{implied\_infra = TRUE},
+\code{Orig.Infraspecies} is filled, \code{Infra.Rank = NA}, and \code{Rank = 3}.
+
+\end{itemize}
+
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+classify_spnames(splist)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{splist}] Character vector. Scientific plant names.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+A tibble with one row per input name and standardized columns/flags:
+\begin{description}
+
+\item[sorter] Numeric index of original order.
+\item[Input.Name] Original input string as provided by user.
+\item[Orig.Name] Reconstructed standardized name aligned to backbone + original-cased author.
+\item[Orig.Genus] Genus in Title Case.
+\item[Orig.Species] Specific epithet in lowercase, or \code{NA} for genus-only (\code{sp./spp.}).
+\item[Author] Recovered author string (original casing/punctuation) or \code{""}.
+\item[Orig.Infraspecies] Infraspecific epithet in lowercase (ranked or implied), or \code{NA}.
+\item[Infra.Rank] Infraspecific rank in lowercase (\code{subsp.}, \code{var.}, \code{subvar.}, \code{f.}, \code{subf.}), or \code{NA}.
+\item[Rank] Numeric level: \code{1} genus-only, \code{2} genus+species, \code{3} includes infraspecific epithet.
+\item[has\_cf,has\_aff,is\_sp,is\_spp,had\_hybrid,rank\_late,rank\_missing\_infra,had\_na\_author,implied\_infra] Logical flags.
+
+\end{description}
+
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+library(wcvpmatch)
+classify_spnames(c("Opuntia sp.", "Rosa canina subsp. coriifolia (Fr.) Leffler"))
+classify_spnames(c("Cydonia japonica tricolor")) # implied unranked infra epithet
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{direct\_match\_infra\_rank\_within\_species}{Direct Match Infraspecific Rank within Species}{direct.Rul.match.Rul.infra.Rul.rank.Rul.within.Rul.species}
+\keyword{internal}{direct\_match\_infra\_rank\_within\_species}
+%
+\begin{Description}
+Direct Match Infraspecific Rank within Species
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+direct_match_infra_rank_within_species(df, target_df = NULL)
+\end{verbatim}
+\end{Usage}
+\HeaderA{fia}{Cleaned Master Tree Species List from FIA}{fia}
+\keyword{datasets}{fia}
+%
+\begin{Description}
+A cleaned dataset containing tree species recorded by the
+Forest Inventory and Analysis (FIA) program of the U.S. Forest Service.
+This dataset is used in the examples and README of the \code{wcvpmatch}
+package. The data was downloaded in November 2022 from the official
+webpage of the Forest Inventory and Analysis National Program, available
+at the following \Rhref{https://research.fs.usda.gov/products/dataandtools/fia-datamart}{link},
+and was originally used during the development of the \code{treemendous}
+package. For \code{wcvpmatch}, the variable names have been standardized
+to \code{Orig.Genus} and \code{Orig.Species}.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+fia
+\end{verbatim}
+\end{Usage}
+%
+\begin{Format}
+A data frame with 2169 rows and 2 variables:
+\begin{description}
+
+\item[Orig.Genus] Genus name of the species binomial
+\item[Orig.Species] Specific epithet of the species binomial
+
+\end{description}
+
+\end{Format}
+\HeaderA{fuzzy\_match\_infraspecies\_within\_species}{Fuzzy Match Infraspecific Epithet within Species}{fuzzy.Rul.match.Rul.infraspecies.Rul.within.Rul.species}
+\keyword{internal}{fuzzy\_match\_infraspecies\_within\_species}
+%
+\begin{Description}
+Fuzzy Match Infraspecific Epithet within Species
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+fuzzy_match_infraspecies_within_species(
+  df,
+  target_df = NULL,
+  max_dist = 1,
+  method = "osa"
+)
+\end{verbatim}
+\end{Usage}
+\HeaderA{prefilter\_target\_by\_genus}{Prefilter Target Backbone by Input Genera (Exact + Fuzzy)}{prefilter.Rul.target.Rul.by.Rul.genus}
+\keyword{internal}{prefilter\_target\_by\_genus}
+%
+\begin{Description}
+\strong{[Stable]}
+
+Reduces the target backbone to genera relevant for the current input names.
+This is designed as a pre-step before \code{wcvp\_matching()} to reduce search space.
+
+Strategy:
+\begin{itemize}
+
+\item{} Exact genus candidates are always included.
+\item{} Optional fuzzy genus candidates are included when \code{include\_fuzzy = TRUE}.
+\item{} Returned object preserves the standard target schema used by the package.
+
+\end{itemize}
+
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+prefilter_target_by_genus(
+  df,
+  target_df = NULL,
+  genus_index = NULL,
+  include_fuzzy = TRUE,
+  max_dist = 1,
+  method = "osa"
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{df}] Input tibble/data.frame with either \code{Genus}/\code{Species} or \code{Orig.Genus}/\code{Orig.Species}.
+
+\item[\code{target\_df}] Optional custom target table. If \code{NULL}, the optional \code{wcvpdata} checklist is used when available; otherwise pass a backbone explicitly.
+
+\item[\code{genus\_index}] Optional pre-built index from \code{build\_genus\_index()}. If \code{NULL}, it is built on the fly.
+
+\item[\code{include\_fuzzy}] Logical. If \code{TRUE}, include fuzzy-matched genera.
+
+\item[\code{max\_dist}] Maximum fuzzy distance for genus matching (used when \code{include\_fuzzy = TRUE}).
+
+\item[\code{method}] String distance method passed to \code{fozziejoin}.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+A prefiltered \code{target\_df} tibble compatible with \code{wcvp\_matching(target\_df = ...)}.
+Attributes:
+\begin{description}
+
+\item[candidate\_genera] Character vector of selected genera.
+\item[exact\_genera] Character vector of exact matched genera.
+\item[fuzzy\_genera] Character vector of fuzzy matched genera.
+
+\end{description}
+
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+
+df <- data.frame(Genus = "Opuntia", Species = "yanganucensis")
+target <- data.frame(genus = "Opuntia", species = "yanganucensis", plant_name_id = 1)
+wcvpmatch:::prefilter_target_by_genus(df, target_df = target)
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{wcvp\_direct\_match}{Direct Match Species \& Genus Binomial or Trinomial names}{wcvp.Rul.direct.Rul.match}
+\keyword{internal}{wcvp\_direct\_match}
+%
+\begin{Description}
+\strong{[Stable]}
+
+Tries to directly match Genus + Species | Genus + Species + Rank + Infraspecies to \AsIs{\texttt{WCVP data}}.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+wcvp_direct_match(df, target_df = NULL)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{df}] \code{tibble} containing the species binomial split into the columns \code{Orig.Genus} and \code{Orig.Species}.
+
+\item[\code{target\_df}] Optional custom target table. If \code{NULL}, the optional \code{wcvpdata} checklist is used when available; otherwise pass a backbone explicitly.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+Returns a \code{tibble} with the additional logical column \code{direct\_match}, indicating whether the binomial was successfully matched (\code{TRUE}) or not (\code{FALSE}).
+Returns original columns plus \code{Matched.Genus}, \code{Matched.Species}, \code{Matched.Infra.Rank}, and \code{Matched.Infraspecies}.
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+
+df_parsed <- classify_spnames("Opuntia yanganucensis")
+target <- data.frame(genus = "Opuntia", species = "yanganucensis", plant_name_id = 1)
+wcvpmatch:::wcvp_direct_match(df_parsed, target_df = target)
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{wcvp\_direct\_match\_species\_within\_genus}{Direct Match Species within Genus}{wcvp.Rul.direct.Rul.match.Rul.species.Rul.within.Rul.genus}
+\keyword{internal}{wcvp\_direct\_match\_species\_within\_genus}
+%
+\begin{Description}
+\strong{[Stable]}
+
+Tries to directly match the specific epithet within an already matched genus in 'WCVP'.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+wcvp_direct_match_species_within_genus(df, target_df = NULL)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{df}] \code{tibble} containing the species binomial split into the columns \code{Orig.Genus} and \code{Orig.Species}.
+
+\item[\code{target\_df}] Optional custom target table. If \code{NULL}, the optional \code{wcvpdata} checklist is used when available; otherwise pass a backbone explicitly.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+Returns a \code{tibble} with the additional logical column \code{direct\_match\_species\_within\_genus}, indicating whether the specific epithet was successfully matched within the matched genus (\code{TRUE}) or not (\code{FALSE}).
+\end{Value}
+\HeaderA{wcvp\_distribution}{Retrieve Tabular WCVP Distribution by Taxonomic Rank}{wcvp.Rul.distribution}
+%
+\begin{Description}
+\strong{[Stable]}
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+wcvp_distribution(
+  taxon,
+  taxon_rank = c("species", "genus", "family", "order", "higher"),
+  native = TRUE,
+  introduced = TRUE,
+  extinct = TRUE,
+  location_doubtful = TRUE,
+  wcvp_names = NULL,
+  wcvp_distributions = NULL,
+  prefilter_genus = TRUE,
+  fallback_to_genus = TRUE,
+  summarise_by_input = FALSE,
+  max_dist = NULL,
+  method = "osa",
+  output = c("standard", "full", "spatial", "summary")
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{taxon}] Character vector of taxa to query.
+
+\item[\code{taxon\_rank}] Character scalar. One of \code{"species"}, \code{"genus"},
+\code{"family"}, \code{"order"}, or \code{"higher"}. The last two require corresponding
+\code{order} or \code{higher} columns in \code{wcvp\_names}.
+
+\item[\code{native}] Logical. Include native occurrences? Defaults to \code{TRUE}.
+
+\item[\code{introduced}] Logical. Include introduced occurrences? Defaults to
+\code{TRUE}.
+
+\item[\code{extinct}] Logical. Include extinct occurrences? Defaults to \code{TRUE}.
+
+\item[\code{location\_doubtful}] Logical. Include doubtful occurrences? Defaults to
+\code{TRUE}.
+
+\item[\code{wcvp\_names}] Optional WCVP names table. If \code{NULL}, the function loads
+\code{wcvpdata::wcvp\_matching\_names()}.
+
+\item[\code{wcvp\_distributions}] Optional WCVP distribution table. If \code{NULL}, the
+function loads \code{wcvpdata::wcvp\_distribution()}.
+
+\item[\code{prefilter\_genus}] Logical. Forwarded to \code{wcvp\_matching()} for
+species-level queries. Ignored for all other taxonomic ranks.
+
+\item[\code{fallback\_to\_genus}] Logical. If \code{TRUE} and \code{taxon\_rank = "species"},
+inputs without species-level distribution are retried at genus level.
+
+\item[\code{summarise\_by\_input}] Logical. If \code{TRUE}, return one row per input taxon
+with collapsed distribution fields. In this mode, \code{area\_codes}, \code{areas},
+\code{regions}, \code{continents}, and \code{distribution} are returned as character
+strings separated by \code{" - "} rather than list-columns.
+
+\item[\code{max\_dist}] Maximum string distance. If \code{NULL}, species queries default
+to \code{2} and genus/family queries to \code{0}.
+
+\item[\code{method}] String distance method passed to \code{fozziejoin}.
+
+\item[\code{output}] Output layout: \code{"standard"} (the default analytical
+taxon-area table), \code{"full"} (the complete audit table), \code{"spatial"}
+(the compact taxon-area table for a later spatial join), or \code{"summary"}
+(one row per submitted taxon). \code{summarise\_by\_input = TRUE} is retained as
+a backwards-compatible alias for \code{output = "summary"}.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Details}
+Queries distribution records by matching a taxon name against the WCVP names
+table and then resolving the corresponding rows in the WCVP distribution
+table. The function is designed around \code{wcvpdata::wcvp\_matching\_names()} and
+\code{wcvpdata::wcvp\_distribution()}, but custom tables with the same
+schema can also be supplied.
+
+Matching is performed with \code{fozziejoin}, using compact lookup tables and
+length-based prefiltering to keep the candidate set small. Species queries are
+resolved in two stages: genus candidates are matched first, then species
+names are searched only within those candidate genera.
+
+If species-level matches resolve to synonyms and the names table contains
+\code{accepted\_plant\_name\_id}, distribution is recovered from the accepted taxon.
+For queries above species, accepted names are preferred to avoid double
+counting synonym records.
+
+The result deliberately contains no geometry and does not require \code{sf}.
+\code{area\_code\_l3} is the stable WGSrpd level-3 key intended for a later join
+to a user-supplied spatial object.
+
+Default names and distribution tables are cached for the current R session.
+Exact species queries use a direct lookup; lowercase strings and species
+keys over the full backbone are only built when a fuzzy query needs them.
+\end{Details}
+%
+\begin{Value}
+A non-spatial tibble. The default \code{output = "standard"} returns one
+row per matched query-area combination with the submitted and resolved
+taxa, geographic hierarchy, and four occurrence flags (12 columns).
+\code{output = "full"}
+additionally returns matching provenance and identifiers. \code{output = "spatial"} returns
+only the taxon-area fields needed for a later spatial join. \code{output = "summary"} returns one row per input taxon with collapsed text fields such
+as \code{distribution}, \code{areas}, \code{area\_codes}, \code{regions}, \code{continents}, and
+\code{n\_areas}.
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+
+
+library(wcvpmatch)
+
+wcvp_distribution("Opuntia ficus-indica", taxon_rank = "species")
+wcvp_distribution("Opuntia", taxon_rank = "genus")
+wcvp_distribution("Cactaceae", taxon_rank = "family")
+# When `order` is present in a custom names table:
+# \dontrun{wcvp_distribution("Caryophyllales", taxon_rank = "order", wcvp_names = custom_names)}
+
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{wcvp\_fuzzy\_match\_genus}{Fuzzy Match Genus Name}{wcvp.Rul.fuzzy.Rul.match.Rul.genus}
+\keyword{internal}{wcvp\_fuzzy\_match\_genus}
+%
+\begin{Description}
+\strong{[Stable]}
+
+Tries to fuzzy match the genus name to the 'WCVP' table (using the optional \code{wcvpdata} checklist by default when available).
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+wcvp_fuzzy_match_genus(df, target_df = NULL, max_dist = 1, method = "osa")
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{df}] \code{tibble} containing the species binomial split into the columns \code{Orig.Genus} and \code{Orig.Species}.
+
+\item[\code{target\_df}] Optional custom target table. If \code{NULL}, the optional \code{wcvpdata} checklist is used when available; otherwise pass a backbone explicitly.
+
+\item[\code{max\_dist}] Maximum edit distance used for fuzzy genus matching.
+
+\item[\code{method}] String distance method passed to \code{fozziejoin} (for example \code{"osa"}).
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+Returns a \code{tibble} with the additional logical column \code{fuzzy\_match\_genus}, indicating whether the genus was successfully matched (\code{TRUE}) or not (\code{FALSE}).
+Further, the additional column \code{fuzzy\_genus\_dist} returns the distance for every match.
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+
+df <- data.frame(Orig.Genus = "Opuntiaa", Orig.Species = "yanganucensis")
+target <- data.frame(genus = "Opuntia", species = "yanganucensis", plant_name_id = 1)
+wcvpmatch:::wcvp_fuzzy_match_genus(df, target_df = target)
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{wcvp\_fuzzy\_match\_species\_within\_genus}{Fuzzy Match Species within Genus}{wcvp.Rul.fuzzy.Rul.match.Rul.species.Rul.within.Rul.genus}
+\keyword{internal}{wcvp\_fuzzy\_match\_species\_within\_genus}
+%
+\begin{Description}
+\strong{[Stable]}
+
+Tries to fuzzy match the species epithet within a matched genus against 'WCVP' (using the optional \code{wcvpdata} checklist by default when available).
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+wcvp_fuzzy_match_species_within_genus(
+  df,
+  target_df = NULL,
+  max_dist = 1,
+  method = "osa"
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{df}] \code{tibble} containing the species binomial split into the columns \code{Orig.Genus} and \code{Orig.Species}.
+
+\item[\code{target\_df}] Optional custom target table. If \code{NULL}, the optional \code{wcvpdata} checklist is used when available; otherwise pass a backbone explicitly.
+
+\item[\code{max\_dist}] Maximum edit distance used for fuzzy species matching within genus.
+
+\item[\code{method}] String distance method passed to \code{fozziejoin} (for example \code{"osa"}).
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+Returns a \code{tibble} with the additional logical column \code{fuzzy\_match\_species\_within\_genus}, indicating whether the specific epithet was successfully fuzzy matched within the matched genus (\code{TRUE}) or not (\code{FALSE}).
+\end{Value}
+\HeaderA{wcvp\_genus\_match}{Match Genus name}{wcvp.Rul.genus.Rul.match}
+\keyword{internal}{wcvp\_genus\_match}
+%
+\begin{Description}
+\strong{[Stable]}
+
+Tries to match the genus name to the 'WCVP' table (using the optional \code{wcvpdata} checklist by default when available).
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+wcvp_genus_match(df, target_df = NULL)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{df}] \code{tibble} containing the species binomial split into the columns \code{Orig.Genus} and \code{Orig.Species}.
+
+\item[\code{target\_df}] Optional custom target table. If \code{NULL}, the optional \code{wcvpdata} checklist is used when available; otherwise pass a backbone explicitly.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+Returns a \code{tibble} with the additional logical column \code{genus\_match}, indicating whether the genus was successfully matched (\code{TRUE}) or not (\code{FALSE}).
+\end{Value}
+\HeaderA{wcvp\_matching}{Match Scientific Names Against WCVP}{wcvp.Rul.matching}
+%
+\begin{Description}
+\strong{[Stable]}
+
+Runs a matching pipeline with exact and partial matching for binomial and
+trinomial names, including infraspecific rank validation.
+
+When the default WCVP backbone is used, its normalized representation and
+compact genus lookup are cached for the current R session. Prepared custom
+backbones are also recognized inside the pipeline so internal matching nodes
+do not normalize or deduplicate the same table repeatedly.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+wcvp_matching(
+  df,
+  target_df = NULL,
+  prefilter_genus = TRUE,
+  allow_duplicates = FALSE,
+  max_dist = 1,
+  method = "osa",
+  add_name_distance = FALSE,
+  name_distance_method = "osa",
+  profile = FALSE,
+  output_name_style = c("snake_case", "legacy"),
+  output = c("standard", "full")
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{df}] Input tibble/data.frame with either \code{Genus}/\code{Species} or
+\code{Orig.Genus}/\code{Orig.Species}. For trinomials, include \code{Infra.Rank} and
+\code{Infraspecies} (or \code{Orig.Infra.Rank}/\code{Orig.Infraspecies}).
+
+\item[\code{target\_df}] Optional custom target table. If \code{NULL}, data are read from
+the optional \code{wcvpdata} checklist when available; otherwise pass \code{target\_df} explicitly.
+
+\item[\code{prefilter\_genus}] Logical. If \code{TRUE}, prefilter \code{target\_df} to candidate
+genera (exact + fuzzy) before running the matching pipeline.
+
+\item[\code{allow\_duplicates}] Logical. If \code{TRUE}, duplicated taxon keys are
+deduplicated internally for matching and then expanded back to original
+rows. Output includes \code{input\_index} for traceability to the original input.
+
+\item[\code{max\_dist}] Maximum distance used in all fuzzy matching stages (genus, species, infraspecies).
+
+\item[\code{method}] A string indicating the fuzzy matching method (passed to \code{fozziejoin}). Supported methods:
+\begin{itemize}
+
+\item{} \code{"levenshtein"}: Levenshtein edit distance (default).
+\item{} \code{"osa"}: Optimal string alignment.
+\item{} \code{"damerau\_levensthein"} or \code{"dl"}: Damerau-Levenshtein distance.
+\item{} \code{"hamming"}: Hamming distance (equal-length strings only).
+\item{} \code{"lcs"}: Longest common subsequence.
+\item{} \code{"qgram"}: Q-gram similarity (requires \code{q}).
+\item{} \code{"cosine"}: Cosine similarity (requires \code{q}).
+\item{} \code{"jaccard"}: Jaccard similarity (requires \code{q}).
+\item{} \code{"jaro"}: Jaro similarity.
+\item{} \code{"jaro\_winkler"} or \code{"jw"}: Jaro-Winkler similarity.
+\item{} \code{"soundex"}: Soundex codes based on the National Archives standard.
+
+\end{itemize}
+
+
+\item[\code{add\_name\_distance}] Logical. If \code{TRUE}, add
+\code{matched\_dist} as pairwise distance between input name
+(\code{Input.Name} fallback \code{Orig.Name}) and \code{matched\_taxon\_name}.
+
+\item[\code{name\_distance\_method}] Method passed to \code{stringdist::stringdist}
+when \code{add\_name\_distance = TRUE} (for example \code{"osa"}).
+
+\item[\code{profile}] Logical. If \code{TRUE}, attach a timing table in the
+\code{"timings"} attribute of the returned tibble, with elapsed seconds per
+pipeline stage.
+
+\item[\code{output\_name\_style}] Naming style for output columns:
+\begin{itemize}
+
+\item{} \code{"snake\_case"} returns standardized lower snake\_case names.
+\item{} \code{"legacy"} keeps the historical mixed naming convention.
+
+\end{itemize}
+
+
+\item[\code{output}] Output layout. \code{"standard"} (the default) returns the parsed,
+matched, and accepted-name fields needed for routine reconciliation.
+\code{"full"} additionally returns internal matching-stage flags, fuzzy
+distances, and parsing diagnostics.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+A tibble with parsed input fields and matched/accepted taxonomic
+context. The standard output contains \code{input\_index}, input and matched
+name components, authorship, matched and accepted IDs/names, status,
+\code{match\_ambiguity}, and \code{matched}. Use \code{output = "full"} for matching
+diagnostics.
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+
+
+library(wcvpmatch)
+# Match a single name
+wcvp_matching(data.frame(Genus = "Opuntia", Species = "yanganucensis"))
+
+# Match multiple names with snake_case output
+names <- c("Aniba heterotepala", "Anthurium quipuscoae")
+df <- classify_spnames(names)
+wcvp_matching(df, output_name_style = "snake_case")
+
+# Attach per-stage timings for profiling
+out <- wcvp_matching(df, output_name_style = "snake_case", profile = TRUE)
+attr(out, "timings")
+
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{wcvp\_setup\_info}{Check Default Backbone Setup}{wcvp.Rul.setup.Rul.info}
+%
+\begin{Description}
+\strong{[Stable]}
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+wcvp_setup_info(inform = TRUE)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{inform}] Logical. If \code{TRUE} (default), print a short setup message.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Details}
+Reports whether the optional companion package \code{wcvpdata} is available for
+use as the default WCVP backbone and, if not, explains how to install it
+from \code{r-universe}.
+\end{Details}
+%
+\begin{Value}
+Invisibly returns a named list with setup status fields:
+\code{default\_backbone\_available}, \code{wcvpdata\_installed},
+\code{wcvpdata\_has\_backbone}, \code{wcvpdata\_version}, \code{repository}, and
+\code{install\_command}.
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+library(wcvpmatch)
+wcvp_setup_info()
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{wcvp\_suffix\_match\_species\_within\_genus}{Suffix Match Species within Genus}{wcvp.Rul.suffix.Rul.match.Rul.species.Rul.within.Rul.genus}
+\keyword{internal}{wcvp\_suffix\_match\_species\_within\_genus}
+%
+\begin{Description}
+\strong{[Stable]}
+
+Tries to match the specific epithet by exchanging common suffixes within an already matched genus in 'WCVP'.
+The following suffixes are captured: \code{c("a", "i", "is", "um", "us", "ae")}.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+wcvp_suffix_match_species_within_genus(df, target_df = NULL)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{df}] \code{tibble} containing the species binomial split into the columns \code{Orig.Genus} and \code{Orig.Species}.
+
+\item[\code{target\_df}] Optional custom target table. If \code{NULL}, the optional \code{wcvpdata} checklist is used when available; otherwise pass a backbone explicitly.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+Returns a \code{tibble} with the additional logical column \code{suffix\_match\_species\_within\_genus}, indicating whether the specific epithet was successfully matched within the matched genus (\code{TRUE}) or not (\code{FALSE}).
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+
+df <- data.frame(Orig.Genus = "Opuntia", Orig.Species = "yanganucensa", Matched.Genus = "Opuntia")
+target <- data.frame(genus = "Opuntia", species = "yanganucensis", plant_name_id = 1)
+wcvpmatch:::wcvp_suffix_match_species_within_genus(df, target_df = target)
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{wcvp\_synonyms}{Retrieve Synonyms Resolved Through the WCVP Backbone}{wcvp.Rul.synonyms}
+%
+\begin{Description}
+\strong{[Stable]}
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+wcvp_synonyms(
+  taxon,
+  target_df = NULL,
+  prefilter_genus = TRUE,
+  max_dist = 2,
+  method = "osa",
+  include_accepted = FALSE,
+  output = c("compact", "full")
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{taxon}] Character vector of species names to resolve.
+
+\item[\code{target\_df}] Optional WCVP-like names table. If \code{NULL}, the optional
+\code{wcvpdata} checklist is used.
+
+\item[\code{prefilter\_genus}] Logical. Passed to \code{\LinkA{wcvp\_matching()}{wcvp.Rul.matching}}.
+
+\item[\code{max\_dist}] Maximum string distance used while resolving \code{taxon}.
+
+\item[\code{method}] String distance method passed to \code{\LinkA{wcvp\_matching()}{wcvp.Rul.matching}}.
+
+\item[\code{include\_accepted}] Logical. Include the accepted name as a row with
+\code{name\_role = "accepted"} before its synonyms? Defaults to \code{FALSE}.
+
+\item[\code{output}] Output layout. \code{"compact"} (the default) returns the accepted
+name and its synonym fields. \code{"full"} additionally returns matching
+diagnostics, WCVP identifiers, basionym ID, and retrieval status.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Details}
+Resolves submitted species names with \code{\LinkA{wcvp\_matching()}{wcvp.Rul.matching}} and retrieves every
+WCVP record with \code{taxon\_status = "Synonym"} that points to the resolved
+accepted name. This means that an accepted name, a synonym, or a minor
+spelling variant can all be used as the query.
+
+Exact submitted names use a direct lookup before invoking the fuzzy matching
+pipeline. The accepted-name lookup and normalized default backbone are
+cached for the current R session and shared with the other package functions.
+\end{Details}
+%
+\begin{Value}
+A tibble with one row per input name and retrieved synonym. The
+default compact result contains \code{submitted\_name}, \code{accepted\_taxon\_name},
+\code{accepted\_taxon\_authors}, \code{name\_role}, \code{synonym\_name},
+\code{synonym\_authors}, and \code{homotypic\_synonym}. Inputs without a match or
+without recorded synonyms are retained with missing synonym fields.
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+
+
+wcvp_synonyms("Nopalea cochenillifera")
+
+
+\end{ExampleCode}
+\end{Examples}
+\printindex{}
+\end{document}
