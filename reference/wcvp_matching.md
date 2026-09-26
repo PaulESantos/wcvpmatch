@@ -172,16 +172,16 @@ attr(out, "timings")
 #>  2 deduplicate_input                              0           2
 #>  3 check_df_consistency                           0.00400     2
 #>  4 get_db                                         0          NA
-#>  5 prefilter_target_by_genus                      0.0210      2
-#>  6 wcvp_direct_match                              0.00900     2
+#>  5 prefilter_target_by_genus                      0.0220      2
+#>  6 wcvp_direct_match                              0.01000     2
 #>  7 wcvp_genus_match                               0.00700     0
 #>  8 wcvp_fuzzy_match_genus                         0.00700     0
-#>  9 wcvp_direct_match_species_within_genus         0.0780      0
+#>  9 wcvp_direct_match_species_within_genus         0.0870      0
 #> 10 wcvp_suffix_match_species_within_genus         0.00700     0
-#> 11 wcvp_fuzzy_match_species_within_genus          0.00600     0
-#> 12 prepare_taxonomic_context_data                 0.0280      2
+#> 11 wcvp_fuzzy_match_species_within_genus          0.00700     0
+#> 12 prepare_taxonomic_context_data                 0.0500      2
 #> 13 add_taxonomic_context                          0.01000     2
 #> 14 standardize_output_names                       0           2
-#> 15 total                                          0.235       2
+#> 15 total                                          0.271       2
 # }
 ```
