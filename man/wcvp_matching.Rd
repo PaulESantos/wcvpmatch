@@ -75,8 +75,9 @@ distances, and parsing diagnostics.}
 \value{
 A tibble with parsed input fields and matched/accepted taxonomic
 context. The standard output contains \code{input_index}, input and matched
-name components, authorship, matched and accepted IDs/names, status, and
-\code{matched}. Use \code{output = "full"} for matching diagnostics.
+name components, authorship, matched and accepted IDs/names, status,
+\code{match_ambiguity}, and \code{matched}. Use \code{output = "full"} for matching
+diagnostics.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#stable}{\figure{lifecycle-stable.svg}{options: alt='[Stable]'}}}{\strong{[Stable]}}

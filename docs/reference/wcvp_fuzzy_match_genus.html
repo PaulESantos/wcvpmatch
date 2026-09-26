@@ -9,7 +9,7 @@ Tries to fuzzy match the genus name to the 'WCVP' table (using the optional wcvp
 
     <a class="navbar-brand me-2" href="../index.html">wcvpmatch</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -86,15 +86,15 @@ Further, the additional column <code>fuzzy_genus_dist</code> returns the distanc
 <span class="r-in"><span><span class="fu">wcvpmatch</span><span class="fu">:::</span><span class="fu">wcvp_fuzzy_match_genus</span><span class="op">(</span><span class="va">df</span>, target_df <span class="op">=</span> <span class="va">target</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Input was converted from <span style="color: #0000BB;">&lt;data.frame&gt;</span> to a <span style="color: #0000BB;">&lt;tibble&gt;</span>.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   See <span style="color: #0000BB; font-style: italic;">&lt;https://tibble.tidyverse.org/&gt;</span> for more details.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 21</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 22</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Orig.Genus Orig.Species  fuzzy_match_genus Input.Name         Orig.Name Author</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>              <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> Opuntiaa   yanganucensis TRUE              Opuntiaa yanganuc… <span style="color: #BB0000;">NA</span>        <span style="color: #949494;">""</span>    </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 15 more variables: Orig.Infraspecies &lt;chr&gt;, Infra.Rank &lt;chr&gt;, Rank &lt;dbl&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 16 more variables: Orig.Infraspecies &lt;chr&gt;, Infra.Rank &lt;chr&gt;, Rank &lt;dbl&gt;,</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   has_cf &lt;lgl&gt;, has_aff &lt;lgl&gt;, is_sp &lt;lgl&gt;, is_spp &lt;lgl&gt;, had_hybrid &lt;lgl&gt;,</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   rank_late &lt;lgl&gt;, rank_missing_infra &lt;lgl&gt;, had_na_author &lt;lgl&gt;,</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   implied_infra &lt;lgl&gt;, sorter &lt;dbl&gt;, fuzzy_genus_dist &lt;dbl&gt;,</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   Matched.Genus &lt;chr&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   Matched.Genus &lt;chr&gt;, match_ambiguity &lt;chr&gt;</span></span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

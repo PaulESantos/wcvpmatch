@@ -97,22 +97,54 @@ wcvp_fuzzy_match_genus <- function(df, target_df = NULL, max_dist = 1, method = 
     dplyr::count(.row_id, name = "n") %>%
     dplyr::filter(n > 1)
 
+  # Resolve a fuzzy genus tie when exactly one candidate contains the input
+  # species. This retains the candidate set for auditing while avoiding an
+  # arbitrary genus choice that would discard an exact species match.
+  supported_candidates <- matched_temp %>%
+    dplyr::inner_join(
+      target_df %>%
+        dplyr::filter(!is.na(genus), !is.na(species)) %>%
+        dplyr::distinct(genus, species),
+      by = c("Matched.Genus" = "genus", "Orig.Species" = "species")
+    ) %>%
+    dplyr::distinct(.row_id, Matched.Genus) %>%
+    dplyr::mutate(.species_supported = TRUE)
+
+  matched_temp <- matched_temp %>%
+    dplyr::left_join(supported_candidates, by = c(".row_id", "Matched.Genus")) %>%
+    dplyr::mutate(.species_supported = dplyr::coalesce(.data$.species_supported, FALSE)) %>%
+    dplyr::group_by(.row_id) %>%
+    dplyr::mutate(
+      .candidate_count = dplyr::n(),
+      .species_supported_count = sum(.data$.species_supported),
+      match_ambiguity = dplyr::case_when(
+        .candidate_count <= 1 ~ NA_character_,
+        .species_supported_count == 1 ~ "genus_tie_resolved_by_species",
+        TRUE ~ "genus_tie_unresolved"
+      )
+    ) %>%
+    dplyr::ungroup()
+
 ## If there are multiple matches for the same genus: raise warning and keep ambiguous candidates in an attribute
   if(nrow(ambiguous_keys) > 0){
     cli::cli_warn(c(
       "!" = "Multiple fuzzy matches for some genera (tied distances).",
-      "i" = "The first match is selected."
+      "i" = "A uniquely species-supported candidate is selected; otherwise the alphabetically first genus is selected."
     ))
     ambiguous_genus <- matched_temp %>%
       dplyr::semi_join(ambiguous_keys, by = ".row_id") %>%
       dplyr::arrange(.row_id, fuzzy_genus_dist, Matched.Genus)
   }
 
- ## continue selecting first genus if more than one match
+ ## Prefer the uniquely species-supported genus; keep unresolved ties deterministic.
   matched <- matched_temp %>%
+    dplyr::arrange(.row_id, dplyr::desc(.data$.species_supported), Matched.Genus) %>%
     dplyr::group_by(.row_id) %>%
     dplyr::slice_head(n = 1) %>%
-    dplyr::ungroup()
+    dplyr::ungroup() %>%
+    dplyr::select(-dplyr::any_of(c(
+      ".species_supported", ".candidate_count", ".species_supported_count"
+    )))
 
   unmatched <- df_work %>%
     dplyr::anti_join(
@@ -124,7 +156,9 @@ wcvp_fuzzy_match_genus <- function(df, target_df = NULL, max_dist = 1, method = 
 
   res <-  dplyr::bind_rows(matched, unmatched, .id = 'fuzzy_match_genus') %>%
     dplyr::mutate(fuzzy_match_genus = (fuzzy_match_genus == 1)) %>% ## convert to Boolean
-    dplyr::select(-dplyr::any_of(".row_id")) %>%
+    dplyr::select(-dplyr::any_of(c(
+      ".row_id", ".species_supported", ".candidate_count", ".species_supported_count"
+    ))) %>%
     dplyr::arrange(Orig.Genus, Orig.Species) %>%
     dplyr::relocate(c('Orig.Genus', 'Orig.Species')) ## Genus & Species column at the beginning of tibble
 

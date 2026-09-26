@@ -484,6 +484,21 @@ test_that("matched TRUE is always coherent with matched_taxon_name", {
   expect_true(all(!out$matched | !is.na(out$matched_taxon_name)))
 })
 
+test_that("default WCVP backbone retains taxonomic context for Styrax records", {
+  skip_if_no_default_backbone()
+
+  out <- wcvp_matching(
+    classify_spnames(c("Styrax nunezii", "Styrax omuk", "Styrax vilcabambae")),
+    output_name_style = "snake_case"
+  )
+
+  expect_true(all(out$matched))
+  expect_equal(out$matched_taxon_name, out$input_name)
+  expect_true(all(out$taxon_status == "accepted"))
+  expect_equal(out$accepted_taxon_name, out$input_name)
+  expect_false(anyNA(out$matched_plant_name_id))
+})
+
 test_that("matching can attach per-stage timings for profiling", {
   target_df <- tibble::tibble(
     genus = c("Aniba", "Jaltomata"),

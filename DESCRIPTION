@@ -1,9 +1,11 @@
 Package: wcvpmatch
 Title: Taxonomic Name Reconciliation Against the 'WCVP' Backbone
-Version: 0.0.2
+Version: 0.0.3
 Authors@R: c(
         person("Paul Efren", "Santos Andrade",
         email = "paulefrens@gmail.com", role = c("aut", "cre", "cph")))
+Author: Paul Efren Santos Andrade [aut, cre, cph]
+Maintainer: Paul Efren Santos Andrade <paulefrens@gmail.com>
 Description: Standardizes and reconciles scientific plant names against
     a World Checklist of Vascular Plants ('WCVP')-style taxonomic
     backbone. The package parses names into taxonomic components and

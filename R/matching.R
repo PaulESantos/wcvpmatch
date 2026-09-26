@@ -51,8 +51,9 @@
 #'
 #' @return A tibble with parsed input fields and matched/accepted taxonomic
 #'   context. The standard output contains `input_index`, input and matched
-#'   name components, authorship, matched and accepted IDs/names, status, and
-#'   `matched`. Use `output = "full"` for matching diagnostics.
+#'   name components, authorship, matched and accepted IDs/names, status,
+#'   `match_ambiguity`, and `matched`. Use `output = "full"` for matching
+#'   diagnostics.
 #' @examplesIf rlang::is_installed("wcvpdata")
 #' \donttest{
 #' library(wcvpmatch)
@@ -181,22 +182,26 @@ wcvp_matching <- function(df,
         )
       )
 
-    best_match_list <- lapply(seq_len(nrow(x_work)), function(i) {
-      idx <- key_index[[x_work$.taxon_key[i]]]
+    # Resolve metadata from the taxon key before joining it back to the result.
+    # An explicit row-wise table preserves the key lookup for one-row candidate
+    # groups in Arrow-materialized WCVP data (where list simplification can
+    # otherwise discard the candidate metadata).
+    best_match <- tibble::tibble(
+      .row_id = x_work$.row_id,
+      plant_name_id = rep(NA_real_, nrow(x_work)),
+      taxon_name = rep(NA_character_, nrow(x_work)),
+      taxon_authors = rep(NA_character_, nrow(x_work)),
+      taxon_status = rep(NA_character_, nrow(x_work)),
+      accepted_plant_name_id = rep(NA_real_, nrow(x_work))
+    )
 
-      if (is.null(idx) || length(idx) == 0) {
-        return(list(
-          plant_name_id = NA_real_,
-          taxon_name = NA_character_,
-          taxon_authors = NA_character_,
-          taxon_status = NA_character_,
-          accepted_plant_name_id = NA_real_
-        ))
-      }
+    for (i in seq_len(nrow(x_work))) {
+      idx <- key_index[[x_work$.taxon_key[i]]]
+      if (is.null(idx) || length(idx) == 0) next
 
       candidates <- db_meta[idx, , drop = FALSE]
       name_exact <- !is.na(candidates$taxon_name) &
-        (x_work$.input_name_clean[i] == candidates$.taxon_name_clean)
+        x_work$.input_name_clean[i] == candidates$.taxon_name_clean
       status_rank <- ifelse(
         tolower(candidates$taxon_status) == "accepted",
         2L,
@@ -205,25 +210,12 @@ wcvp_matching <- function(df,
       ord <- order(-as.integer(name_exact), -status_rank, candidates$plant_name_id)
       best <- candidates[ord[1], , drop = FALSE]
 
-      list(
-        plant_name_id = best$plant_name_id[[1]],
-        taxon_name = best$taxon_name[[1]],
-        taxon_authors = best$taxon_authors[[1]],
-        taxon_status = best$taxon_status[[1]],
-        accepted_plant_name_id = best$accepted_plant_name_id[[1]]
-      )
-    })
-
-    best_match <- tibble::tibble(
-      .row_id = x_work$.row_id,
-      plant_name_id = vapply(best_match_list, function(x) x$plant_name_id, numeric(1)),
-      taxon_name = vapply(best_match_list, function(x) x$taxon_name, character(1)),
-      taxon_authors = vapply(best_match_list, function(x) x$taxon_authors, character(1)),
-      taxon_status = vapply(best_match_list, function(x) x$taxon_status, character(1)),
-      accepted_plant_name_id = vapply(best_match_list, function(x) x$accepted_plant_name_id, numeric(1))
-    )
-    best_match$plant_name_id[is.nan(best_match$plant_name_id)] <- NA_real_
-    best_match$accepted_plant_name_id[is.nan(best_match$accepted_plant_name_id)] <- NA_real_
+      best_match$plant_name_id[i] <- as.numeric(best$plant_name_id[[1]])
+      best_match$taxon_name[i] <- as.character(best$taxon_name[[1]])
+      best_match$taxon_authors[i] <- as.character(best$taxon_authors[[1]])
+      best_match$taxon_status[i] <- as.character(best$taxon_status[[1]])
+      best_match$accepted_plant_name_id[i] <- as.numeric(best$accepted_plant_name_id[[1]])
+    }
 
     out <- x_work %>%
       dplyr::left_join(best_match, by = ".row_id") %>%
@@ -602,7 +594,7 @@ wcvp_matching <- function(df,
     "Author",
     "matched_plant_name_id", "matched_taxon_name", "matched_taxon_authors", "taxon_status",
     "accepted_plant_name_id", "accepted_taxon_name", "accepted_taxon_authors", "is_accepted_name",
-    "matched_dist",
+    "matched_dist", "match_ambiguity",
     "matched",
     "direct_match", "genus_match", "fuzzy_match_genus",
     "direct_match_species_within_genus", "suffix_match_species_within_genus", "fuzzy_match_species_within_genus",
@@ -637,7 +629,7 @@ wcvp_matching <- function(df,
         "matched_infra_rank", "matched_infraspecies", "author",
         "matched_plant_name_id", "matched_taxon_name", "matched_taxon_authors",
         "taxon_status", "accepted_plant_name_id", "accepted_taxon_name",
-        "accepted_taxon_authors", "is_accepted_name", "matched"
+        "accepted_taxon_authors", "is_accepted_name", "match_ambiguity", "matched"
       )
     } else {
       c(
@@ -646,7 +638,7 @@ wcvp_matching <- function(df,
         "Matched.Infra.Rank", "Matched.Infraspecies", "Author",
         "matched_plant_name_id", "matched_taxon_name", "matched_taxon_authors",
         "taxon_status", "accepted_plant_name_id", "accepted_taxon_name",
-        "accepted_taxon_authors", "is_accepted_name", "matched"
+        "accepted_taxon_authors", "is_accepted_name", "match_ambiguity", "matched"
       )
     }
     if (isTRUE(add_name_distance) || "matched_dist" %in% names(res)) {

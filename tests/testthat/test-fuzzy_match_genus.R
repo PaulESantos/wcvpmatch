@@ -39,3 +39,26 @@ test_that("fuzzy genus tie stores ambiguous candidates in attribute", {
   expect_true(all(amb$Orig.Genus == "Aac"))
   expect_true(all(amb$fuzzy_genus_dist == min(amb$fuzzy_genus_dist)))
 })
+
+test_that("a unique species candidate resolves a fuzzy genus tie", {
+  target_df <- tibble::tibble(
+    genus = c("Howea", "Hoteia"),
+    species = c("forsteriana", "other"),
+    infraspecific_rank = NA_character_,
+    infraspecies = NA_character_
+  )
+
+  expect_warning(
+    out <- wcvp_matching(
+      classify_spnames("Howeia forsteriana"),
+      target_df = target_df,
+      max_dist = 1,
+      output_name_style = "snake_case"
+    ),
+    "Multiple fuzzy matches"
+  )
+
+  expect_equal(out$matched_genus, "Howea")
+  expect_true(out$matched)
+  expect_equal(out$match_ambiguity, "genus_tie_resolved_by_species")
+})

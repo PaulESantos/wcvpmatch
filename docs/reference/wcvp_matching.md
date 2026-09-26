@@ -122,8 +122,9 @@ wcvp_matching(
 
 A tibble with parsed input fields and matched/accepted taxonomic
 context. The standard output contains `input_index`, input and matched
-name components, authorship, matched and accepted IDs/names, status, and
-`matched`. Use `output = "full"` for matching diagnostics.
+name components, authorship, matched and accepted IDs/names, status,
+`match_ambiguity`, and `matched`. Use `output = "full"` for matching
+diagnostics.
 
 ## Examples
 
@@ -171,16 +172,16 @@ attr(out, "timings")
 #>  2 deduplicate_input                               0          2
 #>  3 check_df_consistency                            0          2
 #>  4 get_db                                          0         NA
-#>  5 prefilter_target_by_genus                       0.0200     2
-#>  6 wcvp_direct_match                               0.0100     2
+#>  5 prefilter_target_by_genus                       0.0300     2
+#>  6 wcvp_direct_match                               0          2
 #>  7 wcvp_genus_match                                0          0
 #>  8 wcvp_fuzzy_match_genus                          0          0
-#>  9 wcvp_direct_match_species_within_genus          0.0800     0
+#>  9 wcvp_direct_match_species_within_genus          0          0
 #> 10 wcvp_suffix_match_species_within_genus          0          0
 #> 11 wcvp_fuzzy_match_species_within_genus           0          0
-#> 12 prepare_taxonomic_context_data                  0.0300     2
+#> 12 prepare_taxonomic_context_data                  0.0600     2
 #> 13 add_taxonomic_context                           0.0200     2
 #> 14 standardize_output_names                        0          2
-#> 15 total                                           0.210      2
+#> 15 total                                           0.270      2
 # }
 ```
