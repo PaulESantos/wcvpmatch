@@ -48,14 +48,14 @@ target <- data.frame(genus = "Opuntia", species = "yanganucensis", plant_name_id
 wcvpmatch:::wcvp_fuzzy_match_genus(df, target_df = target)
 #> ℹ Input was converted from <data.frame> to a <tibble>.
 #>   See <https://tibble.tidyverse.org/> for more details.
-#> # A tibble: 1 × 21
+#> # A tibble: 1 × 22
 #>   Orig.Genus Orig.Species  fuzzy_match_genus Input.Name         Orig.Name Author
 #>   <chr>      <chr>         <lgl>             <chr>              <chr>     <chr> 
 #> 1 Opuntiaa   yanganucensis TRUE              Opuntiaa yanganuc… NA        ""    
-#> # ℹ 15 more variables: Orig.Infraspecies <chr>, Infra.Rank <chr>, Rank <dbl>,
+#> # ℹ 16 more variables: Orig.Infraspecies <chr>, Infra.Rank <chr>, Rank <dbl>,
 #> #   has_cf <lgl>, has_aff <lgl>, is_sp <lgl>, is_spp <lgl>, had_hybrid <lgl>,
 #> #   rank_late <lgl>, rank_missing_infra <lgl>, had_na_author <lgl>,
 #> #   implied_infra <lgl>, sorter <dbl>, fuzzy_genus_dist <dbl>,
-#> #   Matched.Genus <chr>
+#> #   Matched.Genus <chr>, match_ambiguity <chr>
 # }
 ```

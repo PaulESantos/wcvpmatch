@@ -32,7 +32,7 @@ install it from `r-universe`.
 ``` r
 library(wcvpmatch)
 wcvp_setup_info()
-#> ── Default WCVP Backbone ──────────────────────────────────── wcvpmatch 0.0.2 ──
+#> ── Default WCVP Backbone ──────────────────────────────────── wcvpmatch 0.0.3 ──
 #> ✔ wcvpdata   0.7.0        
 #> ✔ backbone   available
 #> i repository https://paulesantos.r-universe.dev

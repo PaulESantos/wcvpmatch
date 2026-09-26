@@ -19,7 +19,7 @@ do not normalize or deduplicate the same table repeatedly."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">wcvpmatch</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -158,8 +158,9 @@ distances, and parsing diagnostics.</p></dd>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A tibble with parsed input fields and matched/accepted taxonomic
 context. The standard output contains <code>input_index</code>, input and matched
-name components, authorship, matched and accepted IDs/names, status, and
-<code>matched</code>. Use <code>output = "full"</code> for matching diagnostics.</p>
+name components, authorship, matched and accepted IDs/names, status,
+<code>match_ambiguity</code>, and <code>matched</code>. Use <code>output = "full"</code> for matching
+diagnostics.</p>
     </div>
 
     <div class="section level2">
@@ -203,19 +204,19 @@ name components, authorship, matched and accepted IDs/names, status, and
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 15 × 3</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    stage                                  elapsed_seconds  rows</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                                            <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span> check_df_format                                0.006<span style="text-decoration: underline;">00</span>     2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span> check_df_format                                0.007<span style="text-decoration: underline;">00</span>     2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 2</span> deduplicate_input                              0           2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 3</span> check_df_consistency                           0.003<span style="text-decoration: underline;">00</span>     2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 3</span> check_df_consistency                           0.004<span style="text-decoration: underline;">00</span>     2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 4</span> get_db                                         0          <span style="color: #BB0000;">NA</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 5</span> prefilter_target_by_genus                      0.020<span style="text-decoration: underline;">0</span>      2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 5</span> prefilter_target_by_genus                      0.021<span style="text-decoration: underline;">0</span>      2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 6</span> wcvp_direct_match                              0.009<span style="text-decoration: underline;">00</span>     2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 7</span> wcvp_genus_match                               0.007<span style="text-decoration: underline;">00</span>     0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 8</span> wcvp_fuzzy_match_genus                         0.007<span style="text-decoration: underline;">00</span>     0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span> wcvp_direct_match_species_within_genus         0.080<span style="text-decoration: underline;">0</span>      0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span> wcvp_direct_match_species_within_genus         0.078<span style="text-decoration: underline;">0</span>      0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span> wcvp_suffix_match_species_within_genus         0.007<span style="text-decoration: underline;">00</span>     0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">11</span> wcvp_fuzzy_match_species_within_genus          0.007<span style="text-decoration: underline;">00</span>     0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">12</span> prepare_taxonomic_context_data                 0.029<span style="text-decoration: underline;">0</span>      2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">13</span> add_taxonomic_context                          0.010<span style="text-decoration: underline;">0</span>      2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">11</span> wcvp_fuzzy_match_species_within_genus          0.006<span style="text-decoration: underline;">00</span>     0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">12</span> prepare_taxonomic_context_data                 0.028<span style="text-decoration: underline;">0</span>      2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">13</span> add_taxonomic_context                          0.010<span style="text-decoration: underline;">00</span>     2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">14</span> standardize_output_names                       0           2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">15</span> total                                          0.235       2</span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
