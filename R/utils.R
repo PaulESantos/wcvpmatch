@@ -101,33 +101,20 @@ check_df_format <- function(df) {
   df$Rank <- dplyr::coalesce(rank_numeric, inferred_rank)
 
   # Build Input.Name when not provided, preserving existing non-empty values.
-  build_input_name <- function(genus, species, infra_rank, infraspecies) {
-    parts <- c(genus, species, infra_rank, infraspecies)
-    parts <- parts[!is.na(parts) & nzchar(parts)]
-    if (length(parts) == 0) return(NA_character_)
-    paste(parts, collapse = " ")
+  input_name <- as.character(df$Input.Name)
+  missing_name <- is.na(input_name) | !nzchar(stringr::str_trim(input_name))
+  if (any(missing_name)) {
+    parts <- lapply(df[c("Orig.Genus", "Orig.Species", "Infra.Rank", "Orig.Infraspecies")],
+      function(x) { x <- x[missing_name]; x[is.na(x)] <- ""; x })
+    generated <- parts[[1L]]
+    for (part in parts[-1L]) {
+      generated <- ifelse(!nzchar(part), generated,
+        ifelse(!nzchar(generated), part, paste(generated, part)))
+    }
+    generated[!nzchar(generated)] <- NA_character_
+    input_name[missing_name] <- generated
   }
-  generated_input_name <- vapply(
-    seq_len(nrow(df)),
-    function(i) {
-      build_input_name(
-        df$Orig.Genus[i],
-        df$Orig.Species[i],
-        df$Infra.Rank[i],
-        df$Orig.Infraspecies[i]
-      )
-    },
-    FUN.VALUE = character(1)
-  )
-  df <- dplyr::mutate(
-    df,
-    Input.Name = as.character(Input.Name),
-    Input.Name = dplyr::if_else(
-      !is.na(Input.Name) & nzchar(stringr::str_trim(Input.Name)),
-      stringr::str_trim(Input.Name),
-      generated_input_name
-    )
-  )
+  df$Input.Name <- stringr::str_trim(input_name)
 
   # Flags (if absent, add FALSE)
   flag_cols <- c(
@@ -288,7 +275,9 @@ is_normalized_target_df <- function(x) {
 }
 
 .is_species_record <- function(target_df) {
-  if (".wcvpmatch_species_record" %in% names(target_df)) {
+  index_cache <- attr(target_df, "wcvpmatch_indexes", exact = TRUE)
+  if (".wcvpmatch_species_record" %in% names(target_df) &&
+      (is.null(index_cache) || .target_cache_valid(target_df, index_cache))) {
     return(as.logical(target_df$.wcvpmatch_species_record))
   }
   no_infra <- is.na(target_df$infraspecific_rank) & is.na(target_df$infraspecies)
@@ -302,45 +291,39 @@ is_normalized_target_df <- function(x) {
 .species_candidate_keys <- function(target_df,
                                     match_scopes = c("species", "infra_parent")) {
   match_scopes <- sort(unique(match_scopes))
-  is_full_default <- identical(
-    attr(target_df, "wcvpmatch_source", exact = TRUE), "default"
-  ) && is.null(attr(target_df, "candidate_genera", exact = TRUE))
-  cache_key <- paste0(
-    "default_species_candidate_keys_",
-    paste(match_scopes, collapse = "_")
-  )
-  if (is_full_default) {
-    cached <- .wcvpmatch_cache[[cache_key]]
-    if (!is.null(cached)) return(cached)
-  }
-
-  base <- target_df %>%
-    dplyr::select(genus, species) %>%
-    dplyr::filter(!is.na(genus), !is.na(species))
-  parts <- list()
-  if ("species" %in% match_scopes) {
-    parts[["species"]] <- target_df[.is_species_record(target_df), , drop = FALSE] %>%
+  .target_cached(target_df, paste0("species_", paste(match_scopes, collapse = "_")), {
+    base <- target_df %>%
       dplyr::select(genus, species) %>%
-      dplyr::filter(!is.na(genus), !is.na(species)) %>%
-      dplyr::mutate(.match_scope = "species")
-  }
-  if ("infra_parent" %in% match_scopes) {
-    parts[["infra_parent"]] <- base %>%
-      dplyr::mutate(.match_scope = "infra_parent")
-  }
+      dplyr::filter(!is.na(genus), !is.na(species))
+    parts <- list()
+    if ("species" %in% match_scopes) {
+      parts[["species"]] <- target_df[.is_species_record(target_df), , drop = FALSE] %>%
+        dplyr::select(genus, species) %>%
+        dplyr::filter(!is.na(genus), !is.na(species)) %>%
+        dplyr::mutate(.match_scope = "species")
+    }
+    if ("infra_parent" %in% match_scopes) {
+      parts[["infra_parent"]] <- base %>%
+        dplyr::mutate(.match_scope = "infra_parent")
+    }
 
-  out <- dplyr::bind_rows(parts) %>%
-    dplyr::distinct()
-  if (is_full_default) .wcvpmatch_cache[[cache_key]] <- out
-  out
+    out <- dplyr::bind_rows(parts) %>%
+      dplyr::distinct()
+    out
+  })
 }
 
 prepare_target_db <- function(target_df) {
   if (isTRUE(attr(target_df, "wcvpmatch_prepared", exact = TRUE))) {
+    cache <- attr(target_df, "wcvpmatch_indexes", exact = TRUE)
+    if (!is.null(cache) && !.target_cache_valid(target_df, cache)) {
+      target_df$.wcvpmatch_species_record <- NULL
+      target_df$.wcvpmatch_species_record <- .is_species_record(target_df)
+    }
     if (is.null(.target_id(target_df))) {
       attr(target_df, "wcvpmatch_target_id") <- .new_target_id()
     }
-    return(target_df)
+    return(.cache_target(target_df))
   }
 
   source <- attr(target_df, "wcvpmatch_source", exact = TRUE)
@@ -360,7 +343,7 @@ prepare_target_db <- function(target_df) {
   attr(out, "wcvpmatch_prepared") <- TRUE
   attr(out, "wcvpmatch_target_id") <- .new_target_id()
   if (!is.null(source)) attr(out, "wcvpmatch_source") <- source
-  out
+  .cache_target(out)
 }
 
 .make_taxon_key <- function(genus, species, infraspecific_rank, infraspecies) {
@@ -376,7 +359,8 @@ prepare_target_db <- function(target_df) {
 
 prepare_taxonomic_context_data <- function(target_tbl,
                                            matched_df = NULL,
-                                           accepted_source_tbl = target_tbl) {
+                                           accepted_source_tbl = target_tbl,
+                                           accepted_lookup = NULL) {
   meta_needed <- c("plant_name_id", "taxon_name", "taxon_status", "accepted_plant_name_id")
   has_taxon_authors <- "taxon_authors" %in% names(target_tbl)
 
@@ -480,9 +464,13 @@ prepare_taxonomic_context_data <- function(target_tbl,
   # Candidate metadata can come from the genus-prefiltered table, while
   # accepted names may live under a different genus and therefore use the
   # complete source table. This avoids scanning the full backbone twice.
-  accepted_positions <- match(accepted_ids, accepted_source_tbl$plant_name_id)
-  accepted_positions <- accepted_positions[!is.na(accepted_positions)]
-  accepted_lookup <- accepted_source_tbl[accepted_positions, , drop = FALSE] %>%
+  accepted_source <- if (is.null(accepted_lookup)) {
+    accepted_positions <- .accepted_positions(accepted_ids, accepted_source_tbl)
+    accepted_source_tbl[accepted_positions[!is.na(accepted_positions)], , drop = FALSE]
+  } else {
+    accepted_lookup(accepted_ids)
+  }
+  accepted_lookup_tbl <- accepted_source %>%
     dplyr::select(
       plant_name_id,
       accepted_taxon_name = taxon_name,
@@ -504,12 +492,12 @@ prepare_taxonomic_context_data <- function(target_tbl,
   names(key_index) <- key_levels
 
   accepted_name_map <- setNames(
-    accepted_lookup$accepted_taxon_name,
-    as.character(accepted_lookup$plant_name_id)
+    accepted_lookup_tbl$accepted_taxon_name,
+    as.character(accepted_lookup_tbl$plant_name_id)
   )
   accepted_authors_map <- setNames(
-    accepted_lookup$accepted_taxon_authors,
-    as.character(accepted_lookup$plant_name_id)
+    accepted_lookup_tbl$accepted_taxon_authors,
+    as.character(accepted_lookup_tbl$plant_name_id)
   )
 
   list(
@@ -519,6 +507,30 @@ prepare_taxonomic_context_data <- function(target_tbl,
     accepted_name_map = accepted_name_map,
     accepted_authors_map = accepted_authors_map
   )
+}
+
+# Only use this shortcut for data read directly from the installed accessor.
+# A custom table may retain provider attributes after its values were edited.
+.normalize_default_target_df <- function(x) {
+  components <- c("genus", "species", "infraspecific_rank", "infraspecies")
+  supported_schema <- identical(
+    attr(x, "wcvpdata_matching_schema", exact = TRUE), "1"
+  )
+  valid_structure <- inherits(x, "data.frame") &&
+    all(components %in% names(x)) &&
+    all(vapply(x[components], is.character, logical(1)))
+
+  if (!supported_schema || !valid_structure) {
+    return(normalize_target_df(x))
+  }
+
+  # Schema v1 already guarantees clean components and canonical ranks.
+  # Add consumer aliases without scanning or rewriting the component vectors.
+  x <- tibble::as_tibble(x)
+  x$Genus <- x$genus
+  x$Species <- x$species
+  attr(x, "wcvpmatch_normalized") <- TRUE
+  x
 }
 
 default_target_df <- function() {
@@ -538,7 +550,7 @@ default_target_df <- function() {
     )
   )
 
-  normalized <- normalize_target_df(wcvp_data)
+  normalized <- .normalize_default_target_df(wcvp_data)
   attr(normalized, "wcvpmatch_source") <- "default"
   .wcvpmatch_cache[["default_target_df"]] <- normalized
   normalized

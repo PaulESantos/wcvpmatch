@@ -8,7 +8,11 @@ genus in 'WCVP'.
 ## Usage
 
 ``` r
-wcvp_direct_match_species_within_genus(df, target_df = NULL)
+wcvp_direct_match_species_within_genus(
+  df,
+  target_df = NULL,
+  .normalized = FALSE
+)
 ```
 
 ## Arguments
@@ -23,6 +27,10 @@ wcvp_direct_match_species_within_genus(df, target_df = NULL)
   Optional custom target table. If `NULL`, the optional `wcvpdata`
   checklist is used when available; otherwise pass a backbone
   explicitly.
+
+- .normalized:
+
+  Internal flag: input has already passed `check_df_format()`.
 
 ## Value
 

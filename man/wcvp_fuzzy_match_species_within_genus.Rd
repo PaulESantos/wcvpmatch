@@ -8,7 +8,8 @@ wcvp_fuzzy_match_species_within_genus(
   df,
   target_df = NULL,
   max_dist = 1,
-  method = "osa"
+  method = "osa",
+  .normalized = FALSE
 )
 }
 \arguments{
@@ -19,6 +20,8 @@ wcvp_fuzzy_match_species_within_genus(
 \item{max_dist}{Maximum edit distance used for fuzzy species matching within genus.}
 
 \item{method}{String distance method passed to \code{fozziejoin} (for example \code{"osa"}).}
+
+\item{.normalized}{Internal flag: input has already passed \code{check_df_format()}.}
 }
 \value{
 Returns a \code{tibble} with the additional logical column \code{fuzzy_match_species_within_genus}, indicating whether the specific epithet was successfully fuzzy matched within the matched genus (\code{TRUE}) or not (\code{FALSE}).

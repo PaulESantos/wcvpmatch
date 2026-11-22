@@ -5,6 +5,7 @@
 #' Tries to match the specific epithet by exchanging common suffixes within an already matched genus in 'WCVP'.
 #' The following suffixes are captured: `c("a", "i", "is", "um", "us", "ae")`.
 #'
+#' @param .normalized Internal flag: input has already passed `check_df_format()`.
 #' @param df `tibble` containing the species binomial split into the columns `Orig.Genus` and `Orig.Species`.
 #' @param target_df Optional custom target table. If `NULL`, the optional `wcvpdata` checklist is used when available; otherwise pass a backbone explicitly.
 #'
@@ -17,8 +18,8 @@
 #' wcvpmatch:::wcvp_suffix_match_species_within_genus(df, target_df = target)
 #' }
 #' @keywords internal
-wcvp_suffix_match_species_within_genus <- function(df, target_df = NULL){
-  df <- check_df_format(df)
+wcvp_suffix_match_species_within_genus <- function(df, target_df = NULL, .normalized = FALSE){
+  if (!.normalized) df <- check_df_format(df)
   assertthat::assert_that(all(c('Orig.Genus', 'Orig.Species', 'Matched.Genus') %in% colnames(df)))
   target_df <- get_db(target_df = target_df)
 
@@ -44,15 +45,14 @@ wcvp_suffix_match_species_within_genus <- function(df, target_df = NULL){
       Root = stringr::str_match(Orig.Species, catch_suffixes)[, 2]
     )
 
-  database_subset <- .species_candidate_keys(target_df, unique(df_work$.match_scope)) %>%
-    dplyr::semi_join(
-      df_work %>% dplyr::distinct(Matched.Genus),
-      by = c("genus" = "Matched.Genus")
-    ) %>%
-    dplyr::rename(Genus = genus, Species = species) %>%
-    dplyr::mutate(
-      Root = stringr::str_match(Species, catch_suffixes)[, 2]
-    )
+  scopes <- sort(unique(df_work$.match_scope))
+  database_subset <- .target_cached(target_df, paste0("suffix_", paste(scopes, collapse = "_")), {
+    .species_candidate_keys(target_df, scopes) %>%
+      dplyr::rename(Genus = genus, Species = species) %>%
+      dplyr::mutate(Root = stringr::str_match(Species, catch_suffixes)[, 2])
+  }) %>%
+    dplyr::semi_join(df_work %>% dplyr::distinct(Matched.Genus),
+      by = c("Genus" = "Matched.Genus"))
 
   candidate_matches <- df_work %>%
     dplyr::inner_join(

@@ -4,6 +4,7 @@
 #'
 #' Tries to fuzzy match the genus name to the 'WCVP' table (using the optional `wcvpdata` checklist by default when available).
 #'
+#' @param .normalized Internal flag: input has already passed `check_df_format()`.
 #' @param df `tibble` containing the species binomial split into the columns `Orig.Genus` and `Orig.Species`.
 #' @param target_df Optional custom target table. If `NULL`, the optional `wcvpdata` checklist is used when available; otherwise pass a backbone explicitly.
 #' @param max_dist Maximum edit distance used for fuzzy genus matching.
@@ -21,8 +22,8 @@
 #' @keywords internal
 #'
 
-wcvp_fuzzy_match_genus <- function(df, target_df = NULL, max_dist = 1, method = "osa"){
-  df <- check_df_format(df)
+wcvp_fuzzy_match_genus <- function(df, target_df = NULL, max_dist = 1, method = "osa", .normalized = FALSE){
+  if (!.normalized) df <- check_df_format(df)
   assertthat::assert_that(all(c('Orig.Genus', 'Orig.Species') %in% colnames(df)))
   target_df <- get_db(target_df = target_df)
   prefetched_fuzzy <- attr(target_df, "fuzzy_genus_map", exact = TRUE)

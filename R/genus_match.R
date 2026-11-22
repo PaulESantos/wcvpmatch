@@ -5,6 +5,7 @@
 #'
 #' Tries to match the genus name to the 'WCVP' table (using the optional `wcvpdata` checklist by default when available).
 #'
+#' @param .normalized Internal flag: input has already passed `check_df_format()`.
 #' @param df `tibble` containing the species binomial split into the columns `Orig.Genus` and `Orig.Species`.
 #' @param target_df Optional custom target table. If `NULL`, the optional `wcvpdata` checklist is used when available; otherwise pass a backbone explicitly.
 #'
@@ -12,13 +13,11 @@
 #' Returns a `tibble` with the additional logical column `genus_match`, indicating whether the genus was successfully matched (`TRUE`) or not (`FALSE`).
 #'
 #' @keywords internal
-wcvp_genus_match <- function(df, target_df = NULL){
-  df <- check_df_format(df)
+wcvp_genus_match <- function(df, target_df = NULL, .normalized = FALSE){
+  if (!.normalized) df <- check_df_format(df)
   assertthat::assert_that(all(c('Orig.Genus', 'Orig.Species') %in% colnames(df)))
   target_df <- get_db(target_df = target_df)
 
-  target_genera <- target_df %>%
-    dplyr::distinct(genus)
 
   ## handle empty input tibble while preserving expected output schema
   if(nrow(df) == 0){
@@ -29,6 +28,8 @@ wcvp_genus_match <- function(df, target_df = NULL){
       return(df)
     }
   }
+
+  target_genera <- .target_cached(target_df, "genus_table", dplyr::distinct(target_df, genus))
 
   matched <- df %>%
     dplyr::semi_join(target_genera,

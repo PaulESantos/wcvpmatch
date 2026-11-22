@@ -13,7 +13,8 @@ wcvp_fuzzy_match_species_within_genus(
   df,
   target_df = NULL,
   max_dist = 1,
-  method = "osa"
+  method = "osa",
+  .normalized = FALSE
 )
 ```
 
@@ -37,6 +38,10 @@ wcvp_fuzzy_match_species_within_genus(
 - method:
 
   String distance method passed to `fozziejoin` (for example `"osa"`).
+
+- .normalized:
+
+  Internal flag: input has already passed `check_df_format()`.
 
 ## Value
 

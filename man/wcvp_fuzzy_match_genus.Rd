@@ -4,7 +4,13 @@
 \alias{wcvp_fuzzy_match_genus}
 \title{Fuzzy Match Genus Name}
 \usage{
-wcvp_fuzzy_match_genus(df, target_df = NULL, max_dist = 1, method = "osa")
+wcvp_fuzzy_match_genus(
+  df,
+  target_df = NULL,
+  max_dist = 1,
+  method = "osa",
+  .normalized = FALSE
+)
 }
 \arguments{
 \item{df}{\code{tibble} containing the species binomial split into the columns \code{Orig.Genus} and \code{Orig.Species}.}
@@ -14,6 +20,8 @@ wcvp_fuzzy_match_genus(df, target_df = NULL, max_dist = 1, method = "osa")
 \item{max_dist}{Maximum edit distance used for fuzzy genus matching.}
 
 \item{method}{String distance method passed to \code{fozziejoin} (for example \code{"osa"}).}
+
+\item{.normalized}{Internal flag: input has already passed \code{check_df_format()}.}
 }
 \value{
 Returns a \code{tibble} with the additional logical column \code{fuzzy_match_genus}, indicating whether the genus was successfully matched (\code{TRUE}) or not (\code{FALSE}).

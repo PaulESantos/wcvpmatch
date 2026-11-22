@@ -8,7 +8,13 @@ optional `wcvpdata` checklist by default when available).
 ## Usage
 
 ``` r
-wcvp_fuzzy_match_genus(df, target_df = NULL, max_dist = 1, method = "osa")
+wcvp_fuzzy_match_genus(
+  df,
+  target_df = NULL,
+  max_dist = 1,
+  method = "osa",
+  .normalized = FALSE
+)
 ```
 
 ## Arguments
@@ -31,6 +37,10 @@ wcvp_fuzzy_match_genus(df, target_df = NULL, max_dist = 1, method = "osa")
 - method:
 
   String distance method passed to `fozziejoin` (for example `"osa"`).
+
+- .normalized:
+
+  Internal flag: input has already passed `check_df_format()`.
 
 ## Value
 

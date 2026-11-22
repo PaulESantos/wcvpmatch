@@ -53,7 +53,8 @@ Tries to fuzzy match the species epithet within a matched genus against 'WCVP' (
 <span>  <span class="va">df</span>,</span>
 <span>  target_df <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  max_dist <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  method <span class="op">=</span> <span class="st">"osa"</span></span>
+<span>  method <span class="op">=</span> <span class="st">"osa"</span>,</span>
+<span>  .normalized <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -75,6 +76,10 @@ Tries to fuzzy match the species epithet within a matched genus against 'WCVP' (
 
 <dt id="arg-method">method<a class="anchor" aria-label="anchor" href="#arg-method"></a></dt>
 <dd><p>String distance method passed to <code>fozziejoin</code> (for example <code>"osa"</code>).</p></dd>
+
+
+<dt id="arg--normalized">.normalized<a class="anchor" aria-label="anchor" href="#arg--normalized"></a></dt>
+<dd><p>Internal flag: input has already passed <code>check_df_format()</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

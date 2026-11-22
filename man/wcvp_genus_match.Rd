@@ -4,12 +4,14 @@
 \alias{wcvp_genus_match}
 \title{Match Genus name}
 \usage{
-wcvp_genus_match(df, target_df = NULL)
+wcvp_genus_match(df, target_df = NULL, .normalized = FALSE)
 }
 \arguments{
 \item{df}{\code{tibble} containing the species binomial split into the columns \code{Orig.Genus} and \code{Orig.Species}.}
 
 \item{target_df}{Optional custom target table. If \code{NULL}, the optional \code{wcvpdata} checklist is used when available; otherwise pass a backbone explicitly.}
+
+\item{.normalized}{Internal flag: input has already passed \code{check_df_format()}.}
 }
 \value{
 Returns a \code{tibble} with the additional logical column \code{genus_match}, indicating whether the genus was successfully matched (\code{TRUE}) or not (\code{FALSE}).

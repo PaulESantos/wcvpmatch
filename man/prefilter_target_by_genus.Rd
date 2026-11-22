@@ -10,7 +10,8 @@ prefilter_target_by_genus(
   genus_index = NULL,
   include_fuzzy = TRUE,
   max_dist = 1,
-  method = "osa"
+  method = "osa",
+  .normalized = FALSE
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ prefilter_target_by_genus(
 \item{max_dist}{Maximum fuzzy distance for genus matching (used when \code{include_fuzzy = TRUE}).}
 
 \item{method}{String distance method passed to \code{fozziejoin}.}
+
+\item{.normalized}{Internal flag: input has already passed \code{check_df_format()}.}
 }
 \value{
 A prefiltered \code{target_df} tibble compatible with \code{wcvp_matching(target_df = ...)}.

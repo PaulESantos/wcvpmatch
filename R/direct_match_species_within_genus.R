@@ -5,6 +5,7 @@
 #'
 #' Tries to directly match the specific epithet within an already matched genus in 'WCVP'.
 #'
+#' @param .normalized Internal flag: input has already passed `check_df_format()`.
 #' @param df `tibble` containing the species binomial split into the columns `Orig.Genus` and `Orig.Species`.
 #' @param target_df Optional custom target table. If `NULL`, the optional `wcvpdata` checklist is used when available; otherwise pass a backbone explicitly.
 #'
@@ -12,8 +13,8 @@
 #' Returns a `tibble` with the additional logical column `direct_match_species_within_genus`, indicating whether the specific epithet was successfully matched within the matched genus (`TRUE`) or not (`FALSE`).
 #'
 #' @keywords internal
-wcvp_direct_match_species_within_genus <- function(df, target_df = NULL){
-  df <- check_df_format(df)
+wcvp_direct_match_species_within_genus <- function(df, target_df = NULL, .normalized = FALSE){
+  if (!.normalized) df <- check_df_format(df)
 
   assertthat::assert_that(all(c('Orig.Genus', 'Orig.Species', 'Matched.Genus') %in% colnames(df)))
   target_df <- get_db(target_df = target_df)

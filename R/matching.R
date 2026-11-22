@@ -5,18 +5,23 @@
 #' Runs a matching pipeline with exact and partial matching for binomial and
 #' trinomial names, including infraspecific rank validation.
 #'
-#' When the default WCVP backbone is used, its normalized representation and
-#' compact genus lookup are cached for the current R session. Prepared custom
-#' backbones are also recognized inside the pipeline so internal matching nodes
-#' do not normalize or deduplicate the same table repeatedly.
+#' With the default `wcvpdata` backbone and `prefilter_genus = TRUE`, a
+#' matching-schema version 1 Arrow dataset is queried for candidate genera
+#' before records are loaded into R. Accepted-name metadata is retrieved by
+#' identifier, including accepted taxa in other genera. The genus catalog and
+#' most recently selected target are reused within the R session. Older data
+#' schemas and `prefilter_genus = FALSE` use the complete backbone. Prepared
+#' custom backbones are reused, but custom data are not loaded selectively.
 #'
 #' @param df Input tibble/data.frame with either `Genus`/`Species` or
 #'   `Orig.Genus`/`Orig.Species`. For trinomials, include `Infra.Rank` and
 #'   `Infraspecies` (or `Orig.Infra.Rank`/`Orig.Infraspecies`).
 #' @param target_df Optional custom target table. If `NULL`, data are read from
 #'   the optional `wcvpdata` checklist when available; otherwise pass `target_df` explicitly.
-#' @param prefilter_genus Logical. If `TRUE`, prefilter `target_df` to candidate
-#'   genera (exact + fuzzy) before running the matching pipeline.
+#' @param prefilter_genus Logical. If `TRUE` (default), retain exact and fuzzy
+#'   candidate genera. For a version 1 default `wcvpdata` backbone, only these
+#'   genera are loaded from Arrow. If `FALSE`, load the complete default
+#'   backbone. A supplied `target_df` is filtered in memory.
 #' @param allow_duplicates Logical. If `TRUE`, duplicated taxon keys are
 #'   deduplicated internally for matching and then expanded back to original
 #'   rows. Output includes `input_index` for traceability to the original input.
@@ -182,40 +187,34 @@ wcvp_matching <- function(df,
         )
       )
 
-    # Resolve metadata from the taxon key before joining it back to the result.
-    # An explicit row-wise table preserves the key lookup for one-row candidate
-    # groups in Arrow-materialized WCVP data (where list simplification can
-    # otherwise discard the candidate metadata).
-    best_match <- tibble::tibble(
-      .row_id = x_work$.row_id,
-      plant_name_id = rep(NA_real_, nrow(x_work)),
-      taxon_name = rep(NA_character_, nrow(x_work)),
-      taxon_authors = rep(NA_character_, nrow(x_work)),
-      taxon_status = rep(NA_character_, nrow(x_work)),
-      accepted_plant_name_id = rep(NA_real_, nrow(x_work))
-    )
-
-    for (i in seq_len(nrow(x_work))) {
-      idx <- key_index[[x_work$.taxon_key[i]]]
-      if (is.null(idx) || length(idx) == 0) next
-
-      candidates <- db_meta[idx, , drop = FALSE]
-      name_exact <- !is.na(candidates$taxon_name) &
-        x_work$.input_name_clean[i] == candidates$.taxon_name_clean
-      status_rank <- ifelse(
-        tolower(candidates$taxon_status) == "accepted",
-        2L,
-        ifelse(tolower(candidates$taxon_status) == "synonym", 1L, 0L)
-      )
-      ord <- order(-as.integer(name_exact), -status_rank, candidates$plant_name_id)
-      best <- candidates[ord[1], , drop = FALSE]
-
-      best_match$plant_name_id[i] <- as.numeric(best$plant_name_id[[1]])
-      best_match$taxon_name[i] <- as.character(best$taxon_name[[1]])
-      best_match$taxon_authors[i] <- as.character(best$taxon_authors[[1]])
-      best_match$taxon_status[i] <- as.character(best$taxon_status[[1]])
-      best_match$accepted_plant_name_id[i] <- as.numeric(best$accepted_plant_name_id[[1]])
+    # Resolve each (taxon key, submitted name) once. The submitted name is
+    # essential when authorship distinguishes otherwise identical taxon keys.
+    queries <- dplyr::distinct(x_work, .taxon_key, .input_name_clean)
+    groups <- match(queries$.taxon_key, names(key_index))
+    sizes <- lengths(key_index)
+    chosen <- rep(NA_integer_, nrow(queries))
+    single <- which(!is.na(groups) & sizes[groups] == 1L)
+    chosen[single] <- unlist(key_index[groups[single]], use.names = FALSE)
+    status <- tolower(db_meta$taxon_status)
+    status_rank <- ifelse(status == "accepted", 2L, ifelse(status == "synonym", 1L, 0L))
+    ambiguous <- which(!is.na(groups) & sizes[groups] > 1L)
+    for (i in ambiguous) {
+      idx <- key_index[[groups[i]]]
+      exact <- !is.na(db_meta$taxon_name[idx]) &
+        queries$.input_name_clean[i] == db_meta$.taxon_name_clean[idx]
+      ord <- order(-as.integer(exact), -status_rank[idx], db_meta$plant_name_id[idx])
+      chosen[i] <- idx[ord[1L]]
     }
+    resolved <- queries
+    resolved$plant_name_id <- as.numeric(db_meta$plant_name_id[chosen])
+    resolved$taxon_name <- as.character(db_meta$taxon_name[chosen])
+    resolved$taxon_authors <- as.character(db_meta$taxon_authors[chosen])
+    resolved$taxon_status <- as.character(db_meta$taxon_status[chosen])
+    resolved$accepted_plant_name_id <- as.numeric(db_meta$accepted_plant_name_id[chosen])
+    best_match <- x_work %>%
+      dplyr::select(.row_id, .taxon_key, .input_name_clean) %>%
+      dplyr::left_join(resolved, by = c(".taxon_key", ".input_name_clean")) %>%
+      dplyr::select(-.taxon_key, -.input_name_clean)
 
     out <- x_work %>%
       dplyr::left_join(best_match, by = ".row_id") %>%
@@ -321,26 +320,34 @@ wcvp_matching <- function(df,
 
   profile_stage("check_df_consistency", check_df_consistency(df_work), rows = nrow(df_work))
 
-  target_df_full <- profile_stage("get_db", get_db(target_df = target_df))
-  target_df_match <- target_df_full
-  if (isTRUE(prefilter_genus)) {
-    target_df_match <- profile_stage(
-      "prefilter_target_by_genus",
-      prefilter_target_by_genus(
-        df = df_work,
-        target_df = target_df_match,
-        genus_index = build_genus_lookup(target_df_full),
-        include_fuzzy = TRUE,
-        max_dist = max_dist,
-        method = method
-      ),
-      rows = nrow(df_work)
-    )
+  selective_dataset <- if (is.null(target_df) && isTRUE(prefilter_genus))
+    .default_selective_dataset() else NULL
+  if (is.null(selective_dataset)) {
+    target_df_full <- profile_stage("get_db", get_db(target_df = target_df))
+    target_df_match <- target_df_full
+    if (isTRUE(prefilter_genus)) {
+      target_df_match <- profile_stage(
+        "prefilter_target_by_genus",
+        prefilter_target_by_genus(
+          df = df_work, target_df = target_df_match,
+          genus_index = build_genus_lookup(target_df_full),
+          .normalized = TRUE, include_fuzzy = TRUE,
+          max_dist = max_dist, method = method
+        ), rows = nrow(df_work)
+      )
+    }
+  } else {
+    target_df_match <- profile_stage("selective_backbone",
+      .default_selective_target(df_work, selective_dataset, max_dist, method),
+      rows = nrow(df_work))
+    target_df_full <- target_df_match
   }
+
+  target_df_match <- .pipeline_target(target_df_match, is.null(target_df))
 
   node_1 <- profile_stage(
     "wcvp_direct_match",
-    wcvp_direct_match(df_work, target_df = target_df_match),
+    wcvp_direct_match(df_work, target_df = target_df_match, .normalized = TRUE),
     rows = nrow(df_work)
   )
   n1_true <- dplyr::filter(node_1, direct_match)
@@ -348,7 +355,7 @@ wcvp_matching <- function(df,
 
   node_2 <- profile_stage(
     "wcvp_genus_match",
-    wcvp_genus_match(n1_false, target_df = target_df_match),
+    wcvp_genus_match(n1_false, target_df = target_df_match, .normalized = TRUE),
     rows = nrow(n1_false)
   )
   n2_true <- dplyr::filter(node_2, genus_match)
@@ -359,6 +366,7 @@ wcvp_matching <- function(df,
     wcvp_fuzzy_match_genus(
       n2_false,
       target_df = target_df_match,
+      .normalized = TRUE,
       max_dist = max_dist,
       method = method
     ),
@@ -373,7 +381,8 @@ wcvp_matching <- function(df,
     "wcvp_direct_match_species_within_genus",
     wcvp_direct_match_species_within_genus(
       node_4_in,
-      target_df = target_df_match
+      target_df = target_df_match,
+      .normalized = TRUE
     ),
     rows = nrow(node_4_in)
   )
@@ -384,7 +393,8 @@ wcvp_matching <- function(df,
     "wcvp_suffix_match_species_within_genus",
     wcvp_suffix_match_species_within_genus(
       n4_false,
-      target_df = target_df_match
+      target_df = target_df_match,
+      .normalized = TRUE
     ),
     rows = nrow(n4_false)
   )
@@ -397,6 +407,7 @@ wcvp_matching <- function(df,
     wcvp_fuzzy_match_species_within_genus(
       n5a_false,
       target_df = target_df_match,
+      .normalized = TRUE,
       max_dist = max_dist,
       method = method
     ),
@@ -521,7 +532,9 @@ wcvp_matching <- function(df,
     prepare_taxonomic_context_data(
       target_df_match,
       matched_df = res,
-      accepted_source_tbl = target_df_full
+      accepted_source_tbl = target_df_full,
+      accepted_lookup = if (!is.null(selective_dataset))
+        function(ids) .default_accepted_rows(selective_dataset, ids) else NULL
     ),
     rows = nrow(res)
   )

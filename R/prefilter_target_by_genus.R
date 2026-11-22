@@ -100,6 +100,7 @@ build_genus_lookup <- function(target_df = NULL) {
 #'   \item Returned object preserves the standard target schema used by the package.
 #' }
 #'
+#' @param .normalized Internal flag: input has already passed `check_df_format()`.
 #' @param df Input tibble/data.frame with either `Genus`/`Species` or `Orig.Genus`/`Orig.Species`.
 #' @param target_df Optional custom target table. If `NULL`, the optional `wcvpdata` checklist is used when available; otherwise pass a backbone explicitly.
 #' @param genus_index Optional pre-built index from `build_genus_index()`. If `NULL`, it is built on the fly.
@@ -126,8 +127,8 @@ prefilter_target_by_genus <- function(df,
                                       genus_index = NULL,
                                       include_fuzzy = TRUE,
                                       max_dist = 1,
-                                      method = "osa") {
-  df <- check_df_format(df)
+                                      method = "osa", .normalized = FALSE) {
+  if (!.normalized) df <- check_df_format(df)
   target_norm <- get_db(target_df = target_df)
 
   if (is.null(genus_index)) genus_index <- build_genus_lookup(target_df = target_norm)

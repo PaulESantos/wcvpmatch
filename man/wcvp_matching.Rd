@@ -26,8 +26,10 @@ wcvp_matching(
 \item{target_df}{Optional custom target table. If \code{NULL}, data are read from
 the optional \code{wcvpdata} checklist when available; otherwise pass \code{target_df} explicitly.}
 
-\item{prefilter_genus}{Logical. If \code{TRUE}, prefilter \code{target_df} to candidate
-genera (exact + fuzzy) before running the matching pipeline.}
+\item{prefilter_genus}{Logical. If \code{TRUE} (default), retain exact and fuzzy
+candidate genera. For a version 1 default \code{wcvpdata} backbone, only these
+genera are loaded from Arrow. If \code{FALSE}, load the complete default
+backbone. A supplied \code{target_df} is filtered in memory.}
 
 \item{allow_duplicates}{Logical. If \code{TRUE}, duplicated taxon keys are
 deduplicated internally for matching and then expanded back to original
@@ -85,10 +87,13 @@ diagnostics.
 Runs a matching pipeline with exact and partial matching for binomial and
 trinomial names, including infraspecific rank validation.
 
-When the default WCVP backbone is used, its normalized representation and
-compact genus lookup are cached for the current R session. Prepared custom
-backbones are also recognized inside the pipeline so internal matching nodes
-do not normalize or deduplicate the same table repeatedly.
+With the default \code{wcvpdata} backbone and \code{prefilter_genus = TRUE}, a
+matching-schema version 1 Arrow dataset is queried for candidate genera
+before records are loaded into R. Accepted-name metadata is retrieved by
+identifier, including accepted taxa in other genera. The genus catalog and
+most recently selected target are reused within the R session. Older data
+schemas and \code{prefilter_genus = FALSE} use the complete backbone. Prepared
+custom backbones are reused, but custom data are not loaded selectively.
 }
 \examples{
 \dontshow{if (rlang::is_installed("wcvpdata")) withAutoprint(\{ # examplesIf}

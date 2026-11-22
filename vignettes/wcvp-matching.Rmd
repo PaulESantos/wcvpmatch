@@ -33,6 +33,35 @@ context.
 This vignette uses a compact in-memory backbone so every example runs quickly
 and reproducibly.
 
+## Default backbone and selective loading
+
+When `target_df = NULL`, install the optional `wcvpdata` package to use the
+packaged WCVP backbone. With its matching schema version 1 and the default
+`prefilter_genus = TRUE`, `wcvp_matching()` first finds exact and fuzzy genus
+candidates, then loads only their records from the Arrow dataset. It retrieves
+accepted-name details by ID, including names assigned to another genus.
+The genus catalog and the last selected subset are reused in the R session.
+
+For a user-supplied `target_df`, the genus filter acts on the table already in
+memory. Set `prefilter_genus = FALSE` when you need to run against the complete
+default backbone. If the installed `wcvpdata` does not provide matching schema
+version 1, the function uses the complete-backbone path automatically.
+
+```r
+# Requires wcvpdata; omitted from vignette execution.
+input <- classify_spnames(c("Aniba heterotepala", "Jaltometa sagasteguii"))
+out <- wcvp_matching(input, prefilter_genus = TRUE, profile = TRUE)
+attr(out, "timings")
+```
+
+`profile = TRUE` reports elapsed time by stage in the `timings` attribute.
+The selective path reports `selective_backbone`; the complete path reports
+`get_db` and, when requested, `prefilter_target_by_genus`. External timers
+also include work before and after `wcvp_matching()`. To compare the two modes
+in separate R processes, run `Rscript scripts/benchmark-prefilter-genus.R`
+from a development checkout. It checks that the complete outputs, including
+ambiguity attributes, agree.
+
 ## Example backbone
 
 ```{r}
@@ -177,4 +206,7 @@ wcvp_matching(
   `dplyr`.
 - Use `add_name_distance = TRUE` when you want a compact numeric summary of how
   far each submitted name is from the matched name.
+- A warning about tied fuzzy genera identifies candidates recorded in the
+  `ambiguous_genus` attribute. A unique species-supported candidate is selected
+  when available; otherwise the choice is deterministic.
 

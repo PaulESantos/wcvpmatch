@@ -4,12 +4,18 @@
 \alias{wcvp_direct_match_species_within_genus}
 \title{Direct Match Species within Genus}
 \usage{
-wcvp_direct_match_species_within_genus(df, target_df = NULL)
+wcvp_direct_match_species_within_genus(
+  df,
+  target_df = NULL,
+  .normalized = FALSE
+)
 }
 \arguments{
 \item{df}{\code{tibble} containing the species binomial split into the columns \code{Orig.Genus} and \code{Orig.Species}.}
 
 \item{target_df}{Optional custom target table. If \code{NULL}, the optional \code{wcvpdata} checklist is used when available; otherwise pass a backbone explicitly.}
+
+\item{.normalized}{Internal flag: input has already passed \code{check_df_format()}.}
 }
 \value{
 Returns a \code{tibble} with the additional logical column \code{direct_match_species_within_genus}, indicating whether the specific epithet was successfully matched within the matched genus (\code{TRUE}) or not (\code{FALSE}).

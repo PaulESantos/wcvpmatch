@@ -4,6 +4,7 @@
 #'
 #' Tries to fuzzy match the species epithet within a matched genus against 'WCVP' (using the optional `wcvpdata` checklist by default when available).
 #'
+#' @param .normalized Internal flag: input has already passed `check_df_format()`.
 #' @param df `tibble` containing the species binomial split into the columns `Orig.Genus` and `Orig.Species`.
 #' @param target_df Optional custom target table. If `NULL`, the optional `wcvpdata` checklist is used when available; otherwise pass a backbone explicitly.
 #' @param max_dist Maximum edit distance used for fuzzy species matching within genus.
@@ -13,8 +14,8 @@
 #' Returns a `tibble` with the additional logical column `fuzzy_match_species_within_genus`, indicating whether the specific epithet was successfully fuzzy matched within the matched genus (`TRUE`) or not (`FALSE`).
 #'
 #' @keywords internal
-wcvp_fuzzy_match_species_within_genus <- function(df, target_df = NULL, max_dist = 1, method = "osa"){
-  df <- check_df_format(df)
+wcvp_fuzzy_match_species_within_genus <- function(df, target_df = NULL, max_dist = 1, method = "osa", .normalized = FALSE){
+  if (!.normalized) df <- check_df_format(df)
   assertthat::assert_that(all(c('Orig.Genus', 'Orig.Species', 'Matched.Genus') %in% colnames(df)))
   target_df <- get_db(target_df = target_df)
   ambiguous_species <- NULL
@@ -48,34 +49,16 @@ wcvp_fuzzy_match_species_within_genus <- function(df, target_df = NULL, max_dist
     dplyr::semi_join(df_work %>% dplyr::distinct(Matched.Genus), by = c("genus" = "Matched.Genus")) %>%
     dplyr::rename(Genus = genus, Species = species)
 
-  # Generate candidates by exact genus first, then compute pairwise distances.
-  # This changes the comparison space from every input x every candidate genus
-  # to only the species that actually belong to each row's matched genus.
-  matched_temp <- df_work %>%
-    dplyr::inner_join(
-      db_subset,
-      by = c("Matched.Genus" = "Genus", ".match_scope" = ".match_scope"),
-      relationship = "many-to-many"
-    ) %>%
-    dplyr::mutate(
-      .orig_len = nchar(Orig.Species),
-      .cand_len = nchar(Species),
-      fuzzy_species_dist = .pairwise_string_distance(
-        Orig.Species, Species, method = method
-      )
-    ) %>%
-    dplyr::filter(
-      !is.na(fuzzy_species_dist),
-      fuzzy_species_dist <= max_dist,
-      !is.na(Orig.Species),
-      !is.na(Species),
-      !(.orig_len <= 7 & .orig_len != .cand_len)
-    ) %>%
-    dplyr::mutate(Matched.Species = Species) %>%
-    dplyr::select(-dplyr::any_of(c("Species", "Genus", ".orig_len", ".cand_len", ".match_scope"))) %>%
-    dplyr::group_by(.row_id) %>%
-    dplyr::slice_min(order_by = fuzzy_species_dist, n = 1, with_ties = TRUE) %>%
-    dplyr::ungroup()
+  pairs <- .nearest_pairs(
+    df_work$Orig.Species, db_subset$Species,
+    paste(df_work$Matched.Genus, df_work$.match_scope, sep = "\r"),
+    paste(db_subset$Genus, db_subset$.match_scope, sep = "\r"),
+    method, max_dist, short_rule = TRUE
+  )
+  matched_temp <- df_work[pairs$query, , drop = FALSE]
+  matched_temp$fuzzy_species_dist <- pairs$distance
+  matched_temp$Matched.Species <- db_subset$Species[pairs$candidate]
+  matched_temp <- dplyr::select(matched_temp, -dplyr::any_of(".match_scope"))
 
   ambiguous_keys <- matched_temp %>%
     dplyr::count(.row_id, name = "n") %>%

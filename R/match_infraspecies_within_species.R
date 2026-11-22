@@ -20,13 +20,7 @@ direct_match_infra_rank_within_species <- function(df,
     return(df)
   }
 
-  db_subset <- target_df %>%
-    dplyr::select(genus, species, infraspecies, infraspecific_rank) %>%
-    dplyr::rename(db_rank = infraspecific_rank) %>%
-    dplyr::mutate(db_rank = .rank_to_upper(db_rank)) %>%
-    tidyr::drop_na(genus, species, infraspecies) %>%
-    dplyr::mutate(.db_rank_key = dplyr::coalesce(db_rank, "__NA__")) %>%
-    dplyr::distinct()
+  db_subset <- .infra_candidate_keys(target_df)
 
   df_std <- df %>%
     dplyr::mutate(
@@ -83,13 +77,7 @@ fuzzy_match_infraspecies_within_species <- function(df,
     df <- dplyr::mutate(df, fuzzy_infraspecies_dist = NULL)
   }
 
-  db_subset <- target_df %>%
-    dplyr::select(genus, species, infraspecies, infraspecific_rank) %>%
-    dplyr::rename(db_rank = infraspecific_rank) %>%
-    dplyr::mutate(db_rank = .rank_to_upper(db_rank)) %>%
-    tidyr::drop_na(genus, species, infraspecies) %>%
-    dplyr::mutate(.db_rank_key = dplyr::coalesce(db_rank, "__NA__")) %>%
-    dplyr::distinct()
+  db_subset <- .infra_candidate_keys(target_df)
 
   df_std <- df %>%
     dplyr::mutate(
@@ -97,25 +85,16 @@ fuzzy_match_infraspecies_within_species <- function(df,
       .rank_key = dplyr::coalesce(.Infra.Rank.upper, "__NA__")
     )
 
-  matched_temp <- df_std %>%
-    dplyr::inner_join(
-      db_subset,
-      by = c(
-        "Matched.Genus" = "genus",
-        "Matched.Species" = "species",
-        ".rank_key" = ".db_rank_key"
-      ),
-      relationship = "many-to-many"
-    ) %>%
-    dplyr::mutate(
-      fuzzy_infraspecies_dist = .pairwise_string_distance(
-        Orig.Infraspecies, infraspecies, method = method
-      )
-    ) %>%
-    dplyr::filter(
-      !is.na(fuzzy_infraspecies_dist),
-      fuzzy_infraspecies_dist <= max_dist
-    ) %>%
+  pairs <- .nearest_pairs(
+    df_std$Orig.Infraspecies, db_subset$infraspecies,
+    .make_taxon_key(df_std$Matched.Genus, df_std$Matched.Species, df_std$.rank_key, NA_character_),
+    .make_taxon_key(db_subset$genus, db_subset$species, db_subset$.db_rank_key, NA_character_),
+    method, max_dist
+  )
+  matched_temp <- df_std[pairs$query, , drop = FALSE]
+  matched_temp$infraspecies <- db_subset$infraspecies[pairs$candidate]
+  matched_temp$fuzzy_infraspecies_dist <- pairs$distance
+  matched_temp <- matched_temp %>%
     dplyr::mutate(Matched.Infraspecies = infraspecies) %>%
     dplyr::select(-dplyr::any_of(c("genus", "species", "infraspecies", "db_rank", ".db_rank_key"))) %>%
     dplyr::group_by(Orig.Genus, Orig.Species, Infra.Rank, Orig.Infraspecies) %>%
