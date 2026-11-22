@@ -8,7 +8,7 @@ Tries to match the genus name to the 'WCVP' table (using the optional
 ## Usage
 
 ``` r
-wcvp_genus_match(df, target_df = NULL)
+wcvp_genus_match(df, target_df = NULL, .normalized = FALSE)
 ```
 
 ## Arguments
@@ -23,6 +23,10 @@ wcvp_genus_match(df, target_df = NULL)
   Optional custom target table. If `NULL`, the optional `wcvpdata`
   checklist is used when available; otherwise pass a backbone
   explicitly.
+
+- .normalized:
+
+  Internal flag: input has already passed `check_df_format()`.
 
 ## Value
 

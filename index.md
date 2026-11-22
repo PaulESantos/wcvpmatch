@@ -61,6 +61,14 @@ install.packages(
 )
 ```
 
+With the current `wcvpdata` matching schema,
+[`wcvp_matching()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_matching.md)
+loads only candidate genera by default. It retrieves accepted-name
+details by ID even when the accepted name belongs to a different genus.
+For a supplied `target_df`, the same genus filter runs in memory. Set
+`prefilter_genus = FALSE` to use the complete backbone. Older `wcvpdata`
+schemas also use the complete backbone.
+
 ## Quick example: `wcvp_matching()`
 
 ``` r
@@ -109,6 +117,26 @@ matching_result
 #> 2 Jaltometa sa… Jaltomata sagaste… Jaltomata sagasteg… accepted                2
 #> 3 Veronica vul… Veronica vulcanica Veronica spathulata synonym                 0
 ```
+
+To inspect where a matching call spends time, use `profile = TRUE` and
+read the `timings` attribute. A selective call reports
+`selective_backbone`; a call that loads the complete default backbone
+reports `get_db`. The timings cover the matching function, while an
+outer timer can include parsing and later data manipulation.
+
+``` r
+
+if (requireNamespace("wcvpdata", quietly = TRUE)) {
+  input <- classify_spnames(c("Aniba heterotepala", "Jaltometa sagasteguii"))
+  result <- wcvp_matching(input, profile = TRUE)
+  attr(result, "timings")
+}
+```
+
+To compare both modes in fresh R processes with identical input and
+output checks, run `Rscript scripts/benchmark-prefilter-genus.R` from a
+development checkout. The script writes `benchmark-results/summary.csv`;
+its timings are exploratory and the first case includes cold loading.
 
 ## Quick example: `wcvp_distribution()`
 
@@ -188,6 +216,7 @@ Those articles describe:
 - accepted-name resolution and status handling
 - staged fuzzy matching and diagnostics
 - duplicate handling and profiling
+- selective default-backbone loading and the complete-backbone option
 - species, genus, and family distribution retrieval
 - occurrence filters and summarised output
 

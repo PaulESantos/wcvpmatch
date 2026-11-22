@@ -10,6 +10,14 @@ and
 but the function also works with user-supplied tables that follow the
 same schema.
 
+The selective genus loading option described for
+[`wcvp_matching()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_matching.md)
+applies to name reconciliation.
+[`wcvp_distribution()`](https://paulesantos.github.io/wcvpmatch/reference/wcvp_distribution.md)
+has its own lookup and distribution workflow; its `prefilter_genus`
+argument controls candidate matching rather than the matching backbone’s
+Arrow loading strategy.
+
 It always returns a plain tibble, never an `sf` object. The row-level
 result retains `area_code_l3`, the WGSrpd level-3 identifier to use when
 geometries are joined in a separate spatial workflow.

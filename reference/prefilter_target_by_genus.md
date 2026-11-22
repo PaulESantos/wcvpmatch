@@ -26,7 +26,8 @@ prefilter_target_by_genus(
   genus_index = NULL,
   include_fuzzy = TRUE,
   max_dist = 1,
-  method = "osa"
+  method = "osa",
+  .normalized = FALSE
 )
 ```
 
@@ -61,6 +62,10 @@ prefilter_target_by_genus(
 - method:
 
   String distance method passed to `fozziejoin`.
+
+- .normalized:
+
+  Internal flag: input has already passed `check_df_format()`.
 
 ## Value
 

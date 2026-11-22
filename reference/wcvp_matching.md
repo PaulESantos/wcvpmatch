@@ -5,11 +5,14 @@
 Runs a matching pipeline with exact and partial matching for binomial
 and trinomial names, including infraspecific rank validation.
 
-When the default WCVP backbone is used, its normalized representation
-and compact genus lookup are cached for the current R session. Prepared
-custom backbones are also recognized inside the pipeline so internal
-matching nodes do not normalize or deduplicate the same table
-repeatedly.
+With the default `wcvpdata` backbone and `prefilter_genus = TRUE`, a
+matching-schema version 1 Arrow dataset is queried for candidate genera
+before records are loaded into R. Accepted-name metadata is retrieved by
+identifier, including accepted taxa in other genera. The genus catalog
+and most recently selected target are reused within the R session. Older
+data schemas and `prefilter_genus = FALSE` use the complete backbone.
+Prepared custom backbones are reused, but custom data are not loaded
+selectively.
 
 ## Usage
 
@@ -45,8 +48,10 @@ wcvp_matching(
 
 - prefilter_genus:
 
-  Logical. If `TRUE`, prefilter `target_df` to candidate genera (exact +
-  fuzzy) before running the matching pipeline.
+  Logical. If `TRUE` (default), retain exact and fuzzy candidate genera.
+  For a version 1 default `wcvpdata` backbone, only these genera are
+  loaded from Arrow. If `FALSE`, load the complete default backbone. A
+  supplied `target_df` is filtered in memory.
 
 - allow_duplicates:
 
@@ -165,23 +170,22 @@ wcvp_matching(df, output_name_style = "snake_case")
 # Attach per-stage timings for profiling
 out <- wcvp_matching(df, output_name_style = "snake_case", profile = TRUE)
 attr(out, "timings")
-#> # A tibble: 15 × 3
+#> # A tibble: 14 × 3
 #>    stage                                  elapsed_seconds  rows
 #>    <chr>                                            <dbl> <int>
-#>  1 check_df_format                                0.00700     2
+#>  1 check_df_format                                0.00400     2
 #>  2 deduplicate_input                              0           2
-#>  3 check_df_consistency                           0.00400     2
-#>  4 get_db                                         0          NA
-#>  5 prefilter_target_by_genus                      0.0220      2
-#>  6 wcvp_direct_match                              0.01000     2
-#>  7 wcvp_genus_match                               0.00700     0
-#>  8 wcvp_fuzzy_match_genus                         0.00700     0
-#>  9 wcvp_direct_match_species_within_genus         0.0870      0
-#> 10 wcvp_suffix_match_species_within_genus         0.00700     0
-#> 11 wcvp_fuzzy_match_species_within_genus          0.00700     0
-#> 12 prepare_taxonomic_context_data                 0.0500      2
-#> 13 add_taxonomic_context                          0.01000     2
-#> 14 standardize_output_names                       0           2
-#> 15 total                                          0.271       2
+#>  3 check_df_consistency                           0.00300     2
+#>  4 selective_backbone                             0.00500     2
+#>  5 wcvp_direct_match                              0.00200     2
+#>  6 wcvp_genus_match                               0.00100     0
+#>  7 wcvp_fuzzy_match_genus                         0.00100     0
+#>  8 wcvp_direct_match_species_within_genus         0.00100     0
+#>  9 wcvp_suffix_match_species_within_genus         0.00100     0
+#> 10 wcvp_fuzzy_match_species_within_genus          0           0
+#> 11 prepare_taxonomic_context_data                 0.0780      2
+#> 12 add_taxonomic_context                          0.00900     2
+#> 13 standardize_output_names                       0           2
+#> 14 total                                          0.144       2
 # }
 ```

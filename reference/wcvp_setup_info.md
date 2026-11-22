@@ -33,7 +33,7 @@ install it from `r-universe`.
 library(wcvpmatch)
 wcvp_setup_info()
 #> ── Default WCVP Backbone ──────────────────────────────────── wcvpmatch 0.0.3 ──
-#> ✔ wcvpdata   0.7.0        
+#> ✔ wcvpdata   0.8.0        
 #> ✔ backbone   available
 #> i repository https://paulesantos.r-universe.dev
 #> i Functions can use the default backbone when `target_df = NULL`.
